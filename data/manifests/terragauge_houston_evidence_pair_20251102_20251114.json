@@ -1,0 +1,15 @@
+{
+  "artifact": "terragauge_houston_evidence_pair_20251102_20251114.json",
+  "derived_artifact": "data/derived/terragauge_houston_evidence_pair_20251102_20251114.json",
+  "artifact_type": "terragauge_houston_pairwise_evidence_cells",
+  "inputs": {
+    "nisar": "data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json",
+    "houstonnet": "data/derived/houstonnet_2024_summary.json",
+    "groundwater": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
+    "fema": "data/derived/fema_nfhl_usgs_station_join_2026-11-07.json"
+  },
+  "acquisition_dates": ["2025-11-02", "2025-11-14"],
+  "cell_count": 9111,
+  "reference_region": null,
+  "scientific_limit": "This evidence artifact deliberately withholds pair-signal thresholds until a stable reference region is independently justified, and withholds flood-priority labels until a true cell-level flood overlay is ingested. It is pairwise line-of-sight context, not an annual motion rate or a subsidence diagnosis."
+}

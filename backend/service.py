@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import json
 from pathlib import Path
 from typing import Any
 
@@ -17,20 +18,17 @@ class TerraGaugeService:
         self.dataset_path = Path(dataset_path)
         self.thresholds = thresholds or Thresholds()
 
-    def cells(self, empirical_temporal_network: bool = False) -> list[dict[str, Any]]:
-        return [
-            classify_cell(cell, self.thresholds, empirical_temporal_network).to_dict()
-            for cell in load_cells(self.dataset_path)
-        ]
+    def cells(self) -> list[dict[str, Any]]:
+        return [classify_cell(cell, self.thresholds).to_dict() for cell in load_cells(self.dataset_path)]
 
-    def cell(self, cell_id: str, empirical_temporal_network: bool = False) -> dict[str, Any] | None:
-        for result in self.cells(empirical_temporal_network):
+    def cell(self, cell_id: str) -> dict[str, Any] | None:
+        for result in self.cells():
             if result["cell"]["cell_id"] == cell_id:
                 return result
         return None
 
-    def summary(self, empirical_temporal_network: bool = False) -> dict[str, Any]:
-        results = self.cells(empirical_temporal_network)
+    def summary(self) -> dict[str, Any]:
+        results = self.cells()
         counts: dict[str, int] = {}
         for result in results:
             counts[result["label"]] = counts.get(result["label"], 0) + 1
@@ -38,13 +36,24 @@ class TerraGaugeService:
             "cells": len(results),
             "labels": counts,
             "thresholds": asdict(self.thresholds),
-            "temporal_network_status": "empirical_lower_bounds" if empirical_temporal_network else "scenario_lower_bounds",
-            "disclaimer": "TerraGauge provides monitoring-priority evidence, not a flood forecast or a diagnosis of subsidence cause.",
+            "disclaimer": "TerraGauge provides pairwise radar-signal triage, not a flood forecast, annual rate, or diagnosis of subsidence cause.",
         }
 
-    def analyze_cell(self, payload: dict[str, Any], empirical_temporal_network: bool = False) -> dict[str, Any]:
+    def analyze_cell(self, payload: dict[str, Any]) -> dict[str, Any]:
         cell = cell_from_dict(payload)
-        return classify_cell(cell, self.thresholds, empirical_temporal_network).to_dict()
+        return classify_cell(cell, self.thresholds).to_dict()
+
+    def data_ledger(self) -> dict[str, Any]:
+        data_root = next((path for path in (self.dataset_path.parent, *self.dataset_path.parents) if path.name == "data"), None)
+        manifests = data_root / "manifests" if data_root else self.dataset_path.parent / "manifests"
+        entries = []
+        if manifests.is_dir():
+            for path in sorted(manifests.iterdir()):
+                if path.suffix == ".json":
+                    entries.append({"manifest": path.name, "record": json.loads(path.read_text(encoding="utf-8"))})
+                elif path.suffix == ".sha256":
+                    entries.append({"manifest": path.name, "sha256": path.read_text(encoding="utf-8").strip()})
+        return {"dataset": str(self.dataset_path), "entries": entries, "disclaimer": "Source records document provenance; they do not upgrade a pairwise observation into an annual rate."}
 
     def node_noise_floor(self, payload: dict[str, Any]) -> dict[str, Any]:
         heights = payload.get("session_heights_mm")

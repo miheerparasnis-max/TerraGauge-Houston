@@ -10,15 +10,13 @@ def cell(**overrides):
         "cell_id": "test-cell",
         "longitude": -95.3,
         "latitude": 29.7,
-        "los_rate_mm_year": -7.0,
-        "epoch_sigma_mm": 4.0,
-        "interval_days": 12.0,
-        "observation_count": 6,
+        "pair_los_displacement_mm": -12.0,
+        "reference_scatter_mm": 4.0,
         "coherence_median": 0.6,
         "valid_fraction": 0.8,
         "in_main_connected_component": True,
         "flood_exposed": True,
-        "evidence": Evidence(gps_distance_km=1.0, gps_residual_mm_year=1.0, gps_uncertainty_mm_year=1.0),
+        "evidence": Evidence(gps_distance_km=1.0),
     }
     values.update(overrides)
     return CellInput(**values)
@@ -32,7 +30,6 @@ class DetectionTests(unittest.TestCase):
         result = detectability(rate_mm_year=-7, epoch_sigma_mm=4, interval_days=12, observation_count=6, thresholds=Thresholds(), empirical_temporal_network=False)
         self.assertEqual(result.status, "scenario_lower_bound")
         self.assertTrue(result.lower_bound)
-        self.assertIsNotNone(result.minimum_observations)
 
     def test_gnss_noise_floor_requires_three_sessions(self):
         with self.assertRaises(ValueError):
@@ -45,20 +42,22 @@ class DetectionTests(unittest.TestCase):
 
 
 class DecisionTests(unittest.TestCase):
-    def test_agreeing_cell_is_investigate_first(self):
-        self.assertEqual(classify_cell(cell(), Thresholds(), True).label, Label.INVESTIGATE_FIRST)
+    def test_candidate_with_flood_context_is_investigate_signal(self):
+        self.assertEqual(classify_cell(cell(), Thresholds()).label, Label.INVESTIGATE_SIGNAL)
 
-    def test_no_nearby_gps_is_add_monitoring(self):
+    def test_candidate_without_nearby_gps_is_add_monitoring(self):
         value = cell(evidence=Evidence(gps_distance_km=3.0))
-        self.assertEqual(classify_cell(value, Thresholds(), True).label, Label.ADD_MONITORING)
+        self.assertEqual(classify_cell(value, Thresholds()).label, Label.ADD_MONITORING)
 
-    def test_disagreement_is_review(self):
-        value = cell(evidence=Evidence(gps_distance_km=1.0, gps_residual_mm_year=3.0, gps_uncertainty_mm_year=1.0))
-        self.assertEqual(classify_cell(value, Thresholds(), True).label, Label.REVIEW_DISAGREEMENT)
+    def test_mismatch_requires_time_matched_measurements(self):
+        value = cell(evidence=Evidence(gps_distance_km=1.0, gps_comparison_time_matched=True, gps_residual_mm=3.0, gps_uncertainty_mm=1.0))
+        self.assertEqual(classify_cell(value, Thresholds()).label, Label.REVIEW_MISMATCH)
+
+    def test_missing_flood_context_stays_context_only(self):
+        self.assertEqual(classify_cell(cell(flood_exposed=None), Thresholds()).label, Label.CONTEXT_ONLY)
 
     def test_low_quality_is_insufficient_data(self):
-        value = cell(coherence_median=0.2)
-        self.assertEqual(classify_cell(value, Thresholds(), True).label, Label.INSUFFICIENT_DATA)
+        self.assertEqual(classify_cell(cell(coherence_median=0.2), Thresholds()).label, Label.INSUFFICIENT_DATA)
 
 
 if __name__ == "__main__":

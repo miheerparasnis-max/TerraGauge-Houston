@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .houstonnet import write_velocity_stations
 from .fema import write_nfhl_point_join
+from .gnss import write_groundtruth_report
+from .houston import write_houston_evidence
 from .nisar import GunwConfig, inspect_hdf5, write_pair_cells
 from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
@@ -54,6 +56,16 @@ def main() -> None:
     fema.add_argument("groundwater")
     fema.add_argument("responses")
     fema.add_argument("output")
+    evidence = commands.add_parser("build-houston-evidence", help="join checked Houston artifacts into honest pairwise cell evidence")
+    evidence.add_argument("nisar")
+    evidence.add_argument("houstonnet")
+    evidence.add_argument("groundwater")
+    evidence.add_argument("fema")
+    evidence.add_argument("output")
+    evidence.add_argument("--reference-bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="independently justified stable-reference region; omitted means no signal threshold is calculated")
+    groundtruth = commands.add_parser("groundtruth-report", help="validate GroundTruth Node session artifacts")
+    groundtruth.add_argument("manifest")
+    groundtruth.add_argument("output")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -71,6 +83,10 @@ def main() -> None:
         write_groundwater_daily(args.input, args.output)
     elif args.command == "fema-nfhl-join":
         write_nfhl_point_join(args.groundwater, args.responses, args.output)
+    elif args.command == "build-houston-evidence":
+        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None)
+    elif args.command == "groundtruth-report":
+        write_groundtruth_report(args.manifest, args.output)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 

@@ -1,6 +1,6 @@
 # TerraGauge Houston
 
-TerraGauge is an evidence-first monitoring-priority backend for Houston ground-motion analysis. It combines NASA NISAR/OPERA-derived cell inputs, local GPS comparison, flood exposure, and a stationary GNSS noise-floor experiment to explain **where an analyst should investigate first and why**.
+TerraGauge is an evidence-first monitoring-priority backend for Houston ground-motion analysis. It combines NASA NISAR pairwise line-of-sight observations, historic local GPS context, USGS groundwater context, FEMA station-point context, and a stationary GNSS repeatability experiment to explain **what evidence exists at a location and what is still missing**.
 
 It does **not** forecast flooding, diagnose the cause of motion, or claim that a weekend GNSS receiver measured subsidence.
 
@@ -10,7 +10,7 @@ This repository currently contains a dependency-free Python API with:
 
 - transparent monitoring-priority rules;
 - quality-mask enforcement;
-- lower-bound radar detectability calculations;
+- pairwise-signal gates that cannot silently become annual-rate claims;
 - stationary GNSS session-noise calculations;
 - validated JSON inputs and documented JSON outputs;
 - a small demo fixture, visibly labeled as not source-derived; and
@@ -37,15 +37,15 @@ The API starts at `http://127.0.0.1:8000`.
 | `GET` | `/v1/summary` | Label counts, active thresholds, and disclaimer |
 | `GET` | `/v1/cells` | All analyzed 1 km cells |
 | `GET` | `/v1/cells/{cell_id}` | One evidence card payload |
+| `GET` | `/v1/data-ledger` | Versioned source-manifest records |
 | `POST` | `/v1/analyze-cell` | Analyze a validated cell without saving it |
 | `POST` | `/v1/gnss/noise-floor` | Calculate stationary GNSS session scatter |
-
-Append `?temporal_network=true` only after the science lead confirms that the NISAR temporal network is sufficient for an empirical lower-bound calculation. Without it, detectability is deliberately returned as a scenario lower bound.
 
 ### Example requests
 
 ```bash
 curl http://127.0.0.1:8000/v1/summary
+curl http://127.0.0.1:8000/v1/data-ledger
 curl http://127.0.0.1:8000/v1/cells/hou-001
 curl -X POST http://127.0.0.1:8000/v1/gnss/noise-floor \
   -H 'Content-Type: application/json' \
@@ -60,13 +60,14 @@ The app reads an aggregated-cell JSON file such as `data/sample_cells.json`. Poi
 TERRAGAUGE_DATASET=/absolute/path/to/cells.json python3 -m backend
 ```
 
-Each cell must provide coordinates, LOS rate/quality values, flood exposure, and any available GPS/USGS evidence. The source-specific NISAR/OPERA ingestion pipeline should write this standard contract after processing—not bypass the API logic.
+Each cell must provide coordinates, pairwise LOS displacement/quality values, and any available GPS/USGS evidence. `flood_exposed` may be `null`; it must not be guessed from a station-point flood classification. The source-specific ingestion pipeline writes this contract after processing—not bypassing the API logic.
 
 ## Science safeguards
 
-- NISAR motion is line-of-sight motion, not automatically vertical subsidence.
-- Every detectability calculation is a lower bound under a white-noise assumption.
-- GUNW interferograms are not independent raw epochs. A short temporal stack must remain a scenario estimate.
+- NISAR motion is line-of-sight motion, not automatically vertical subsidence or an annual rate.
+- A pair-signal threshold is calculated only from an explicitly supplied, independently justified stable-reference region.
+- Historic HoustonNet values are context, not time-matched validation of the NISAR pair.
+- A station-point FEMA result is context, not a cell-level flood classification.
 - A GNSS node result represents stationary receiver repeatability, not observed land motion.
 - The demo dataset is only for development and cannot appear as a real Houston result.
 
@@ -171,10 +172,34 @@ The checked Houston join is
 monitoring coordinates only; it must never be presented as a parcel-level flood
 determination, flood depth, or a value for every radar cell.
 
+## Current Houston evidence build
+
+`data/derived/terragauge_houston_evidence_pair_20251102_20251114.json` is built from the checked NISAR, HoustonNet, USGS, and FEMA artifacts with:
+
+```bash
+python3 -m backend.ingestion.cli build-houston-evidence \
+  data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json \
+  data/derived/houstonnet_2024_summary.json \
+  data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json \
+  data/derived/fema_nfhl_usgs_station_join_2026-11-07.json \
+  data/derived/terragauge_houston_evidence_pair_20251102_20251114.json
+```
+
+It intentionally returns context-only results until the team supplies an independently justified stable reference region and a true cell-level flood overlay. Its provenance appears at `/v1/data-ledger`.
+
+## GroundTruth Node hardware record
+
+When the LC29H(BS) arrives, keep the outdoor antenna fixed and complete three static sessions. Save the raw receiver log, converted RINEX observation file, static-solution height, and CORS overlap for each. Copy `data/groundtruth_session_manifest.template.json`, fill it with real values, then run:
+
+```bash
+python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_manifest.json data/derived/groundtruth_report.json
+```
+
+A passing report proves only stationary receiver repeatability. It never proves Houston land motion.
+
 ## Remaining source work
 
-1. Download one verified same-track Houston GUNW collection and produce pair artifacts.
-2. Implement a temporal-network inversion only after the real pair graph passes the stack gate.
-3. Add USGS groundwater/compaction and verified flood-layer joins as separate, dated artifacts.
-4. Add the event’s real LC29H(BS) raw-log to RINEX/RTKLIB processing record.
-5. Replace demo data with a dated, versioned data ledger and source-derived results.
+1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
+2. Ingest a true FEMA cell/polygon overlay before assigning flood-priority labels.
+3. Implement a temporal-network inversion only after a real same-track pair graph passes the stack gate.
+4. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.

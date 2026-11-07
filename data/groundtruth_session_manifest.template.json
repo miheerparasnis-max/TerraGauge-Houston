@@ -1,0 +1,35 @@
+{
+  "purpose": "GroundTruth Node stationary-repeatability validation. Do not use this template to claim observed subsidence.",
+  "sessions": [
+    {
+      "session_id": "2026-11-14-am",
+      "raw_observation_log": "data/raw/groundtruth/2026-11-14-am.rtcm",
+      "rinex_observation_file": "data/derived/groundtruth/2026-11-14-am.obs",
+      "static_solution_height_mm": 0.0,
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "NETP",
+      "cors_overlap": true
+    },
+    {
+      "session_id": "2026-11-14-pm",
+      "raw_observation_log": "data/raw/groundtruth/2026-11-14-pm.rtcm",
+      "rinex_observation_file": "data/derived/groundtruth/2026-11-14-pm.obs",
+      "static_solution_height_mm": 0.0,
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "NETP",
+      "cors_overlap": true
+    },
+    {
+      "session_id": "2026-11-15-am",
+      "raw_observation_log": "data/raw/groundtruth/2026-11-15-am.rtcm",
+      "rinex_observation_file": "data/derived/groundtruth/2026-11-15-am.obs",
+      "static_solution_height_mm": 0.0,
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "NETP",
+      "cors_overlap": true
+    }
+  ]
+}

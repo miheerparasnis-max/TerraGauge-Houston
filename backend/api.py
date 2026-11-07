@@ -7,7 +7,7 @@ import os
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
 from .repository import ValidationError
 from .service import TerraGaugeService
@@ -26,17 +26,17 @@ class TerraGaugeHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
-        query = parse_qs(parsed.query)
-        empirical = query.get("temporal_network", ["false"])[0].lower() == "true"
         if parsed.path == "/health":
             return self._json(HTTPStatus.OK, {"status": "ok", "service": "terragauge-api"})
         if parsed.path == "/v1/summary":
-            return self._json(HTTPStatus.OK, self.service.summary(empirical))
+            return self._json(HTTPStatus.OK, self.service.summary())
         if parsed.path == "/v1/cells":
-            return self._json(HTTPStatus.OK, {"cells": self.service.cells(empirical)})
+            return self._json(HTTPStatus.OK, {"cells": self.service.cells()})
+        if parsed.path == "/v1/data-ledger":
+            return self._json(HTTPStatus.OK, self.service.data_ledger())
         if parsed.path.startswith("/v1/cells/"):
             cell_id = parsed.path.removeprefix("/v1/cells/")
-            result = self.service.cell(cell_id, empirical)
+            result = self.service.cell(cell_id)
             if result is None:
                 return self._json(HTTPStatus.NOT_FOUND, {"error": "cell_not_found"})
             return self._json(HTTPStatus.OK, result)
@@ -53,7 +53,7 @@ class TerraGaugeHandler(BaseHTTPRequestHandler):
         try:
             payload = self._body()
             if self.path == "/v1/analyze-cell":
-                return self._json(HTTPStatus.OK, self.service.analyze_cell(payload, bool(payload.get("empirical_temporal_network", False))))
+                return self._json(HTTPStatus.OK, self.service.analyze_cell(payload))
             if self.path == "/v1/gnss/noise-floor":
                 return self._json(HTTPStatus.OK, self.service.node_noise_floor(payload))
             return self._json(HTTPStatus.NOT_FOUND, {"error": "route_not_found"})
