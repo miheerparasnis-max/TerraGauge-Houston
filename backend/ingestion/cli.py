@@ -27,6 +27,7 @@ def main() -> None:
     nisar.add_argument("--coherence-path", default=None)
     nisar.add_argument("--components-path", default=None)
     nisar.add_argument("--cell-pixels", type=int, default=13)
+    nisar.add_argument("--bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="optional WGS84 bounds for a compact study-area artifact")
     nisar.add_argument("--reference-date", required=True)
     nisar.add_argument("--secondary-date", required=True)
     opera = commands.add_parser("opera-disp", help="extract quality-masked OPERA pair cells")
@@ -49,6 +50,8 @@ def main() -> None:
         print(json.dumps(inspect_hdf5(args.input), indent=2))
     elif args.command == "nisar-gunw":
         kwargs = {"wavelength_m": args.wavelength_m, "crs": args.crs, "x_path": args.x_path, "y_path": args.y_path, "cell_pixels": args.cell_pixels, "acquisition_dates": (args.reference_date, args.secondary_date)}
+        if args.bbox:
+            kwargs["bounding_box"] = tuple(args.bbox)
         if args.phase_path: kwargs["phase_path"] = args.phase_path
         if args.coherence_path: kwargs["coherence_path"] = args.coherence_path
         if args.components_path: kwargs["connected_components_path"] = args.components_path

@@ -110,6 +110,12 @@ The documented default layer paths are under
 with inspection before using them. GUNW phase is converted to pairwise LOS
 displacement with `phase * wavelength / (4π)`; it is **not** made into a rate.
 
+For the checked Houston example, `data/manifests/nisar_gunw_20251102_20251114.json`
+records the source, checksum, coordinate system, and extraction bounds. Its compact
+study-area artifact is `data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json`.
+The raw HDF5 is intentionally local-only. Add `--bbox -95.95 29.4 -94.8 30.2` to
+write only the Houston study area instead of the entire source frame.
+
 ### OPERA DISP-S1
 
 OPERA context is ingested from the raw displacement layer and recommended mask,

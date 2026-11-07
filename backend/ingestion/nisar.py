@@ -55,6 +55,7 @@ class GunwConfig:
     connected_components_path: str = f"{DEFAULT_ROOT}/connectedComponents"
     cell_pixels: int = 13
     acquisition_dates: tuple[str, str] = ("unknown_reference", "unknown_secondary")
+    bounding_box: tuple[float, float, float, float] | None = None
 
 
 def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
@@ -90,6 +91,10 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
             lat = median_or_none(latitude[section])
             if lon is None or lat is None:
                 continue
+            if config.bounding_box is not None:
+                west, south, east, north = config.bounding_box
+                if not (west <= lon <= east and south <= lat <= north):
+                    continue
             records.append({
                 "cell_id": one_km_cell_id(lon, lat),
                 "longitude": lon,
