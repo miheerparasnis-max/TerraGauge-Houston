@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import tarfile
 from pathlib import Path
 from typing import Any
 
@@ -58,3 +59,29 @@ def import_velocity_csv(path: str | Path, column_map: dict[str, str]) -> dict[st
 
 def write_velocity_stations(input_path: str | Path, output_path: str | Path, column_map: dict[str, str]) -> None:
     Path(output_path).write_text(json.dumps(import_velocity_csv(input_path, column_map), indent=2), encoding="utf-8")
+
+
+def import_release_summary(archive_path: str | Path) -> dict[str, Any]:
+    """Read the official 2024 HoustonNet summary table directly from its TGZ release."""
+    member_name = "./HoustonNet_2024_Data_Release/A_HGSD_Summary_table_1993-2023.txt"
+    with tarfile.open(archive_path, "r:gz") as archive:
+        stream = archive.extractfile(member_name)
+        if stream is None:
+            raise ValueError("HoustonNet summary table not found in archive")
+        lines = stream.read().decode("utf-8").splitlines()[2:]
+    stations = []
+    for line in lines:
+        fields = line.split()
+        if len(fields) != 9:
+            continue
+        station, longitude, latitude, start, end, years, samples, displacement, rate = fields[0], *fields[1:]
+        # 9000.0 is HoustonNet's sentinel for an invalid/undefined rate.
+        vertical_rate = float(rate)
+        if abs(vertical_rate) >= 8000:
+            continue
+        stations.append({"station_id": station, "longitude": float(longitude), "latitude": float(latitude), "start_decimal_year": float(start), "end_decimal_year": float(end), "history_years": float(years), "samples": int(samples), "total_up_down_cm": float(displacement), "up_mm_year": vertical_rate, "source_status": "source_derived"})
+    return {"artifact_type": "houstonnet_2024_summary", "source_archive": str(archive_path), "reference_frame": "See HoustonNet release summary documentation before radar comparison", "limitations": ["Vertical linear rates span station-specific historical windows.", "Rates must be time-matched and LOS-projected before comparison to NISAR."], "stations": stations}
+
+
+def write_release_summary(archive_path: str | Path, output_path: str | Path) -> None:
+    Path(output_path).write_text(json.dumps(import_release_summary(archive_path), indent=2), encoding="utf-8")
