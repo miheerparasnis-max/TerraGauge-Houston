@@ -1,0 +1,19 @@
+{
+  "source": "NASA CMR query, collection C2854335566-ASF, Houston bounding box -95.95,29.4,-94.8,30.2, retrieved 2026-11-07",
+  "network": {
+    "track": "062",
+    "direction": "A",
+    "frame": "016",
+    "pair_count": 5,
+    "unique_dates": ["2025-11-02", "2025-11-14", "2025-11-26", "2025-12-08", "2025-12-20", "2026-01-01"],
+    "status": "catalog-confirmed; HDF5 downloads still require the user's Earthdata-authorized session"
+  },
+  "granules": [
+    "NISAR_L2_PR_GUNW_004_062_A_016_005_4000_SH_20251102T114328_20251102T114403_20251114T114329_20251114T114403_P05023_N_F_J_001.h5",
+    "NISAR_L2_PR_GUNW_005_062_A_016_006_4000_SH_20251114T114329_20251114T114403_20251126T114326_20251126T114404_P05023_N_F_J_001.h5",
+    "NISAR_L2_PR_GUNW_006_062_A_016_007_4000_SH_20251126T114326_20251126T114404_20251208T114330_20251208T114404_P05023_N_F_J_001.h5",
+    "NISAR_L2_PR_GUNW_007_062_A_016_008_4000_SH_20251208T114330_20251208T114404_20251220T114327_20251220T114405_P05023_N_F_J_001.h5",
+    "NISAR_L2_PR_GUNW_008_062_A_016_009_4000_SH_20251220T114327_20251220T114405_20260101T114331_20260101T114405_P05023_N_F_J_001.h5"
+  ],
+  "next_processing": "Place authorized HDF5 downloads in data/raw/, extract each pair with backend.ingestion.cli nisar-gunw using identical bounds and grid settings, then use backend.ingestion.temporal.invert_files with a human-approved reference cell."
+}
