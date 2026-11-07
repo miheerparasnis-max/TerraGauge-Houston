@@ -1,0 +1,190 @@
+{
+  "artifact_type": "fema_nfhl_usgs_station_join",
+  "source_layer": "FEMA National Flood Hazard Layer, MapServer layer 28 (Flood Hazard Zones)",
+  "limitations": [
+    "A point zone lookup is evidence at the monitoring location only, not flood depth or parcel-level advice.",
+    "Use the current FEMA map and local authority for decisions affecting a property or permit."
+  ],
+  "stations": [
+    {
+      "site_id": "292458094534206",
+      "site_name": "KH-64-33-920 (Texas City Extensometer)",
+      "longitude": -94.8950028,
+      "latitude": 29.416325,
+      "cell_id": "epsg3857-1km--10564-3428",
+      "flood_zone": "X",
+      "zone_subtype": "AREA WITH REDUCED FLOOD RISK DUE TO LEVEE",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "293348095070604",
+      "site_name": "LJ-65-32-428 (Clear Lake Deep Extensometer)",
+      "longitude": -95.1189444,
+      "latitude": 29.56341667,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "flood_zone": "X",
+      "zone_subtype": "0.2 PCT ANNUAL CHANCE FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "293352095011601",
+      "site_name": "LJ-65-32-625 (Seabrook Extensometer)",
+      "longitude": -95.0214556,
+      "latitude": 29.56479444,
+      "cell_id": "epsg3857-1km--10578-3447",
+      "flood_zone": "VE",
+      "zone_subtype": null,
+      "is_special_flood_hazard_area": true,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294327095445201",
+      "site_name": "JY-65-29-106 (Fort Bend Extensometer)",
+      "longitude": -95.7477778,
+      "latitude": 29.72416667,
+      "cell_id": "epsg3857-1km--10659-3468",
+      "flood_zone": "X",
+      "zone_subtype": "0.2 PCT ANNUAL CHANCE FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294338095270403",
+      "site_name": "LJ-65-21-230 (Southwest Piezometer No. 2)",
+      "longitude": -95.4513889,
+      "latitude": 29.7275,
+      "cell_id": "epsg3857-1km--10626-3468",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294527095014910",
+      "site_name": "LJ-65-16-930 (Baytown C-1 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294527095014911",
+      "site_name": "LJ-65-16-931 (Baytown C-2 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294726095351101",
+      "site_name": "LJ-65-12-725 (Addicks Piezometer No. 2)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "flood_zone": "AE",
+      "zone_subtype": "FLOODWAY",
+      "is_special_flood_hazard_area": true,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294726095351102",
+      "site_name": "LJ-65-12-726 (Addicks Extensometer)",
+      "longitude": -95.5861389,
+      "latitude": 29.79069444,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294726095351104",
+      "site_name": "LJ-65-12-729 (Addicks Piezometer No. 1)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "flood_zone": "AE",
+      "zone_subtype": "FLOODWAY",
+      "is_special_flood_hazard_area": true,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294728095200103",
+      "site_name": "LJ-65-14-738 (Northeast Piezometer No. 4)",
+      "longitude": -95.3338889,
+      "latitude": 29.79138889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "flood_zone": "X",
+      "zone_subtype": "0.2 PCT ANNUAL CHANCE FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "294728095200106",
+      "site_name": "LJ-65-14-746 (Northeast Extensometer)",
+      "longitude": -95.3339722,
+      "latitude": 29.79088889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "flood_zone": "X",
+      "zone_subtype": "0.2 PCT ANNUAL CHANCE FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "295449095084101",
+      "site_name": "LJ-65-07-905 (Lake Houston Piezometer No. 2)",
+      "longitude": -95.145,
+      "latitude": 29.91388889,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "295449095084105",
+      "site_name": "LJ-65-07-909 (Lake Houston Extensometer)",
+      "longitude": -95.1455278,
+      "latitude": 29.9132222,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    },
+    {
+      "site_id": "300849095143301",
+      "site_name": "TS-60-55-710 (New Caney Piezometer No. 7-A)",
+      "longitude": -95.2425,
+      "latitude": 30.14694444,
+      "cell_id": "epsg3857-1km--10603-3522",
+      "flood_zone": "X",
+      "zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+      "is_special_flood_hazard_area": false,
+      "query_status": "classified",
+      "source_status": "source_derived"
+    }
+  ]
+}

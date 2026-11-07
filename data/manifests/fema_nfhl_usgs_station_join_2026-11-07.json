@@ -1,0 +1,9 @@
+{
+  "source": "FEMA National Flood Hazard Layer",
+  "service": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
+  "layer": "Flood Hazard Zones",
+  "method": "Point query at each unique USGS monitoring location using FLD_ZONE, ZONE_SUBTY, and SFHA_TF fields.",
+  "derived_artifact": "data/derived/fema_nfhl_usgs_station_join_2026-11-07.json",
+  "retrieved_utc": "2026-11-07T04:46:00Z",
+  "interpretation_limit": "Each classification is evidence at one monitoring coordinate only. It is not a flood-depth estimate, parcel determination, or generalization to a radar cell."
+}

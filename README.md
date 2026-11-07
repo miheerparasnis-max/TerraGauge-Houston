@@ -157,6 +157,20 @@ source-derived Houston example. A positive `depth_change_ft` means the water was
 deeper below land surface at the end of the retrieved window; it is evidence for
 an analyst to inspect, not proof of a causal mechanism.
 
+### FEMA flood-exposure evidence
+
+Save a FEMA National Flood Hazard Layer point-query response for each evidence
+station, then join those responses to the USGS locations:
+
+```bash
+python3 -m backend.ingestion.cli fema-nfhl-join usgs-groundwater.json responses/ data/derived/fema-join.json
+```
+
+The checked Houston join is
+`data/derived/fema_nfhl_usgs_station_join_2026-11-07.json`. It classifies the
+monitoring coordinates only; it must never be presented as a parcel-level flood
+determination, flood depth, or a value for every radar cell.
+
 ## Remaining source work
 
 1. Download one verified same-track Houston GUNW collection and produce pair artifacts.
