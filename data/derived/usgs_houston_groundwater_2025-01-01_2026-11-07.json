@@ -1,0 +1,914 @@
+{
+  "artifact_type": "usgs_groundwater_daily_summary",
+  "source_file": "/private/tmp/terragauge-usgs-gw-daily.json",
+  "sign_convention": "Positive depth_change_ft means water was deeper below land surface at the end of the retrieved window.",
+  "limitations": [
+    "This is local groundwater evidence, not a causal subsidence finding.",
+    "Multiple series may exist at one site for different monitored intervals; preserve series_id when joining.",
+    "Time-match and document aquifer/interval metadata before comparing stations."
+  ],
+  "series": [
+    {
+      "series_id": "292458094534206:0",
+      "site_id": "292458094534206",
+      "site_name": "KH-64-33-920 (Texas City Extensometer)",
+      "longitude": -94.8950028,
+      "latitude": 29.416325,
+      "cell_id": "epsg3857-1km--10564-3428",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 46.93
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 48.54
+      },
+      "depth_change_ft": 1.6099999999999994,
+      "observation_count": 658,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "292458094534206:1",
+      "site_id": "292458094534206",
+      "site_name": "KH-64-33-920 (Texas City Extensometer)",
+      "longitude": -94.8950028,
+      "latitude": 29.416325,
+      "cell_id": "epsg3857-1km--10564-3428",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 46.51
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 47.56
+      },
+      "depth_change_ft": 1.0500000000000043,
+      "observation_count": 658,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "292458094534206:2",
+      "site_id": "292458094534206",
+      "site_name": "KH-64-33-920 (Texas City Extensometer)",
+      "longitude": -94.8950028,
+      "latitude": 29.416325,
+      "cell_id": "epsg3857-1km--10564-3428",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 46.73
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 47.9
+      },
+      "depth_change_ft": 1.1700000000000017,
+      "observation_count": 657,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293348095070604:3",
+      "site_id": "293348095070604",
+      "site_name": "LJ-65-32-428 (Clear Lake Deep Extensometer)",
+      "longitude": -95.1189444,
+      "latitude": 29.56341667,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 134.18
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 127.71
+      },
+      "depth_change_ft": -6.470000000000013,
+      "observation_count": 674,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293348095070604:4",
+      "site_id": "293348095070604",
+      "site_name": "LJ-65-32-428 (Clear Lake Deep Extensometer)",
+      "longitude": -95.1189444,
+      "latitude": 29.56341667,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 134.16
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 127.7
+      },
+      "depth_change_ft": -6.459999999999994,
+      "observation_count": 674,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293348095070604:5",
+      "site_id": "293348095070604",
+      "site_name": "LJ-65-32-428 (Clear Lake Deep Extensometer)",
+      "longitude": -95.1189444,
+      "latitude": 29.56341667,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 134.17
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 127.7
+      },
+      "depth_change_ft": -6.469999999999985,
+      "observation_count": 674,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293352095011601:6",
+      "site_id": "293352095011601",
+      "site_name": "LJ-65-32-625 (Seabrook Extensometer)",
+      "longitude": -95.0214556,
+      "latitude": 29.56479444,
+      "cell_id": "epsg3857-1km--10578-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 97.71
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 100.61
+      },
+      "depth_change_ft": 2.9000000000000057,
+      "observation_count": 643,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293352095011601:7",
+      "site_id": "293352095011601",
+      "site_name": "LJ-65-32-625 (Seabrook Extensometer)",
+      "longitude": -95.0214556,
+      "latitude": 29.56479444,
+      "cell_id": "epsg3857-1km--10578-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 97.7
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 100.6
+      },
+      "depth_change_ft": 2.8999999999999915,
+      "observation_count": 643,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "293352095011601:8",
+      "site_id": "293352095011601",
+      "site_name": "LJ-65-32-625 (Seabrook Extensometer)",
+      "longitude": -95.0214556,
+      "latitude": 29.56479444,
+      "cell_id": "epsg3857-1km--10578-3447",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 97.71
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 100.6
+      },
+      "depth_change_ft": 2.8900000000000006,
+      "observation_count": 642,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294327095445201:9",
+      "site_id": "294327095445201",
+      "site_name": "JY-65-29-106 (Fort Bend Extensometer)",
+      "longitude": -95.7477778,
+      "latitude": 29.72416667,
+      "cell_id": "epsg3857-1km--10659-3468",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 36.29
+      },
+      "last_observation": {
+        "time": "2025-03-02T00:00:00.000",
+        "depth_below_land_surface": 36.46
+      },
+      "depth_change_ft": 0.1700000000000017,
+      "observation_count": 61,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294338095270403:10",
+      "site_id": "294338095270403",
+      "site_name": "LJ-65-21-230 (Southwest Piezometer No. 2)",
+      "longitude": -95.4513889,
+      "latitude": 29.7275,
+      "cell_id": "epsg3857-1km--10626-3468",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 265.24
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 267.12
+      },
+      "depth_change_ft": 1.8799999999999955,
+      "observation_count": 586,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294338095270403:11",
+      "site_id": "294338095270403",
+      "site_name": "LJ-65-21-230 (Southwest Piezometer No. 2)",
+      "longitude": -95.4513889,
+      "latitude": 29.7275,
+      "cell_id": "epsg3857-1km--10626-3468",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 265.16
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 267.01
+      },
+      "depth_change_ft": 1.849999999999966,
+      "observation_count": 586,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294338095270403:12",
+      "site_id": "294338095270403",
+      "site_name": "LJ-65-21-230 (Southwest Piezometer No. 2)",
+      "longitude": -95.4513889,
+      "latitude": 29.7275,
+      "cell_id": "epsg3857-1km--10626-3468",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 265.19
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 267.05
+      },
+      "depth_change_ft": 1.8600000000000136,
+      "observation_count": 586,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014910:13",
+      "site_id": "294527095014910",
+      "site_name": "LJ-65-16-930 (Baytown C-1 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.63
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 110.06
+      },
+      "depth_change_ft": 2.430000000000007,
+      "observation_count": 666,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014910:14",
+      "site_id": "294527095014910",
+      "site_name": "LJ-65-16-930 (Baytown C-1 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.5
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 109.93
+      },
+      "depth_change_ft": 2.430000000000007,
+      "observation_count": 666,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014910:15",
+      "site_id": "294527095014910",
+      "site_name": "LJ-65-16-930 (Baytown C-1 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.56
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 109.96
+      },
+      "depth_change_ft": 2.3999999999999915,
+      "observation_count": 665,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014911:16",
+      "site_id": "294527095014911",
+      "site_name": "LJ-65-16-931 (Baytown C-2 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.71
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 111.49
+      },
+      "depth_change_ft": 3.780000000000001,
+      "observation_count": 675,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014911:17",
+      "site_id": "294527095014911",
+      "site_name": "LJ-65-16-931 (Baytown C-2 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.7
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 111.48
+      },
+      "depth_change_ft": 3.780000000000001,
+      "observation_count": 675,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294527095014911:18",
+      "site_id": "294527095014911",
+      "site_name": "LJ-65-16-931 (Baytown C-2 Extensometer)",
+      "longitude": -95.03065,
+      "latitude": 29.75784167,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 107.7
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 111.48
+      },
+      "depth_change_ft": 3.780000000000001,
+      "observation_count": 674,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351101:19",
+      "site_id": "294726095351101",
+      "site_name": "LJ-65-12-725 (Addicks Piezometer No. 2)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 13.55
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 15.84
+      },
+      "depth_change_ft": 2.289999999999999,
+      "observation_count": 652,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351101:20",
+      "site_id": "294726095351101",
+      "site_name": "LJ-65-12-725 (Addicks Piezometer No. 2)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 13.03
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 15.26
+      },
+      "depth_change_ft": 2.2300000000000004,
+      "observation_count": 652,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351101:21",
+      "site_id": "294726095351101",
+      "site_name": "LJ-65-12-725 (Addicks Piezometer No. 2)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 13.35
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 15.5
+      },
+      "depth_change_ft": 2.1500000000000004,
+      "observation_count": 651,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351102:22",
+      "site_id": "294726095351102",
+      "site_name": "LJ-65-12-726 (Addicks Extensometer)",
+      "longitude": -95.5861389,
+      "latitude": 29.79069444,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 382.71
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 370.06
+      },
+      "depth_change_ft": -12.649999999999977,
+      "observation_count": 662,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351102:23",
+      "site_id": "294726095351102",
+      "site_name": "LJ-65-12-726 (Addicks Extensometer)",
+      "longitude": -95.5861389,
+      "latitude": 29.79069444,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 382.68
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 369.95
+      },
+      "depth_change_ft": -12.730000000000018,
+      "observation_count": 662,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351102:24",
+      "site_id": "294726095351102",
+      "site_name": "LJ-65-12-726 (Addicks Extensometer)",
+      "longitude": -95.5861389,
+      "latitude": 29.79069444,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 382.7
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 369.86
+      },
+      "depth_change_ft": -12.839999999999975,
+      "observation_count": 661,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351104:25",
+      "site_id": "294726095351104",
+      "site_name": "LJ-65-12-729 (Addicks Piezometer No. 1)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 153.09
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 151.66
+      },
+      "depth_change_ft": -1.4300000000000068,
+      "observation_count": 615,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351104:26",
+      "site_id": "294726095351104",
+      "site_name": "LJ-65-12-729 (Addicks Piezometer No. 1)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 152.85
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": 151.52
+      },
+      "depth_change_ft": -1.329999999999984,
+      "observation_count": 615,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294726095351104:27",
+      "site_id": "294726095351104",
+      "site_name": "LJ-65-12-729 (Addicks Piezometer No. 1)",
+      "longitude": -95.5866667,
+      "latitude": 29.79083333,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 153.0
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 151.55
+      },
+      "depth_change_ft": -1.4499999999999886,
+      "observation_count": 614,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294728095200103:28",
+      "site_id": "294728095200103",
+      "site_name": "LJ-65-14-738 (Northeast Piezometer No. 4)",
+      "longitude": -95.3338889,
+      "latitude": 29.79138889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 180.95
+      },
+      "last_observation": {
+        "time": "2026-10-26T00:00:00.000",
+        "depth_below_land_surface": 179.17
+      },
+      "depth_change_ft": -1.7800000000000011,
+      "observation_count": 445,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294728095200103:29",
+      "site_id": "294728095200103",
+      "site_name": "LJ-65-14-738 (Northeast Piezometer No. 4)",
+      "longitude": -95.3338889,
+      "latitude": 29.79138889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 180.91
+      },
+      "last_observation": {
+        "time": "2026-10-26T00:00:00.000",
+        "depth_below_land_surface": 179.14
+      },
+      "depth_change_ft": -1.7700000000000102,
+      "observation_count": 445,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294728095200103:30",
+      "site_id": "294728095200103",
+      "site_name": "LJ-65-14-738 (Northeast Piezometer No. 4)",
+      "longitude": -95.3338889,
+      "latitude": 29.79138889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 180.92
+      },
+      "last_observation": {
+        "time": "2026-10-26T00:00:00.000",
+        "depth_below_land_surface": 179.15
+      },
+      "depth_change_ft": -1.7699999999999818,
+      "observation_count": 445,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294728095200106:31",
+      "site_id": "294728095200106",
+      "site_name": "LJ-65-14-746 (Northeast Extensometer)",
+      "longitude": -95.3339722,
+      "latitude": 29.79088889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 254.88
+      },
+      "last_observation": {
+        "time": "2026-10-26T00:00:00.000",
+        "depth_below_land_surface": 253.54
+      },
+      "depth_change_ft": -1.3400000000000034,
+      "observation_count": 519,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "294728095200106:32",
+      "site_id": "294728095200106",
+      "site_name": "LJ-65-14-746 (Northeast Extensometer)",
+      "longitude": -95.3339722,
+      "latitude": 29.79088889,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 254.81
+      },
+      "last_observation": {
+        "time": "2026-10-26T00:00:00.000",
+        "depth_below_land_surface": 253.47
+      },
+      "depth_change_ft": -1.3400000000000034,
+      "observation_count": 519,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "295449095084101:33",
+      "site_id": "295449095084101",
+      "site_name": "LJ-65-07-905 (Lake Houston Piezometer No. 2)",
+      "longitude": -95.145,
+      "latitude": 29.91388889,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 96.78
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 102.65
+      },
+      "depth_change_ft": 5.8700000000000045,
+      "observation_count": 554,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "295449095084101:34",
+      "site_id": "295449095084101",
+      "site_name": "LJ-65-07-905 (Lake Houston Piezometer No. 2)",
+      "longitude": -95.145,
+      "latitude": 29.91388889,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 96.7
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 102.55
+      },
+      "depth_change_ft": 5.849999999999994,
+      "observation_count": 554,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "295449095084101:35",
+      "site_id": "295449095084101",
+      "site_name": "LJ-65-07-905 (Lake Houston Piezometer No. 2)",
+      "longitude": -95.145,
+      "latitude": 29.91388889,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 96.73
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 102.54
+      },
+      "depth_change_ft": 5.810000000000002,
+      "observation_count": 554,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "295449095084105:36",
+      "site_id": "295449095084105",
+      "site_name": "LJ-65-07-909 (Lake Houston Extensometer)",
+      "longitude": -95.1455278,
+      "latitude": 29.9132222,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 177.6
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 182.63
+      },
+      "depth_change_ft": 5.030000000000001,
+      "observation_count": 519,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "295449095084105:37",
+      "site_id": "295449095084105",
+      "site_name": "LJ-65-07-909 (Lake Houston Extensometer)",
+      "longitude": -95.1455278,
+      "latitude": 29.9132222,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 177.43
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": 182.54
+      },
+      "depth_change_ft": 5.109999999999985,
+      "observation_count": 519,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "300849095143301:38",
+      "site_id": "300849095143301",
+      "site_name": "TS-60-55-710 (New Caney Piezometer No. 7-A)",
+      "longitude": -95.2425,
+      "latitude": 30.14694444,
+      "cell_id": "epsg3857-1km--10603-3522",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 152.08
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": -999999.0
+      },
+      "depth_change_ft": -1000151.08,
+      "observation_count": 673,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "300849095143301:39",
+      "site_id": "300849095143301",
+      "site_name": "TS-60-55-710 (New Caney Piezometer No. 7-A)",
+      "longitude": -95.2425,
+      "latitude": 30.14694444,
+      "cell_id": "epsg3857-1km--10603-3522",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 151.82
+      },
+      "last_observation": {
+        "time": "2026-11-06T00:00:00.000",
+        "depth_below_land_surface": -999999.0
+      },
+      "depth_change_ft": -1000150.82,
+      "observation_count": 673,
+      "source_status": "source_derived"
+    },
+    {
+      "series_id": "300849095143301:40",
+      "site_id": "300849095143301",
+      "site_name": "TS-60-55-710 (New Caney Piezometer No. 7-A)",
+      "longitude": -95.2425,
+      "latitude": 30.14694444,
+      "cell_id": "epsg3857-1km--10603-3522",
+      "parameter_code": "72019",
+      "parameter_name": "Depth to water level, ft below land surface",
+      "unit": "ft",
+      "first_observation": {
+        "time": "2025-01-01T00:00:00.000",
+        "depth_below_land_surface": 151.91
+      },
+      "last_observation": {
+        "time": "2026-11-05T00:00:00.000",
+        "depth_below_land_surface": -999999.0
+      },
+      "depth_change_ft": -1000150.91,
+      "observation_count": 672,
+      "source_status": "source_derived"
+    }
+  ]
+}

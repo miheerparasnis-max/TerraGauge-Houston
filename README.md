@@ -143,6 +143,20 @@ python3 -m backend.ingestion.cli houstonnet-velocities input.csv data/derived/ho
 Before comparing GPS to radar, project ENU velocities into the NISAR line of
 sight and use a matching time span.
 
+### USGS groundwater evidence
+
+Download an explicit time window from the USGS NWIS daily-values service, then
+normalize it without treating water-level change as a motion measurement:
+
+```bash
+python3 -m backend.ingestion.cli usgs-groundwater usgs-groundwater.json data/derived/usgs-groundwater.json
+```
+
+`data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json` is a
+source-derived Houston example. A positive `depth_change_ft` means the water was
+deeper below land surface at the end of the retrieved window; it is evidence for
+an analyst to inspect, not proof of a causal mechanism.
+
 ## Remaining source work
 
 1. Download one verified same-track Houston GUNW collection and produce pair artifacts.
