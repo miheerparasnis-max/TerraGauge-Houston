@@ -30,7 +30,7 @@ def _robust_scatter(values: list[float]) -> float:
     return 1.4826 * median(deviations)
 
 
-def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None) -> dict[str, Any]:
+def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None) -> dict[str, Any]:
     """Join actual source-derived artifacts without fabricating a cell flood overlay.
 
     FEMA data currently exists only at USGS monitoring locations. Therefore
@@ -41,6 +41,8 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     houstonnet = json.loads(Path(houstonnet_path).read_text(encoding="utf-8"))
     groundwater = json.loads(Path(groundwater_path).read_text(encoding="utf-8"))
     fema = json.loads(Path(fema_path).read_text(encoding="utf-8"))
+    flood_context = json.loads(Path(cell_flood_context_path).read_text(encoding="utf-8")) if cell_flood_context_path else None
+    flood_cells = {row["cell_id"]: row for row in flood_context.get("cells", [])} if flood_context else {}
     good = [row for row in nisar["cells"] if row.get("in_main_connected_component") and row.get("coherence_median") is not None and row.get("coherence_median") >= 0.4 and row.get("valid_fraction", 0) >= 0.5 and row.get("pair_los_displacement_mm") is not None]
     if not good:
         raise ValueError("NISAR artifact contains no cells passing the reference quality gate")
@@ -75,8 +77,8 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "usgs_site_id": water.get("site_id") if water else None,
             "usgs_distance_km": water_distance,
             "groundwater_depth_change_ft": water.get("depth_change_ft") if water else None,
-            "flood_source": water.get("flood_source") if water else None,
-            "flood_zone": water.get("flood_zone") if water else None,
+            "flood_source": flood_context.get("source_layer") if flood_context else (water.get("flood_source") if water else None),
+            "flood_zone": flood_cells.get(row["cell_id"], {}).get("flood_zone") if flood_context else (water.get("flood_zone") if water else None),
         }
         cells.append({
             "cell_id": row["cell_id"],
@@ -87,14 +89,14 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "coherence_median": row.get("coherence_median"),
             "valid_fraction": row.get("valid_fraction"),
             "in_main_connected_component": bool(row.get("in_main_connected_component")),
-            "flood_exposed": None,
+            "flood_exposed": flood_cells.get(row["cell_id"], {}).get("flood_exposed") if flood_context else None,
             "evidence": evidence,
             "source_status": "source_derived_context_only",
             "temporal_los_rate_mm_year": None,
             "temporal_network_adequate": False,
         })
     return {
-        "dataset_status": "source_derived_context_only_without_validated_reference_region_or_cell_flood_overlay" if scatter is None else "source_derived_context_only_without_cell_flood_overlay",
+        "dataset_status": "source_derived_pairwise_evidence_without_validated_reference_region" if scatter is None and flood_context else "source_derived_context_only_without_validated_reference_region_or_cell_flood_overlay" if scatter is None else "source_derived_context_only_without_cell_flood_overlay",
         "artifact_type": "terragauge_houston_pairwise_evidence_cells",
         "reference_scatter_mm": scatter,
         "reference_region_bbox": list(reference_bbox) if reference_bbox is not None else None,
@@ -104,12 +106,12 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "NISAR data in this artifact is one pairwise LOS observation, not an annual rate.",
             "No pair-signal threshold is applied until an independently justified stable-reference region is supplied.",
             "HoustonNet values are historic context and are not time-matched validation of the NISAR pair.",
-            "FEMA classifications are available at USGS monitoring locations only; no cell-level flood overlay is asserted.",
+            "FEMA classifications are available at USGS monitoring locations only; no cell-level flood overlay is asserted." if not flood_context else "FEMA context is sampled at the aggregated NISAR-cell center and is not flood depth, parcel advice, or a forecast.",
         ],
-        "sources": {"nisar": str(nisar_path), "houstonnet": str(houstonnet_path), "groundwater": str(groundwater_path), "fema": str(fema_path)},
+        "sources": {"nisar": str(nisar_path), "houstonnet": str(houstonnet_path), "groundwater": str(groundwater_path), "fema": str(fema_path), "cell_flood_context": str(cell_flood_context_path) if cell_flood_context_path else None},
         "cells": cells,
     }
 
 
-def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None) -> None:
-    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox), indent=2), encoding="utf-8")
+def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None) -> None:
+    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path), indent=2), encoding="utf-8")

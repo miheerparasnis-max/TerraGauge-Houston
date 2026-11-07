@@ -7,9 +7,10 @@ import json
 from pathlib import Path
 
 from .houstonnet import write_velocity_stations
-from .fema import write_nfhl_point_join
+from .fema import write_cell_center_flood_context, write_merged_nfhl_geojson_tiles, write_nfhl_point_join, write_nfhl_zone_overlay
 from .gnss import write_groundtruth_report
 from .houston import write_houston_evidence
+from .reference import write_reference_review_candidates
 from .nisar import GunwConfig, inspect_hdf5, write_pair_cells
 from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
@@ -56,6 +57,20 @@ def main() -> None:
     fema.add_argument("groundwater")
     fema.add_argument("responses")
     fema.add_argument("output")
+    zones = commands.add_parser("fema-nfhl-overlay", help="download tiled FEMA NFHL flood-zone polygons for a study area")
+    zones.add_argument("output")
+    zones.add_argument("--bbox", nargs=4, type=float, required=True, metavar=("WEST", "SOUTH", "EAST", "NORTH"))
+    zones.add_argument("--tile-degrees", type=float, default=0.10)
+    merge_zones = commands.add_parser("fema-merge-tiles", help="merge saved FEMA GeoJSON tiles into one provenance-tracked overlay")
+    merge_zones.add_argument("tile_directory")
+    merge_zones.add_argument("output")
+    merge_zones.add_argument("--bbox", nargs=4, type=float, required=True, metavar=("WEST", "SOUTH", "EAST", "NORTH"))
+    merge_zones.add_argument("--tile-degrees", type=float, default=0.10)
+    merge_zones.add_argument("--max-allowable-offset-degrees", type=float, default=0.001)
+    flood_cells = commands.add_parser("fema-cell-context", help="classify NISAR cell centers against a saved FEMA polygon overlay")
+    flood_cells.add_argument("nisar")
+    flood_cells.add_argument("overlay")
+    flood_cells.add_argument("output")
     evidence = commands.add_parser("build-houston-evidence", help="join checked Houston artifacts into honest pairwise cell evidence")
     evidence.add_argument("nisar")
     evidence.add_argument("houstonnet")
@@ -63,9 +78,14 @@ def main() -> None:
     evidence.add_argument("fema")
     evidence.add_argument("output")
     evidence.add_argument("--reference-bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="independently justified stable-reference region; omitted means no signal threshold is calculated")
+    evidence.add_argument("--cell-flood-context", default=None, help="output of fema-cell-context; omitted means no cell-level flood label is assigned")
     groundtruth = commands.add_parser("groundtruth-report", help="validate GroundTruth Node session artifacts")
     groundtruth.add_argument("manifest")
     groundtruth.add_argument("output")
+    reference = commands.add_parser("reference-review-candidates", help="rank review candidates without certifying a stable radar reference region")
+    reference.add_argument("nisar")
+    reference.add_argument("houstonnet")
+    reference.add_argument("output")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -83,10 +103,18 @@ def main() -> None:
         write_groundwater_daily(args.input, args.output)
     elif args.command == "fema-nfhl-join":
         write_nfhl_point_join(args.groundwater, args.responses, args.output)
+    elif args.command == "fema-nfhl-overlay":
+        write_nfhl_zone_overlay(tuple(args.bbox), args.output, args.tile_degrees)
+    elif args.command == "fema-merge-tiles":
+        write_merged_nfhl_geojson_tiles(args.tile_directory, tuple(args.bbox), args.tile_degrees, args.max_allowable_offset_degrees, args.output)
+    elif args.command == "fema-cell-context":
+        write_cell_center_flood_context(args.nisar, args.overlay, args.output)
     elif args.command == "build-houston-evidence":
-        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None)
+        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None, args.cell_flood_context)
     elif args.command == "groundtruth-report":
         write_groundtruth_report(args.manifest, args.output)
+    elif args.command == "reference-review-candidates":
+        write_reference_review_candidates(args.nisar, args.houstonnet, args.output)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 

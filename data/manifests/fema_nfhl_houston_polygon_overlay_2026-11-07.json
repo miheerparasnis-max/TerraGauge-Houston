@@ -1,0 +1,8 @@
+{
+  "artifact": "data/derived/fema_nfhl_houston_polygon_overlay_2026-11-07.json",
+  "source": "FEMA National Flood Hazard Layer, MapServer layer 28 (Flood Hazard Zones)",
+  "study_bounds_wgs84": [-95.95, 29.4, -94.8, 30.2],
+  "download_method": "96 tiled public ArcGIS GeoJSON requests, deduplicated by FEMA OBJECTID",
+  "geometry_generalization": "maxAllowableOffset=0.001 degrees, approximately 111 meters, suitable for 1 km radar-cell center context only",
+  "interpretation_limit": "Flood-zone context is not flood depth, parcel advice, a flood forecast, or proof that all of a radar cell is exposed."
+}

@@ -174,7 +174,7 @@ determination, flood depth, or a value for every radar cell.
 
 ## Current Houston evidence build
 
-`data/derived/terragauge_houston_evidence_pair_20251102_20251114.json` is built from the checked NISAR, HoustonNet, USGS, and FEMA artifacts with:
+`data/derived/terragauge_houston_evidence_pair_20251102_20251114.json` is built from the checked NISAR, HoustonNet, USGS, and FEMA artifacts. `data/derived/fema_nfhl_houston_cell_context_2026-11-07.json` supplies actual FEMA flood-zone context at each aggregated NISAR-cell center.
 
 ```bash
 python3 -m backend.ingestion.cli build-houston-evidence \
@@ -185,7 +185,7 @@ python3 -m backend.ingestion.cli build-houston-evidence \
   data/derived/terragauge_houston_evidence_pair_20251102_20251114.json
 ```
 
-It intentionally returns context-only results until the team supplies an independently justified stable reference region and a true cell-level flood overlay. Its provenance appears at `/v1/data-ledger`.
+It intentionally returns context-only results until the team supplies an independently justified stable reference region. Its provenance appears at `/v1/data-ledger`. The reference-candidate report is available at `data/derived/terragauge_reference_review_candidates_2026-11-07.json`; it is a reviewer aid, never a self-certifying threshold.
 
 ## GroundTruth Node hardware record
 
@@ -200,6 +200,5 @@ A passing report proves only stationary receiver repeatability. It never proves 
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
-2. Ingest a true FEMA cell/polygon overlay before assigning flood-priority labels.
-3. Implement a temporal-network inversion only after a real same-track pair graph passes the stack gate.
-4. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.
+2. Implement a temporal-network inversion only after a real same-track pair graph passes the stack gate.
+3. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.

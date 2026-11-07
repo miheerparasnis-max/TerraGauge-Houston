@@ -1,0 +1,75 @@
+{
+  "artifact_type": "terragauge_reference_region_review_candidates",
+  "strict_quality_cell_count": 1280,
+  "low_motion_quartile_limit_mm": 31.794482735640823,
+  "candidate_cell_count": 31,
+  "review_patches": [
+    {
+      "review_bbox_wgs84": [
+        -95.74114745327834,
+        29.55266857751993,
+        -95.70847184235024,
+        29.570759274573625
+      ],
+      "candidate_cell_count": 6,
+      "median_abs_pair_los_displacement_mm": 21.63410895827632,
+      "median_coherence": 0.7511622309684753,
+      "median_historic_gps_up_mm_year": 0.0,
+      "nearest_stations": [
+        "PA32"
+      ]
+    },
+    {
+      "review_bbox_wgs84": [
+        -95.74013478038472,
+        29.505571082751192,
+        -95.71794049246111,
+        29.53347821385289
+      ],
+      "candidate_cell_count": 5,
+      "median_abs_pair_los_displacement_mm": 23.842194669067972,
+      "median_coherence": 0.7252864837646484,
+      "median_historic_gps_up_mm_year": 0.0,
+      "nearest_stations": [
+        "PA32",
+        "PA58"
+      ]
+    },
+    {
+      "review_bbox_wgs84": [
+        -95.8441927389203,
+        29.40021159325827,
+        -95.8118103684963,
+        29.418505767713135
+      ],
+      "candidate_cell_count": 3,
+      "median_abs_pair_los_displacement_mm": 12.767397959511046,
+      "median_coherence": 0.709273099899292,
+      "median_historic_gps_up_mm_year": 1.4,
+      "nearest_stations": [
+        "PA31"
+      ]
+    },
+    {
+      "review_bbox_wgs84": [
+        -95.69799787007858,
+        29.553104378333916,
+        -95.67630174184148,
+        29.562262690131952
+      ],
+      "candidate_cell_count": 3,
+      "median_abs_pair_los_displacement_mm": 27.859470083123163,
+      "median_coherence": 0.7010807693004608,
+      "median_historic_gps_up_mm_year": 0.0,
+      "nearest_stations": [
+        "PA32"
+      ]
+    }
+  ],
+  "decision": "No reference region is certified by this artifact.",
+  "required_human_review": [
+    "Confirm absence of local deformation mechanisms and land-use changes.",
+    "Check the candidate across a future same-track NISAR temporal network.",
+    "Document why the region is stable before using it for a threshold."
+  ]
+}
