@@ -72,7 +72,75 @@ Each cell must provide coordinates, LOS rate/quality values, flood exposure, and
 
 ## Next backend work
 
-1. Add the source-derived NISAR GUNW ingestion adapter after product variables are verified.
-2. Add OPERA, HoustonNet, USGS, and flood-layer adapters that output the same cell contract.
-3. Add the event’s real LC29H(BS) raw-log to RINEX/RTKLIB processing record.
-4. Replace demo data with a dated, versioned data ledger and source-derived results.
+## Source-derived ingestion
+
+The API is now paired with ingestion adapters for the real source products. They
+write intermediate JSON artifacts with product paths, source filenames,
+parameters, and limitations. They never silently turn a pair displacement into a
+yearly rate.
+
+Install ingestion-only dependencies in an isolated environment:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+### NISAR L2 GUNW
+
+First inspect the actual Houston granule; do not assume a path or projection:
+
+```bash
+python3 -m backend.ingestion.cli inspect-h5 /path/to/NISAR_GUNW.h5 > data/derived/gunw-layout.json
+```
+
+Then extract one quality-preserving pair artifact. Use the verified product CRS,
+x/y paths, wavelength, and acquisition dates from the product metadata:
+
+```bash
+python3 -m backend.ingestion.cli nisar-gunw /path/to/NISAR_GUNW.h5 data/derived/nisar-pair.json \
+  --wavelength-m 0.238 \
+  --crs EPSG:32615 \
+  --x-path /verified/x/path --y-path /verified/y/path \
+  --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
+```
+
+The documented default layer paths are under
+`/science/LSAR/GUNW/grids/frequencyA/unwrappedInterferogram/HH/` for
+`unwrappedPhase`, `coherenceMagnitude`, and `connectedComponents`. Verify them
+with inspection before using them. GUNW phase is converted to pairwise LOS
+displacement with `phase * wavelength / (4π)`; it is **not** made into a rate.
+
+### OPERA DISP-S1
+
+OPERA context is ingested from the raw displacement layer and recommended mask,
+not a portal screenshot or color ramp:
+
+```bash
+python3 -m backend.ingestion.cli opera-disp /path/to/OPERA_DISP.h5 data/derived/opera-pair.json \
+  --crs EPSG:32615 --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
+```
+
+Only `recommended_mask == 1` pixels are included. Build an OPERA historic trend
+only after ingesting a dated sequence of products and documenting reference
+handling.
+
+### HoustonNet velocities
+
+Download and inspect the published HoustonNet release first. Map its exact CSV
+headers explicitly; never guess a reference frame or time span:
+
+```bash
+python3 -m backend.ingestion.cli houstonnet-velocities input.csv data/derived/houstonnet-stations.json \
+  --column-map '{"station_id":"site","longitude":"lon","latitude":"lat","east_mm_year":"east","north_mm_year":"north","up_mm_year":"up"}'
+```
+
+Before comparing GPS to radar, project ENU velocities into the NISAR line of
+sight and use a matching time span.
+
+## Remaining source work
+
+1. Download one verified same-track Houston GUNW collection and produce pair artifacts.
+2. Implement a temporal-network inversion only after the real pair graph passes the stack gate.
+3. Add USGS groundwater/compaction and verified flood-layer joins as separate, dated artifacts.
+4. Add the event’s real LC29H(BS) raw-log to RINEX/RTKLIB processing record.
+5. Replace demo data with a dated, versioned data ledger and source-derived results.

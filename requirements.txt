@@ -1,0 +1,5 @@
+# Required only for real NASA/Houston source-file ingestion.
+# The core API and its unit tests deliberately have no third-party dependency.
+numpy>=2.0
+h5py>=3.11
+pyproj>=3.6
