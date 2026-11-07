@@ -1,0 +1,65 @@
+{
+  "dataset_status": "demonstration_only_replace_with_source_derived_outputs",
+  "cells": [
+    {
+      "cell_id": "hou-001",
+      "longitude": -95.3698,
+      "latitude": 29.7604,
+      "los_rate_mm_year": -7.2,
+      "epoch_sigma_mm": 4.1,
+      "interval_days": 12,
+      "observation_count": 6,
+      "coherence_median": 0.62,
+      "valid_fraction": 0.78,
+      "in_main_connected_component": true,
+      "flood_exposed": true,
+      "source_status": "demo_not_source_derived",
+      "evidence": {
+        "nisar_acquisition_dates": ["2026-06-17", "2026-06-29", "2026-07-11"],
+        "opera_rate_mm_year": -6.4,
+        "nearest_gps_station": "DEMO-GPS-01",
+        "gps_distance_km": 1.1,
+        "gps_projected_rate_mm_year": -6.8,
+        "gps_residual_mm_year": -0.4,
+        "gps_uncertainty_mm_year": 1.5,
+        "usgs_site_id": "demo-usgs-01",
+        "flood_source": "demo flood layer"
+      }
+    },
+    {
+      "cell_id": "hou-002",
+      "longitude": -95.5060,
+      "latitude": 29.6530,
+      "los_rate_mm_year": -8.1,
+      "epoch_sigma_mm": 4.4,
+      "interval_days": 12,
+      "observation_count": 6,
+      "coherence_median": 0.57,
+      "valid_fraction": 0.71,
+      "in_main_connected_component": true,
+      "flood_exposed": true,
+      "source_status": "demo_not_source_derived",
+      "evidence": {
+        "nisar_acquisition_dates": ["2026-06-17", "2026-06-29", "2026-07-11"],
+        "opera_rate_mm_year": -7.1,
+        "gps_distance_km": 4.6,
+        "flood_source": "demo flood layer"
+      }
+    },
+    {
+      "cell_id": "hou-003",
+      "longitude": -95.2780,
+      "latitude": 29.7890,
+      "los_rate_mm_year": null,
+      "epoch_sigma_mm": null,
+      "interval_days": null,
+      "observation_count": null,
+      "coherence_median": 0.21,
+      "valid_fraction": 0.22,
+      "in_main_connected_component": false,
+      "flood_exposed": false,
+      "source_status": "demo_not_source_derived",
+      "evidence": {}
+    }
+  ]
+}
