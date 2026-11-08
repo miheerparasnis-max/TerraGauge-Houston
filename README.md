@@ -15,6 +15,7 @@ This repository currently contains a dependency-free Python API with:
 - validated JSON inputs and documented JSON outputs;
 - a small demo fixture, visibly labeled as not source-derived; and
 - a five-pair NISAR temporal-network diagnostic that refuses to emit a rate from a chain without independent loop closure; and
+- structural integrity reports for every checked NISAR pair, including coordinate bounds, unique cell IDs, correction-flag preservation, and dominant-connected-component counts; and
 - unit tests for the science and decision logic.
 
 The frontend can call these endpoints without duplicating scientific logic.
@@ -119,6 +120,19 @@ records the source, checksum, coordinate system, and extraction bounds. Its comp
 study-area artifact is `data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json`.
 The raw HDF5 is intentionally local-only. Add `--bbox -95.95 29.4 -94.8 30.2` to
 write only the Houston study area instead of the entire source frame.
+
+Every compact pair artifact must pass the reproducible structural gate before it
+can be joined to Houston context. It rejects duplicate cell IDs, invalid/outside
+coordinates, missing product correction flags, and malformed date metadata. It
+also accepts only cells whose dominant local connected component matches the
+scene-wide dominant component; this prevents isolated phase islands from being
+treated as reliable evidence.
+
+```bash
+python3 -m backend.ingestion.cli validate-nisar-pair \
+  data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json \
+  data/derived/nisar_gunw_houston_20251102_20251114_pair_cells_integrity_report.json
+```
 
 ### Multi-date NISAR network status
 

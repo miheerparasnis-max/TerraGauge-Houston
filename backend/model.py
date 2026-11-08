@@ -67,6 +67,7 @@ class CellInput:
     source_status: str = "source_derived"
     temporal_los_rate_mm_year: float | None = None
     temporal_network_adequate: bool = False
+    observation_count: int | None = None
 
 
 @dataclass(frozen=True)

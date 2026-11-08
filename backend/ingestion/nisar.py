@@ -106,6 +106,10 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
         raise ValueError("x/y vectors do not match raster shape")
     longitude, latitude = coordinates_for_grid(SpatialGrid(x=x, y=y, crs=config.crs))
     displacement_mm = phase * (config.wavelength_m / (4.0 * np.pi)) * 1000.0
+    scene_valid = np.isfinite(displacement_mm) & np.isfinite(coherence) & (components > 0)
+    main_component = dominant_component(components[scene_valid].ravel())
+    if main_component is None:
+        raise ValueError("GUNW contains no finite connected-component pixels")
     records: list[dict[str, Any]] = []
     for row in range(0, phase.shape[0], config.cell_pixels):
         for column in range(0, phase.shape[1], config.cell_pixels):
@@ -122,6 +126,7 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
                 west, south, east, north = config.bounding_box
                 if not (west <= lon <= east and south <= lat <= north):
                     continue
+            local_component = dominant_component(section_components[valid].ravel())
             records.append({
                 "cell_id": one_km_cell_id(lon, lat),
                 "longitude": lon,
@@ -129,8 +134,8 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
                 "pair_los_displacement_mm": median_or_none(np.where(valid, section_phase, np.nan)),
                 "coherence_median": median_or_none(np.where(valid, section_coherence, np.nan)),
                 "valid_fraction": float(np.count_nonzero(valid) / valid.size),
-                "dominant_connected_component": dominant_component(section_components[valid].ravel()),
-                "in_main_connected_component": bool(np.any(valid)),
+                "dominant_connected_component": local_component,
+                "in_main_connected_component": bool(np.any(valid) and local_component == main_component),
                 "source_status": "source_derived",
             })
     return {
@@ -144,6 +149,7 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
             "y": config.y_path,
         },
         "parameters": asdict(config),
+        "quality_processing": {"global_main_connected_component": int(main_component), "cell_acceptance": "cell dominant component must equal the product-wide dominant valid component"},
         "source_processing_corrections": correction_flags,
         "limitations": [
             "Each record is a pairwise LOS displacement, not an annual rate.",

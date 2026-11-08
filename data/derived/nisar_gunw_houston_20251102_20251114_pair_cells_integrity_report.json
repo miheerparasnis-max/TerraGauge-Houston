@@ -1,0 +1,11 @@
+{
+  "artifact_type": "terragauge_nisar_pair_integrity_report",
+  "input_artifact": "data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json",
+  "pass": true,
+  "finding_count": 0,
+  "findings": [],
+  "cell_count": 9111,
+  "main_connected_component_cell_count": 5304,
+  "correction_flag_count": 4,
+  "claim": "Structural validation only; passing does not establish ground motion, a stable reference region, or a temporal rate."
+}

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from datetime import date
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +20,10 @@ def _number(value: Any, name: str, allow_none: bool = True) -> float | None:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValidationError(f"{name} must be a number")
-    return float(value)
+    result = float(value)
+    if not isfinite(result):
+        raise ValidationError(f"{name} must be finite")
+    return result
 
 
 def cell_from_dict(payload: dict[str, Any]) -> CellInput:
@@ -33,6 +38,11 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
     dates = evidence_data.get("nisar_acquisition_dates", [])
     if not isinstance(dates, list) or not all(isinstance(item, str) for item in dates):
         raise ValidationError("nisar_acquisition_dates must be a list of strings")
+    for value in dates:
+        try:
+            date.fromisoformat(value[:10])
+        except ValueError as error:
+            raise ValidationError("nisar_acquisition_dates must begin with ISO dates") from error
     evidence = Evidence(
         nisar_acquisition_dates=dates,
         nearest_gps_station=_optional_string(evidence_data.get("nearest_gps_station"), "nearest_gps_station"),
@@ -58,10 +68,22 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
     flood_exposed = payload.get("flood_exposed")
     if flood_exposed is not None and not isinstance(flood_exposed, bool):
         raise ValidationError("flood_exposed must be a boolean or null")
+    longitude = _number(payload.get("longitude"), "longitude", allow_none=False)
+    latitude = _number(payload.get("latitude"), "latitude", allow_none=False)
+    if not -180 <= longitude <= 180:
+        raise ValidationError("longitude must be between -180 and 180")
+    if not -90 <= latitude <= 90:
+        raise ValidationError("latitude must be between -90 and 90")
+    temporal_rate = _number(payload.get("temporal_los_rate_mm_year"), "temporal_los_rate_mm_year")
+    temporal_adequate = _bool(payload.get("temporal_network_adequate", False), "temporal_network_adequate")
+    if temporal_rate is not None and (not temporal_adequate or observations is None or observations < 5):
+        raise ValidationError("temporal_los_rate_mm_year requires an adequate network with at least five observations")
+    if temporal_adequate and (observations is None or observations < 5):
+        raise ValidationError("temporal_network_adequate requires at least five observations")
     return CellInput(
         cell_id=cell_id,
-        longitude=_number(payload.get("longitude"), "longitude", allow_none=False),  # type: ignore[arg-type]
-        latitude=_number(payload.get("latitude"), "latitude", allow_none=False),  # type: ignore[arg-type]
+        longitude=longitude,
+        latitude=latitude,
         pair_los_displacement_mm=_number(payload.get("pair_los_displacement_mm"), "pair_los_displacement_mm"),
         reference_scatter_mm=_number(payload.get("reference_scatter_mm"), "reference_scatter_mm"),
         coherence_median=_number(payload.get("coherence_median"), "coherence_median"),
@@ -70,8 +92,9 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
         flood_exposed=flood_exposed,
         evidence=evidence,
         source_status=_optional_string(payload.get("source_status"), "source_status") or "source_derived",
-        temporal_los_rate_mm_year=_number(payload.get("temporal_los_rate_mm_year"), "temporal_los_rate_mm_year"),
-        temporal_network_adequate=_bool(payload.get("temporal_network_adequate", False), "temporal_network_adequate"),
+        temporal_los_rate_mm_year=temporal_rate,
+        temporal_network_adequate=temporal_adequate,
+        observation_count=observations,
     )
 
 
@@ -94,4 +117,8 @@ def load_cells(path: str | Path) -> list[CellInput]:
         raw = json.load(stream)
     if not isinstance(raw, dict) or not isinstance(raw.get("cells"), list):
         raise ValidationError("dataset must be an object with a cells array")
-    return [cell_from_dict(item) for item in raw["cells"]]
+    cells = [cell_from_dict(item) for item in raw["cells"]]
+    identifiers = [cell.cell_id for cell in cells]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValidationError("dataset contains duplicate cell_id values")
+    return cells

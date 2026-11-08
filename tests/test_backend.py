@@ -3,6 +3,7 @@ import unittest
 from backend.decision import classify_cell
 from backend.detection import detectability, gnss_session_noise_floor, rate_uncertainty_mm_year
 from backend.model import CellInput, Evidence, Label, Thresholds
+from backend.repository import ValidationError, cell_from_dict
 
 
 def cell(**overrides):
@@ -61,6 +62,22 @@ class DecisionTests(unittest.TestCase):
 
     def test_low_quality_is_insufficient_data(self):
         self.assertEqual(classify_cell(cell(coherence_median=0.2), Thresholds()).label, Label.INSUFFICIENT_DATA)
+
+
+class InputValidationTests(unittest.TestCase):
+    def test_rejects_rate_without_valid_network(self):
+        payload = cell().__dict__.copy()
+        payload["evidence"] = payload["evidence"].__dict__
+        payload.update({"temporal_los_rate_mm_year": -5.0, "temporal_network_adequate": False, "observation_count": 6})
+        with self.assertRaises(ValidationError):
+            cell_from_dict(payload)
+
+    def test_rejects_non_finite_coordinates(self):
+        payload = cell().__dict__.copy()
+        payload["evidence"] = payload["evidence"].__dict__
+        payload["longitude"] = float("nan")
+        with self.assertRaises(ValidationError):
+            cell_from_dict(payload)
 
 
 if __name__ == "__main__":

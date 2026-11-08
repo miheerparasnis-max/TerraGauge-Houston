@@ -28,6 +28,10 @@
       30.2
     ]
   },
+  "quality_processing": {
+    "global_main_connected_component": 1,
+    "cell_acceptance": "cell dominant component must equal the product-wide dominant valid component"
+  },
   "source_processing_corrections": {
     "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/azimuthIonosphericCorrectionApplied": "True",
     "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/hydrostaticTroposphericCorrectionApplied": "True",

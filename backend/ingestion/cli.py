@@ -15,6 +15,7 @@ from .nisar import GunwConfig, inspect_hdf5, write_pair_cells
 from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
 from .temporal import write_network_diagnostic
+from .quality import write_pair_integrity_report
 
 
 def main() -> None:
@@ -90,6 +91,9 @@ def main() -> None:
     temporal = commands.add_parser("temporal-network-diagnostic", help="check date graph redundancy before reference selection or inversion")
     temporal.add_argument("output")
     temporal.add_argument("inputs", nargs="+", help="pair-cell JSON artifacts in chronological order")
+    integrity = commands.add_parser("validate-nisar-pair", help="write a structural integrity report for a compact NISAR pair artifact")
+    integrity.add_argument("input")
+    integrity.add_argument("output")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -121,6 +125,8 @@ def main() -> None:
         write_reference_review_candidates(args.nisar, args.houstonnet, args.output)
     elif args.command == "temporal-network-diagnostic":
         write_network_diagnostic(args.inputs, args.output)
+    elif args.command == "validate-nisar-pair":
+        write_pair_integrity_report(args.input, args.output)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 
