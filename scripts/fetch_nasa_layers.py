@@ -72,7 +72,10 @@ def dist(earthaccess) -> None:
 def main() -> None:
     import earthaccess
 
-    earthaccess.login(strategy="interactive", persist=True)
+    auth = earthaccess.login(strategy="interactive", persist=True)
+    if not auth or not getattr(auth, "authenticated", False):
+        sys.exit("Earthdata login failed. Check your username and password (the password is hidden while you type), "
+                 "make sure you clicked the confirmation link NASA emailed you, then run this again.")
     wanted = sys.argv[1:] or ["nasadem", "dswx", "dist"]
     for name in wanted:
         print(f"== {name}")

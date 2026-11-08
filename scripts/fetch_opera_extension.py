@@ -65,7 +65,10 @@ def main() -> None:
         return
     total = sum(g["size_mb"] for g in chain) / 1024
     print(f"{len(chain)} products, about {total:.1f} GB, {iso(chain[0]['reference_acquisition_utc'])} to {iso(chain[-1]['secondary_acquisition_utc'])}")
-    earthaccess.login(strategy="interactive", persist=True)
+    auth = earthaccess.login(strategy="interactive", persist=True)
+    if not auth or not getattr(auth, "authenticated", False):
+        sys.exit("Earthdata login failed. Check your username and password (the password is hidden while you type), "
+                 "make sure you clicked the confirmation link NASA emailed you, then run this again.")
     RAW.mkdir(parents=True, exist_ok=True)
     for index, granule in enumerate(chain, start=1):
         ref, sec = granule["reference_acquisition_utc"][:8], granule["secondary_acquisition_utc"][:8]
@@ -75,6 +78,9 @@ def main() -> None:
             continue
         print(f"[{index}/{len(chain)}] downloading {granule['granule_id']}")
         files = earthaccess.download([granule["download_url"]], str(RAW))
+        if not files:
+            sys.exit("Download failed. Sign in once at https://search.asf.alaska.edu with your Earthdata account, "
+                     "accept the data agreement, then run this again. Finished files are kept, so it picks up where it stopped.")
         source = Path(files[0])
         write_disp_cells(source, output, OperaConfig(crs="EPSG:32615", reference_date=iso(ref), secondary_date=iso(sec), bounding_box=BBOX))
         print(f"           wrote {output.name}")
