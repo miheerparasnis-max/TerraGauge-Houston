@@ -196,6 +196,19 @@ source-derived Houston example. A positive `depth_change_ft` means the water was
 deeper below land surface at the end of the retrieved window; it is evidence for
 an analyst to inspect, not proof of a causal mechanism.
 
+### USGS/HGSD extensometer-compaction evidence
+
+TerraGauge now has a production adapter for the official cumulative-compaction
+table. The table must be downloaded from the USGS/HGSD release first and its
+columns mapped explicitly—no field name is guessed. Its output is **mechanism
+context** near a station, never a replacement for GNSS or a citywide motion map.
+
+```bash
+python3 -m backend.ingestion.cli usgs-extensometer input.csv data/derived/usgs_extensometer_compaction.json \
+  --column-map '{"station_id":"site","longitude":"longitude","latitude":"latitude","date":"date","cumulative_compaction":"compaction"}' \
+  --unit ft
+```
+
 ### FEMA flood-exposure evidence
 
 Save a FEMA National Flood Hazard Layer point-query response for each evidence

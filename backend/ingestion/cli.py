@@ -16,6 +16,7 @@ from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
 from .temporal import write_network_diagnostic
 from .quality import write_pair_integrity_report
+from .compaction import write_extensometer_csv
 
 
 def main() -> None:
@@ -94,6 +95,11 @@ def main() -> None:
     integrity = commands.add_parser("validate-nisar-pair", help="write a structural integrity report for a compact NISAR pair artifact")
     integrity.add_argument("input")
     integrity.add_argument("output")
+    compaction = commands.add_parser("usgs-extensometer", help="normalize an explicitly mapped USGS/HGSD cumulative-compaction CSV")
+    compaction.add_argument("input")
+    compaction.add_argument("output")
+    compaction.add_argument("--column-map", required=True, help="JSON mapping for station_id, longitude, latitude, date, cumulative_compaction")
+    compaction.add_argument("--unit", default="ft")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -127,6 +133,8 @@ def main() -> None:
         write_network_diagnostic(args.inputs, args.output)
     elif args.command == "validate-nisar-pair":
         write_pair_integrity_report(args.input, args.output)
+    elif args.command == "usgs-extensometer":
+        write_extensometer_csv(args.input, args.output, json.loads(args.column_map), args.unit)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 
