@@ -45,6 +45,9 @@ class DecisionTests(unittest.TestCase):
     def test_candidate_with_flood_context_is_investigate_signal(self):
         self.assertEqual(classify_cell(cell(), Thresholds()).label, Label.INVESTIGATE_SIGNAL)
 
+    def test_candidate_without_flood_context_is_still_investigated(self):
+        self.assertEqual(classify_cell(cell(flood_exposed=False), Thresholds()).label, Label.INVESTIGATE_SIGNAL)
+
     def test_candidate_without_nearby_gps_is_add_monitoring(self):
         value = cell(evidence=Evidence(gps_distance_km=3.0))
         self.assertEqual(classify_cell(value, Thresholds()).label, Label.ADD_MONITORING)
@@ -53,8 +56,8 @@ class DecisionTests(unittest.TestCase):
         value = cell(evidence=Evidence(gps_distance_km=1.0, gps_comparison_time_matched=True, gps_residual_mm=3.0, gps_uncertainty_mm=1.0))
         self.assertEqual(classify_cell(value, Thresholds()).label, Label.REVIEW_MISMATCH)
 
-    def test_missing_flood_context_stays_context_only(self):
-        self.assertEqual(classify_cell(cell(flood_exposed=None), Thresholds()).label, Label.CONTEXT_ONLY)
+    def test_missing_flood_context_does_not_hide_candidate(self):
+        self.assertEqual(classify_cell(cell(flood_exposed=None), Thresholds()).label, Label.INVESTIGATE_SIGNAL)
 
     def test_low_quality_is_insufficient_data(self):
         self.assertEqual(classify_cell(cell(coherence_median=0.2), Thresholds()).label, Label.INSUFFICIENT_DATA)

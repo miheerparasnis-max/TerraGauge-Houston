@@ -44,6 +44,32 @@ def _decode(value: Any) -> Any:
     return value.decode() if isinstance(value, bytes) else value
 
 
+def _processing_corrections(file: Any) -> dict[str, Any]:
+    """Capture scalar correction flags present in a GUNW without guessing values.
+
+    The GUNW product may already contain ionospheric/tropospheric corrections.
+    Keeping the exact flag names in the derived artifact prevents the dashboard
+    from recommending a duplicate correction such as an extra MERRA-2 pass.
+    """
+    h5py = _h5py()
+    flags: dict[str, Any] = {}
+
+    def visitor(name: str, node: Any) -> None:
+        leaf = name.rsplit("/", 1)[-1]
+        lowered = leaf.lower()
+        if not isinstance(node, h5py.Dataset) or node.shape != ():
+            return
+        if not any(token in lowered for token in ("ionosphericcorrectionapplied", "troposphericcorrectionapplied", "phasescreen")):
+            return
+        value = node[()]
+        if isinstance(value, np.generic):
+            value = value.item()
+        flags[f"/{name}"] = _decode(value)
+
+    file.visititems(visitor)
+    return flags
+
+
 @dataclass(frozen=True)
 class GunwConfig:
     wavelength_m: float
@@ -73,6 +99,7 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
         components = np.asarray(file[config.connected_components_path])
         x = np.asarray(file[config.x_path], dtype=float)
         y = np.asarray(file[config.y_path], dtype=float)
+        correction_flags = _processing_corrections(file)
     if phase.shape != coherence.shape or phase.shape != components.shape:
         raise ValueError("phase, coherence, and connected-components grids must have identical shape")
     if phase.shape != (len(y), len(x)):
@@ -117,9 +144,10 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
             "y": config.y_path,
         },
         "parameters": asdict(config),
+        "source_processing_corrections": correction_flags,
         "limitations": [
             "Each record is a pairwise LOS displacement, not an annual rate.",
-            "External phase corrections in GUNW are not silently applied by this adapter.",
+            "The adapter does not apply any external phase correction; source processing flags are preserved above.",
             "Temporal inversion and covariance treatment are required before an empirical rate/detectability claim.",
         ],
         "cells": records,

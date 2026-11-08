@@ -65,3 +65,26 @@ class TerraGaugeService:
         result = gnss_session_noise_floor([float(value) for value in heights], float(hours))
         result["disclaimer"] = "Stationary receiver repeatability only. This result does not measure subsidence."
         return result
+
+    def review_packet(self, cell_id: str) -> dict[str, Any] | None:
+        """Return the human checks required before a map label becomes a claim."""
+        result = self.cell(cell_id)
+        if result is None:
+            return None
+        label = result["label"]
+        needs_review = label in {"investigate_satellite_signal", "add_ground_monitoring", "review_time_matched_mismatch"}
+        return {
+            "cell_id": cell_id,
+            "classification": result,
+            "review_required": needs_review,
+            "checklist": [
+                "Inspect the original interferogram, coherence, and connected-component raster at this location.",
+                "Confirm the GUNW processing/provenance record and do not apply atmospheric corrections a second time.",
+                "Check time-matched GNSS and groundwater/compaction context; neither alone establishes causation.",
+                "Check construction, standing-water, and land-cover context before describing a radar signal as ground motion.",
+                "Report this as a monitoring priority unless a reviewed multi-date, redundantly connected inversion supports a rate.",
+            ] if needs_review else [
+                "No escalation is implied by this label. Keep the provenance and limitation visible in the interface."
+            ],
+            "monitoring_definition": "The 2 km coverage test uses permanent GNSS stations. Extensometers are mechanism evidence, not a replacement for a surface-motion station.",
+        }

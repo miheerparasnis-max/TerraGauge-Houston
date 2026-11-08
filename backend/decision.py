@@ -34,16 +34,25 @@ def classify_cell(cell: CellInput, thresholds: Thresholds) -> CellResult:
 
     if matched_disagreement:
         return CellResult(cell, Label.REVIEW_MISMATCH, ["Time-matched GPS and radar differ beyond the published comparison tolerance."], threshold)
-    if candidate and cell.flood_exposed is True and not nearby_gps:
-        return CellResult(cell, Label.ADD_MONITORING, ["Quality-controlled NISAR pair signal and flood context pass; no permanent GPS station is within the monitoring radius."], threshold)
-    if candidate and cell.flood_exposed is True:
-        return CellResult(cell, Label.INVESTIGATE_SIGNAL, ["Quality-controlled NISAR pair signal exceeds the reference-scatter threshold and flood context is present."], threshold)
+    # One mutually exclusive action order: insufficient → add monitoring →
+    # investigate → context.  Flood context increases urgency but never decides
+    # whether a quality-controlled satellite signal deserves a review.
+    if candidate and not nearby_gps:
+        reasons = ["Quality-controlled NISAR pair signal exceeds the reference-scatter threshold, but no permanent GNSS station is within the monitoring radius."]
+        if cell.flood_exposed is True:
+            reasons.append("FEMA flood-zone context is present, increasing the priority of a ground-monitoring gap.")
+        return CellResult(cell, Label.ADD_MONITORING, reasons, threshold)
+    if candidate:
+        reasons = ["Quality-controlled NISAR pair signal exceeds the reference-scatter threshold and a permanent GNSS station is nearby for follow-up."]
+        if cell.flood_exposed is True:
+            reasons.append("FEMA flood-zone context is present.")
+        return CellResult(cell, Label.INVESTIGATE_SIGNAL, reasons, threshold)
 
     reasons = ["Radar quality passes, but this cell does not meet the full investigation rule."]
     if not candidate:
         reasons.append("Pairwise LOS displacement is below the published reference-scatter threshold.")
     if cell.flood_exposed is None:
-        reasons.append("Cell-level flood context is not available; no flood-based priority label is assigned.")
-    elif not cell.flood_exposed:
-        reasons.append("No flood-context intersection is recorded for this cell.")
+        reasons.append("Cell-level flood context is unavailable.")
+    elif cell.flood_exposed:
+        reasons.append("FEMA flood-zone context is present but does not override a below-threshold radar signal.")
     return CellResult(cell, Label.CONTEXT_ONLY, reasons, threshold)

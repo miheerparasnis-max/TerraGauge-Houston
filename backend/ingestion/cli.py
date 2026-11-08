@@ -14,6 +14,7 @@ from .reference import write_reference_review_candidates
 from .nisar import GunwConfig, inspect_hdf5, write_pair_cells
 from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
+from .temporal import write_network_diagnostic
 
 
 def main() -> None:
@@ -86,6 +87,9 @@ def main() -> None:
     reference.add_argument("nisar")
     reference.add_argument("houstonnet")
     reference.add_argument("output")
+    temporal = commands.add_parser("temporal-network-diagnostic", help="check date graph redundancy before reference selection or inversion")
+    temporal.add_argument("output")
+    temporal.add_argument("inputs", nargs="+", help="pair-cell JSON artifacts in chronological order")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -115,6 +119,8 @@ def main() -> None:
         write_groundtruth_report(args.manifest, args.output)
     elif args.command == "reference-review-candidates":
         write_reference_review_candidates(args.nisar, args.houstonnet, args.output)
+    elif args.command == "temporal-network-diagnostic":
+        write_network_diagnostic(args.inputs, args.output)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 

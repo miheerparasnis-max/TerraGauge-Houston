@@ -1,6 +1,6 @@
 import unittest
 
-from backend.ingestion.temporal import invert_gunw_network
+from backend.ingestion.temporal import diagnose_gunw_network, invert_gunw_network
 
 
 def pair(start, end, value):
@@ -20,3 +20,9 @@ class TemporalNetworkTests(unittest.TestCase):
     def test_rejects_too_few_dates(self):
         with self.assertRaises(ValueError):
             invert_gunw_network([pair("2026-01-01", "2026-01-31", 1), pair("2026-01-31", "2026-03-02", 1), pair("2026-03-02", "2026-04-01", 1)], "reference")
+
+    def test_chain_is_explicitly_withheld(self):
+        artifacts = [pair("2026-01-01", "2026-01-31", 1), pair("2026-01-31", "2026-03-02", 1), pair("2026-03-02", "2026-04-01", 1), pair("2026-04-01", "2026-05-01", 1)]
+        result = diagnose_gunw_network(artifacts)
+        self.assertEqual(result["redundant_edges"], 0)
+        self.assertEqual(result["rate_status"], "withheld_insufficient_redundancy")

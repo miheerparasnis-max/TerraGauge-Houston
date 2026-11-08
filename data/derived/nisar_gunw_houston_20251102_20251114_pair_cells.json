@@ -28,9 +28,15 @@
       30.2
     ]
   },
+  "source_processing_corrections": {
+    "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/azimuthIonosphericCorrectionApplied": "True",
+    "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/hydrostaticTroposphericCorrectionApplied": "True",
+    "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/rangeIonosphericCorrectionApplied": "True",
+    "/science/LSAR/GUNW/metadata/processingInformation/parameters/geocoding/wetTroposphericCorrectionApplied": "True"
+  },
   "limitations": [
     "Each record is a pairwise LOS displacement, not an annual rate.",
-    "External phase corrections in GUNW are not silently applied by this adapter.",
+    "The adapter does not apply any external phase correction; source processing flags are preserved above.",
     "Temporal inversion and covariance treatment are required before an empirical rate/detectability claim."
   ],
   "cells": [

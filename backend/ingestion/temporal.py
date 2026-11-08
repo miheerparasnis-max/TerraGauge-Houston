@@ -14,6 +14,40 @@ def _day(value: str) -> date:
     return date.fromisoformat(value[:10])
 
 
+def diagnose_gunw_network(pair_artifacts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Describe whether the input graph can support a rate before selecting a reference.
+
+    This is intentionally separate from inversion: graph redundancy is an
+    objective data-completeness check, while reference-region choice requires
+    scientific review.
+    """
+    edges: list[dict[str, str]] = []
+    for artifact in pair_artifacts:
+        dates = artifact.get("parameters", {}).get("acquisition_dates")
+        if not isinstance(dates, (list, tuple)) or len(dates) != 2:
+            raise ValueError("each pair artifact needs two acquisition_dates")
+        start, end = str(dates[0]), str(dates[1])
+        if "unknown" in start or "unknown" in end:
+            raise ValueError("replace unknown acquisition dates before temporal diagnosis")
+        edges.append({"reference_date": start, "secondary_date": end})
+    dates = sorted({date for edge in edges for date in edge.values()}, key=_day)
+    independent_edges_needed = max(0, len(dates) - 1)
+    redundant_edges = max(0, len(edges) - independent_edges_needed)
+    return {
+        "artifact_type": "nisar_gunw_temporal_network_diagnostic",
+        "acquisition_dates": dates,
+        "pair_edges": edges,
+        "date_count": len(dates),
+        "pair_count": len(edges),
+        "independent_edges_needed_for_connectivity": independent_edges_needed,
+        "redundant_edges": redundant_edges,
+        "minimum_redundant_edges_for_rate": 2,
+        "rate_status": "eligible_for_reference_review_and_inversion" if len(dates) >= 5 and redundant_edges >= 2 else "withheld_insufficient_redundancy",
+        "next_requirement": "Add at least two valid same-track cross-pairs or repeat pairs before emitting a temporal LOS rate; select and document a stable reference region before inversion.",
+        "limitations": ["A connected chain can reconstruct relative epochs but has no independent loop closure.", "This diagnostic does not select a reference region or estimate motion."],
+    }
+
+
 def _reference(pair: dict[str, Any], reference_cell_id: str) -> dict[str, dict[str, Any]]:
     reference = next((item for item in pair["cells"] if item["cell_id"] == reference_cell_id), None)
     if reference is None or reference.get("pair_los_displacement_mm") is None:
@@ -105,3 +139,8 @@ def invert_gunw_network(pair_artifacts: list[dict[str, Any]], reference_cell_id:
 def invert_files(input_paths: list[str], output_path: str, reference_cell_id: str) -> None:
     artifacts = [json.loads(Path(path).read_text(encoding="utf-8")) for path in input_paths]
     Path(output_path).write_text(json.dumps(invert_gunw_network(artifacts, reference_cell_id), indent=2), encoding="utf-8")
+
+
+def write_network_diagnostic(input_paths: list[str], output_path: str) -> None:
+    artifacts = [json.loads(Path(path).read_text(encoding="utf-8")) for path in input_paths]
+    Path(output_path).write_text(json.dumps(diagnose_gunw_network(artifacts), indent=2), encoding="utf-8")

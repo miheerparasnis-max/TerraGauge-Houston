@@ -14,6 +14,7 @@ This repository currently contains a dependency-free Python API with:
 - stationary GNSS session-noise calculations;
 - validated JSON inputs and documented JSON outputs;
 - a small demo fixture, visibly labeled as not source-derived; and
+- a five-pair NISAR temporal-network diagnostic that refuses to emit a rate from a chain without independent loop closure; and
 - unit tests for the science and decision logic.
 
 The frontend can call these endpoints without duplicating scientific logic.
@@ -38,6 +39,7 @@ The API starts at `http://127.0.0.1:8000`.
 | `GET` | `/v1/cells` | All analyzed 1 km cells |
 | `GET` | `/v1/cells/{cell_id}` | One evidence card payload |
 | `GET` | `/v1/data-ledger` | Versioned source-manifest records |
+| `GET` | `/v1/review-packets/{cell_id}` | Required human checks before a priority is presented as a finding |
 | `POST` | `/v1/analyze-cell` | Analyze a validated cell without saving it |
 | `POST` | `/v1/gnss/noise-floor` | Calculate stationary GNSS session scatter |
 
@@ -69,6 +71,7 @@ Each cell must provide coordinates, pairwise LOS displacement/quality values, an
 - Historic HoustonNet values are context, not time-matched validation of the NISAR pair.
 - A station-point FEMA result is context, not a cell-level flood classification.
 - A GNSS node result represents stationary receiver repeatability, not observed land motion.
+- The NISAR-derived artifacts preserve the product's ionospheric and tropospheric correction flags; TerraGauge never recommends applying an atmospheric correction twice.
 - The demo dataset is only for development and cannot appear as a real Houston result.
 
 ## Next backend work
@@ -116,6 +119,27 @@ records the source, checksum, coordinate system, and extraction bounds. Its comp
 study-area artifact is `data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json`.
 The raw HDF5 is intentionally local-only. Add `--bbox -95.95 29.4 -94.8 30.2` to
 write only the Houston study area instead of the entire source frame.
+
+### Multi-date NISAR network status
+
+Five checked track-062 Houston pairs now cover six dates from 2025-11-02 through
+2026-01-01. The reproducible diagnostic at
+`data/derived/nisar_track062_network_diagnostic_20251102_20260101.json` finds a
+connected **chain** with zero redundant edges. Accordingly, TerraGauge withholds
+a temporal rate. This is a result, not a missing feature: a defensible rate needs
+at least two independent loop-closure edges as well as a documented stable
+reference region.
+
+Recreate the graph audit with:
+
+```bash
+python3 -m backend.ingestion.cli temporal-network-diagnostic data/derived/nisar_track062_network_diagnostic.json \
+  data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json \
+  data/derived/nisar_gunw_houston_20251114_20251126_pair_cells.json \
+  data/derived/nisar_gunw_houston_20251126_20251208_pair_cells.json \
+  data/derived/nisar_gunw_houston_20251208_20251220_pair_cells.json \
+  data/derived/nisar_gunw_houston_20251220_20260101_pair_cells.json
+```
 
 ### OPERA DISP-S1
 
@@ -200,5 +224,5 @@ A passing report proves only stationary receiver repeatability. It never proves 
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
-2. Implement a temporal-network inversion only after a real same-track pair graph passes the stack gate.
+2. Acquire at least two valid redundant same-track pair edges, then run the existing temporal-network inversion.
 3. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.

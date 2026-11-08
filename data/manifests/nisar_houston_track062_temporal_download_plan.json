@@ -6,7 +6,7 @@
     "frame": "016",
     "pair_count": 5,
     "unique_dates": ["2025-11-02", "2025-11-14", "2025-11-26", "2025-12-08", "2025-12-20", "2026-01-01"],
-    "status": "catalog-confirmed; HDF5 downloads still require the user's Earthdata-authorized session"
+    "status": "all five HDF5 granules were downloaded through the team's Earthdata-authorized session and converted locally into compact Houston pair-cell artifacts; raw HDF5 remains local-only"
   },
   "granules": [
     "NISAR_L2_PR_GUNW_004_062_A_016_005_4000_SH_20251102T114328_20251102T114403_20251114T114329_20251114T114403_P05023_N_F_J_001.h5",
@@ -15,5 +15,7 @@
     "NISAR_L2_PR_GUNW_007_062_A_016_008_4000_SH_20251208T114330_20251208T114404_20251220T114327_20251220T114405_P05023_N_F_J_001.h5",
     "NISAR_L2_PR_GUNW_008_062_A_016_009_4000_SH_20251220T114327_20251220T114405_20260101T114331_20260101T114405_P05023_N_F_J_001.h5"
   ],
-  "next_processing": "Place authorized HDF5 downloads in data/raw/, extract each pair with backend.ingestion.cli nisar-gunw using identical bounds and grid settings, then use backend.ingestion.temporal.invert_files with a human-approved reference cell."
+  "derived_artifacts": ["data/derived/nisar_gunw_houston_20251102_20251114_pair_cells.json", "data/derived/nisar_gunw_houston_20251114_20251126_pair_cells.json", "data/derived/nisar_gunw_houston_20251126_20251208_pair_cells.json", "data/derived/nisar_gunw_houston_20251208_20251220_pair_cells.json", "data/derived/nisar_gunw_houston_20251220_20260101_pair_cells.json"],
+  "network_diagnostic": "data/derived/nisar_track062_network_diagnostic_20251102_20260101.json",
+  "next_processing": "Do not invert yet: this five-edge chain has zero redundant edges. Acquire at least two valid same-track cross-pairs or repeat pairs, then science-review a stable reference region before using backend.ingestion.temporal.invert_files."
 }

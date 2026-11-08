@@ -1,0 +1,44 @@
+{
+  "artifact_type": "nisar_gunw_temporal_network_diagnostic",
+  "acquisition_dates": [
+    "2025-11-02",
+    "2025-11-14",
+    "2025-11-26",
+    "2025-12-08",
+    "2025-12-20",
+    "2026-01-01"
+  ],
+  "pair_edges": [
+    {
+      "reference_date": "2025-11-02",
+      "secondary_date": "2025-11-14"
+    },
+    {
+      "reference_date": "2025-11-14",
+      "secondary_date": "2025-11-26"
+    },
+    {
+      "reference_date": "2025-11-26",
+      "secondary_date": "2025-12-08"
+    },
+    {
+      "reference_date": "2025-12-08",
+      "secondary_date": "2025-12-20"
+    },
+    {
+      "reference_date": "2025-12-20",
+      "secondary_date": "2026-01-01"
+    }
+  ],
+  "date_count": 6,
+  "pair_count": 5,
+  "independent_edges_needed_for_connectivity": 5,
+  "redundant_edges": 0,
+  "minimum_redundant_edges_for_rate": 2,
+  "rate_status": "withheld_insufficient_redundancy",
+  "next_requirement": "Add at least two valid same-track cross-pairs or repeat pairs before emitting a temporal LOS rate; select and document a stable reference region before inversion.",
+  "limitations": [
+    "A connected chain can reconstruct relative epochs but has no independent loop closure.",
+    "This diagnostic does not select a reference region or estimate motion."
+  ]
+}
