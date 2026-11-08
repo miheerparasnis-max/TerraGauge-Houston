@@ -62,6 +62,7 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
         cumulative_compaction_change_ft=_number(evidence_data.get("cumulative_compaction_change_ft"), "cumulative_compaction_change_ft"),
         opera_historic_pair_displacement_mm=_number(evidence_data.get("opera_historic_pair_displacement_mm"), "opera_historic_pair_displacement_mm"),
         opera_historic_valid_fraction=_number(evidence_data.get("opera_historic_valid_fraction"), "opera_historic_valid_fraction"),
+        opera_historic_water_fraction=_number(evidence_data.get("opera_historic_water_fraction"), "opera_historic_water_fraction"),
         flood_source=_optional_string(evidence_data.get("flood_source"), "flood_source"),
         flood_zone=_optional_string(evidence_data.get("flood_zone"), "flood_zone"),
     )

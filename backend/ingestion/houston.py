@@ -87,6 +87,7 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "cumulative_compaction_change_ft": extensometer.get("cumulative_compaction_change") if extensometer else None,
             "opera_historic_pair_displacement_mm": historic_opera.get("opera_pair_displacement_mm") if historic_opera else None,
             "opera_historic_valid_fraction": historic_opera.get("opera_valid_fraction") if historic_opera else None,
+            "opera_historic_water_fraction": historic_opera.get("opera_water_fraction") if historic_opera else None,
             "flood_source": flood_context.get("source_layer") if flood_context else (water.get("flood_source") if water else None),
             "flood_zone": flood_cells.get(row["cell_id"], {}).get("flood_zone") if flood_context else (water.get("flood_zone") if water else None),
         }

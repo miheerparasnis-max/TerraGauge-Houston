@@ -20,6 +20,7 @@ class OperaConfig:
     y_path: str = "/y"
     displacement_path: str = "/displacement"
     recommended_mask_path: str = "/recommended_mask"
+    water_mask_path: str = "/water_mask"
     cell_pixels: int = 33
     reference_date: str = "unknown_reference"
     secondary_date: str = "unknown_secondary"
@@ -50,8 +51,9 @@ def extract_disp_cells(path: str | Path, config: OperaConfig) -> dict[str, Any]:
         row_window, column_window = _window(x, y, config.crs, config.bounding_box)
         displacement = np.asarray(file[config.displacement_path][row_window, column_window], dtype=float)
         recommended_mask = np.asarray(file[config.recommended_mask_path][row_window, column_window])
+        water_mask = np.asarray(file[config.water_mask_path][row_window, column_window])
         x, y = x[column_window], y[row_window]
-    if displacement.shape != recommended_mask.shape or displacement.shape != (len(y), len(x)):
+    if displacement.shape != recommended_mask.shape or displacement.shape != water_mask.shape or displacement.shape != (len(y), len(x)):
         raise ValueError("OPERA arrays and x/y vectors must describe the same grid")
     longitude, latitude = coordinates_for_grid(SpatialGrid(x=x, y=y, crs=config.crs))
     records: list[dict[str, Any]] = []
@@ -69,6 +71,7 @@ def extract_disp_cells(path: str | Path, config: OperaConfig) -> dict[str, Any]:
                 "latitude": lat,
                 "opera_pair_displacement_mm": median_or_none(np.where(valid, displacement[section] * 1000.0, np.nan)),
                 "opera_valid_fraction": float(np.count_nonzero(valid) / valid.size),
+                "opera_water_fraction": float(np.count_nonzero(water_mask[section] > 0) / water_mask[section].size),
                 "source_status": "source_derived",
             })
     return {

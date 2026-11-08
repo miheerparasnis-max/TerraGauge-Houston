@@ -1,0 +1,52 @@
+"""Conservative long-term OPERA temporal-network inversion.
+
+OPERA provides the historical Sentinel-1 record; NISAR remains the recent
+mission-era signal. This adapter refuses to publish a rate until the historical
+graph is long, connected, and redundant.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+from .temporal import diagnose_gunw_network, invert_gunw_network
+
+
+def _as_generic(artifact: dict[str, Any]) -> dict[str, Any]:
+    if artifact.get("artifact_type") != "opera_disp_pair_cells":
+        raise ValueError("every input must be an opera_disp_pair_cells artifact")
+    params = artifact.get("parameters", {})
+    reference, secondary = params.get("reference_date"), params.get("secondary_date")
+    if not isinstance(reference, str) or not isinstance(secondary, str) or "unknown" in reference or "unknown" in secondary:
+        raise ValueError("OPERA artifact needs verified reference_date and secondary_date")
+    return {"parameters": {"acquisition_dates": [reference, secondary]}, "cells": [{
+        "cell_id": row["cell_id"], "longitude": row["longitude"], "latitude": row["latitude"],
+        "pair_los_displacement_mm": row.get("opera_pair_displacement_mm"),
+        "coherence_median": row.get("opera_valid_fraction"), "valid_fraction": row.get("opera_valid_fraction"),
+        "in_main_connected_component": (row.get("opera_valid_fraction") or 0) > 0,
+    } for row in artifact.get("cells", [])]}
+
+
+def invert_opera_network(pair_artifacts: list[dict[str, Any]], reference_cell_id: str) -> dict[str, Any]:
+    generic = [_as_generic(artifact) for artifact in pair_artifacts]
+    diagnostic = diagnose_gunw_network(generic)
+    dates = diagnostic["acquisition_dates"]
+    span_days = (date.fromisoformat(dates[-1]) - date.fromisoformat(dates[0])).days
+    if len(dates) < 20 or span_days < 730 or diagnostic["redundant_edges"] < 10:
+        return {
+            "artifact_type": "opera_temporal_rate_withheld",
+            "network_diagnostic": diagnostic,
+            "span_days": span_days,
+            "rate_status": "withheld_insufficient_long_term_network",
+            "next_requirement": "Provide at least 20 acquisition dates spanning two years with at least 10 redundant edges, then select a science-reviewed stable reference cell.",
+        }
+    inverted = invert_gunw_network(generic, reference_cell_id)
+    return {**inverted, "artifact_type": "opera_temporal_los_rate", "span_days": span_days, "rate_status": "source_derived_historical_los_rate", "limitations": [*inverted["limitations"], "OPERA rate is historical Sentinel-1 line-of-sight motion, not automatically vertical subsidence.", "Rate uncertainty remains incomplete until spatial/temporal covariance is modeled."]}
+
+
+def invert_opera_files(input_paths: list[str], output_path: str, reference_cell_id: str) -> None:
+    artifacts = [json.loads(Path(path).read_text(encoding="utf-8")) for path in input_paths]
+    Path(output_path).write_text(json.dumps(invert_opera_network(artifacts, reference_cell_id), indent=2), encoding="utf-8")

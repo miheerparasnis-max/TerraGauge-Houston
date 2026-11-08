@@ -46,6 +46,7 @@ class Evidence:
     cumulative_compaction_change_ft: float | None = None
     opera_historic_pair_displacement_mm: float | None = None
     opera_historic_valid_fraction: float | None = None
+    opera_historic_water_fraction: float | None = None
     flood_source: str | None = None
     flood_zone: str | None = None
 

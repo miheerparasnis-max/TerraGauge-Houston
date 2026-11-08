@@ -17,6 +17,7 @@ from .usgs import write_groundwater_daily
 from .temporal import write_network_diagnostic
 from .quality import write_pair_integrity_report
 from .compaction import write_extensometer_csv, write_usgs_2023_release
+from .opera_temporal import invert_opera_files
 
 
 def main() -> None:
@@ -46,6 +47,7 @@ def main() -> None:
     opera.add_argument("--y-path", default="/y")
     opera.add_argument("--displacement-path", default="/displacement")
     opera.add_argument("--recommended-mask-path", default="/recommended_mask")
+    opera.add_argument("--water-mask-path", default="/water_mask")
     opera.add_argument("--cell-pixels", type=int, default=33)
     opera.add_argument("--bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="optional WGS84 bounds for a compact study-area artifact")
     opera.add_argument("--reference-date", required=True)
@@ -106,6 +108,10 @@ def main() -> None:
     compaction_release = commands.add_parser("usgs-extensometer-release", help="normalize the official USGS 2023 TABLE1/TABLE2-15 extensometer release")
     compaction_release.add_argument("directory")
     compaction_release.add_argument("output")
+    opera_temporal = commands.add_parser("opera-temporal-invert", help="invert a redundant multi-year OPERA network after stable-reference review")
+    opera_temporal.add_argument("output")
+    opera_temporal.add_argument("--reference-cell", required=True)
+    opera_temporal.add_argument("inputs", nargs="+")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -118,7 +124,7 @@ def main() -> None:
         if args.components_path: kwargs["connected_components_path"] = args.components_path
         write_pair_cells(args.input, args.output, GunwConfig(**kwargs))
     elif args.command == "opera-disp":
-        write_disp_cells(args.input, args.output, OperaConfig(crs=args.crs, x_path=args.x_path, y_path=args.y_path, displacement_path=args.displacement_path, recommended_mask_path=args.recommended_mask_path, cell_pixels=args.cell_pixels, reference_date=args.reference_date, secondary_date=args.secondary_date, bounding_box=tuple(args.bbox) if args.bbox else None))
+        write_disp_cells(args.input, args.output, OperaConfig(crs=args.crs, x_path=args.x_path, y_path=args.y_path, displacement_path=args.displacement_path, recommended_mask_path=args.recommended_mask_path, water_mask_path=args.water_mask_path, cell_pixels=args.cell_pixels, reference_date=args.reference_date, secondary_date=args.secondary_date, bounding_box=tuple(args.bbox) if args.bbox else None))
     elif args.command == "usgs-groundwater":
         write_groundwater_daily(args.input, args.output)
     elif args.command == "fema-nfhl-join":
@@ -143,6 +149,8 @@ def main() -> None:
         write_extensometer_csv(args.input, args.output, json.loads(args.column_map), args.unit)
     elif args.command == "usgs-extensometer-release":
         write_usgs_2023_release(args.directory, args.output)
+    elif args.command == "opera-temporal-invert":
+        invert_opera_files(args.inputs, args.output, args.reference_cell)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 

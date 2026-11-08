@@ -163,6 +163,10 @@ not a portal screenshot or color ramp. The checked Houston artifact is
 quality-masked ~1 km cells from a real 2016 OPERA product. It is joined only as
 historical pairwise context; no annual trend is claimed.
 
+The same product's NASA OPERA water mask is aggregated into every OPERA cell as
+`opera_water_fraction`. It is a review flag for wet/standing-water conditions,
+not a flood-depth measurement.
+
 ```bash
 python3 -m backend.ingestion.cli opera-disp /path/to/OPERA_DISP.nc data/derived/opera-pair.json \
   --crs EPSG:32615 --bbox -95.95 29.4 -94.8 30.2 --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
@@ -171,6 +175,23 @@ python3 -m backend.ingestion.cli opera-disp /path/to/OPERA_DISP.nc data/derived/
 Only `recommended_mask == 1` pixels are included. Build an OPERA historic trend
 only after ingesting a dated sequence of products and documenting reference
 handling.
+
+### OPERA long-term rate engine
+
+`opera-temporal-invert` is ready for the historical OPERA stack. It requires a
+science-reviewed stable reference cell, at least 20 dates spanning two years,
+and at least 10 redundant graph edges. Those gates prevent a short or merely
+chain-like stack from producing a fake "precise" rate.
+
+```bash
+python3 -m backend.ingestion.cli opera-temporal-invert data/derived/opera_houston_temporal_rate.json \
+  --reference-cell epsg3857-1km-REFERENCE-CELL \
+  data/derived/opera_pair_*.json
+```
+
+When it passes, the output is an OPERA/Sentinel-1 **historical LOS rate with
+documented limitations**, not automatically vertical subsidence. NISAR remains
+the current mission-era layer and GNSS remains the station-level validation.
 
 ### HoustonNet velocities
 
