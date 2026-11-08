@@ -1,6 +1,7 @@
 import unittest
 
 from backend.ingestion.quality import validate_pair_artifact
+from backend.ingestion.nisar import _raster_window
 
 
 class PairIntegrityTests(unittest.TestCase):
@@ -28,3 +29,14 @@ class PairIntegrityTests(unittest.TestCase):
             path = Path(directory) / "pair.json"
             path.write_text(json.dumps(artifact), encoding="utf-8")
             self.assertFalse(validate_pair_artifact(path)["pass"])
+
+
+class NisarWindowTests(unittest.TestCase):
+    def test_bbox_restricts_source_window(self):
+        import numpy as np
+
+        x = np.array([240000.0, 260000.0, 280000.0, 300000.0])
+        y = np.array([3260000.0, 3280000.0, 3300000.0, 3320000.0])
+        rows, columns = _raster_window(x, y, "EPSG:32615", (-95.60, 29.62, -95.30, 29.80))
+        self.assertLess(rows.stop - rows.start, len(y))
+        self.assertLess(columns.stop - columns.start, len(x))

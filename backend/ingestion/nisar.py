@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from .common import SpatialGrid, coordinates_for_grid, dominant_component, median_or_none, one_km_cell_id
+from .common import SpatialGrid, coordinates_for_grid, dominant_component, median_or_none, one_km_cell_id, require_geospatial_dependencies
 
 
 DEFAULT_ROOT = "/science/LSAR/GUNW/grids/frequencyA/unwrappedInterferogram/HH"
@@ -70,6 +70,22 @@ def _processing_corrections(file: Any) -> dict[str, Any]:
     return flags
 
 
+def _raster_window(x: np.ndarray, y: np.ndarray, crs: str, bounding_box: tuple[float, float, float, float] | None) -> tuple[slice, slice]:
+    """Limit source reads to a WGS84 study area before raster arrays are loaded."""
+    if bounding_box is None:
+        return slice(0, len(y)), slice(0, len(x))
+    Transformer = require_geospatial_dependencies()
+    west, south, east, north = bounding_box
+    transformer = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
+    corners = [transformer.transform(lon, lat) for lon in (west, east) for lat in (south, north)]
+    projected_x, projected_y = zip(*corners)
+    columns = np.flatnonzero((x >= min(projected_x)) & (x <= max(projected_x)))
+    rows = np.flatnonzero((y >= min(projected_y)) & (y <= max(projected_y)))
+    if not len(columns) or not len(rows):
+        raise ValueError("bounding box does not overlap the GUNW raster")
+    return slice(int(rows.min()), int(rows.max()) + 1), slice(int(columns.min()), int(columns.max()) + 1)
+
+
 @dataclass(frozen=True)
 class GunwConfig:
     wavelength_m: float
@@ -94,11 +110,13 @@ def extract_pair_cells(path: str | Path, config: GunwConfig) -> dict[str, Any]:
         raise ValueError("wavelength_m and cell_pixels must be positive")
     h5py = _h5py()
     with h5py.File(path, "r") as file:
-        phase = np.asarray(file[config.phase_path], dtype=float)
-        coherence = np.asarray(file[config.coherence_path], dtype=float)
-        components = np.asarray(file[config.connected_components_path])
         x = np.asarray(file[config.x_path], dtype=float)
         y = np.asarray(file[config.y_path], dtype=float)
+        row_window, column_window = _raster_window(x, y, config.crs, config.bounding_box)
+        phase = np.asarray(file[config.phase_path][row_window, column_window], dtype=float)
+        coherence = np.asarray(file[config.coherence_path][row_window, column_window], dtype=float)
+        components = np.asarray(file[config.connected_components_path][row_window, column_window])
+        x, y = x[column_window], y[row_window]
         correction_flags = _processing_corrections(file)
     if phase.shape != coherence.shape or phase.shape != components.shape:
         raise ValueError("phase, coherence, and connected-components grids must have identical shape")
