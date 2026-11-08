@@ -3,3 +3,10 @@ __pycache__/
 .env
 .venv/
 data/raw/
+
+# Website build output and dependencies
+web/node_modules/
+web/dist/
+# Regenerable provisional intermediates (scripts/build_provisional.py)
+data/derived/provisional/nisar_gunw_houston_*_deramped.json
+data/derived/provisional/terragauge_houston_evidence_*.json
