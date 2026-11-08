@@ -302,17 +302,18 @@ npm run dev        # opens http://localhost:5173
 
 One combined map of 1 km squares answers four questions (color the map by each):
 
-- **Movement:** OPERA satellite rate converted to vertical, blended with a GPS station's rate where one is within 1 km (inverse-variance weighting).
-- **Confidence:** High / Medium / Low from the fit error, a GPS cross-check within 3 km, record jumpiness, and agreement with the squares around it (`backend/insights.py`).
-- **Future:** projection to 2030/2035/2040 with an ~80% range. A backtest decides whether it's shown as a tested forecast or as a labeled "if the trend continues" scenario.
-- **Priority:** Urgent / High / Watch / Stable / Check data, plus the top 15 suggested GPS sensor sites (sinking areas with no active station within 2 km, kept 4 km apart).
+- **Movement:** OPERA satellite rate 2016–2026 converted to vertical, blended with a GPS station's rate where one is within 1 km.
+- **Confidence:** High / Medium / Low from the fit error, a GPS cross-check, record jumpiness, and agreement with neighboring squares.
+- **Future:** a machine-learning forecast (`backend/forecast.py`, gradient-boosted trees) to 2031. Trained on 2016–2021, tested on 2021–2026 with spatial-block cross-validation: typical error 1.4 mm/yr vs 2.5 for "the past rate continues" and 7.2 for "no motion". Ranges are conformally calibrated to 80% coverage. Only shown if it beats every baseline.
+- **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
 
-Clicking a square opens a plain-language card with the evidence, the trend chart, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, prediction test, why NISAR can't measure this yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
+Each square's card also shows how long NISAR (and a permanent GPS station) would need to confirm its rate.
 
 To regenerate the data the site shows:
 
 ```bash
 python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
+python3 scripts/build_forecast.py      # needs scikit-learn; trains and tests the forecast
 python3 scripts/export_web.py          # writes web/public/data/
 ```
 

@@ -81,7 +81,9 @@ def main() -> None:
     operas = [load(path) for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json"))]
     velocity = opera_series(operas, reference_cell_ids=nearest_cell_ids(reference_stations, operas[0]["cells"]))
     velocity["reference_method"] = report["reference"]["method"]
-    save(OUT / "opera_houston_los_velocity_20160712_20210505.json", velocity)
+    for stale in OUT.glob("opera_houston_los_velocity_*.json"):
+        stale.unlink()
+    save(OUT / "opera_houston_los_velocity.json", velocity)
     comparison = compare_opera_gps(velocity, stations, exclude_station_ids={s["station_id"] for s in reference_stations})
     save(OUT / "opera_vs_houstonnet_comparison.json", comparison)
     report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "gps_comparison": comparison["stats"]}

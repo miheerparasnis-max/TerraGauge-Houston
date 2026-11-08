@@ -217,3 +217,58 @@ def neighborhood_medians(cells: list[dict[str, Any]], radius_km: float = 3.0) ->
         if len(near) >= 3:
             out[cell["id"]] = median(near)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Action labels (the plan's taxonomy) and detectability
+# ---------------------------------------------------------------------------
+
+ACTIONS = ("investigate_first", "add_monitoring", "review_disagreement", "observe", "no_clear_motion", "insufficient_data")
+DISAGREE_MM_YEAR = 5.0
+
+
+def action_label(*, rate_vertical: float | None, significant: bool, flood_zone_sfha: bool, gps_km: float | None, gps_rate: float | None, covered_km: float = 2.0, open_water: bool = False) -> tuple[str, str]:
+    """One label per square, in this order (first match wins):
+
+    1. Insufficient data: no reliable reading, open water, or a rate faster
+       than anything measured in Houston (likely a glitch).
+    2. Review disagreement: an active GPS station within ``covered_km`` and the
+       satellite differ by more than 5 mm/yr.
+    3. Investigate first: clear sinking inside a FEMA high-risk flood zone,
+       confirmed by a GPS station within ``covered_km``.
+    4. Add monitoring here: clear sinking inside a FEMA high-risk flood zone
+       with no GPS station within ``covered_km``.
+    5. Observe: clear sinking outside the high-risk flood zone.
+    6. No clear motion: nothing beyond measurement noise.
+    """
+    if rate_vertical is None or open_water:
+        return "insufficient_data", "No reliable satellite reading here (trees, fields, or open water), and no GPS station inside the square."
+    if abs(rate_vertical) > IMPLAUSIBLE_MM_YEAR:
+        return "insufficient_data", f"The reading ({rate_vertical:.0f} mm/yr) is faster than anything measured in Houston, so it is treated as a glitch."
+    near = gps_km is not None and gps_km <= covered_km
+    if near and gps_rate is not None and abs(rate_vertical - gps_rate) > DISAGREE_MM_YEAR:
+        return "review_disagreement", f"The satellite says {rate_vertical:.1f} mm/yr but a GPS station {gps_km:.1f} km away says {gps_rate:.1f} mm/yr. One of them is missing something; worth a look."
+    sinking = significant and rate_vertical < 0
+    if sinking and flood_zone_sfha and near:
+        return "investigate_first", f"Clearly sinking ({rate_vertical:.1f} mm/yr) in a FEMA high-risk flood zone, and a GPS station {gps_km:.1f} km away confirms it."
+    if sinking and flood_zone_sfha:
+        return "add_monitoring", f"Clearly sinking ({rate_vertical:.1f} mm/yr) in a FEMA high-risk flood zone, but no GPS station within {covered_km:g} km to confirm it."
+    if sinking:
+        return "observe", f"Clearly sinking ({rate_vertical:.1f} mm/yr), but outside FEMA's high-risk flood zone."
+    return "no_clear_motion", "No sinking beyond what our measurements can tell apart from noise."
+
+
+def passes_to_detect(rate_mm_year: float, sigma_mm: float, interval_days: float, sigma_multiplier: float = 2.0, max_passes: int = 2000) -> int | None:
+    """Fewest equally spaced observations so that the rate is >= multiplier × its standard error.
+
+    White-noise lower bound (real atmospheric noise is correlated, so the
+    true wait is longer). Returns None if not reached within ``max_passes``.
+    """
+    from .detection import rate_uncertainty_mm_year
+
+    if rate_mm_year == 0:
+        return None
+    for n in range(3, max_passes + 1):
+        if rate_uncertainty_mm_year(sigma_mm, interval_days, n) <= abs(rate_mm_year) / sigma_multiplier:
+            return n
+    return None

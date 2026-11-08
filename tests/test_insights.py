@@ -54,3 +54,23 @@ class InsightTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ActionTests(unittest.TestCase):
+    def test_action_order(self):
+        from backend.insights import action_label
+
+        base = dict(significant=True, flood_zone_sfha=True, gps_rate=-12.0)
+        self.assertEqual(action_label(rate_vertical=None, significant=False, flood_zone_sfha=True, gps_km=1, gps_rate=None)[0], "insufficient_data")
+        self.assertEqual(action_label(rate_vertical=-90, gps_km=5, **base)[0], "insufficient_data")
+        self.assertEqual(action_label(rate_vertical=-25, gps_km=1, **base)[0], "review_disagreement")
+        self.assertEqual(action_label(rate_vertical=-13, gps_km=1, **base)[0], "investigate_first")
+        self.assertEqual(action_label(rate_vertical=-13, gps_km=5, **base)[0], "add_monitoring")
+        self.assertEqual(action_label(rate_vertical=-13, gps_km=5, significant=True, flood_zone_sfha=False, gps_rate=None)[0], "observe")
+        self.assertEqual(action_label(rate_vertical=-2, gps_km=5, significant=False, flood_zone_sfha=True, gps_rate=None)[0], "no_clear_motion")
+
+    def test_detectability_faster_rates_need_fewer_passes(self):
+        from backend.insights import passes_to_detect
+
+        self.assertLess(passes_to_detect(-20, 8, 12), passes_to_detect(-5, 8, 12))
+        self.assertIsNone(passes_to_detect(0, 8, 12))

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Meta } from "./types";
-import { CONFIDENCE, PRIORITY, num } from "./labels";
+import { ACTION, CONFIDENCE, num } from "./labels";
 
 function Scatter({ meta }: { meta: Meta }) {
   const pts = meta.validation.points;
@@ -31,8 +31,16 @@ function Gauge({ signal, noise, label }: { signal: number; noise: number; label:
   );
 }
 
+const BASELINE_NAMES: Record<string, string> = {
+  model: "Machine-learning model",
+  past_rate_continues: "The past rate continues",
+  area_rate: "The surrounding area's rate",
+  damped_past_rate: "The past rate, scaled down",
+  no_motion: "No motion",
+};
+
 export function HowWeKnow({ meta }: { meta: Meta }) {
-  const v = meta.validation, b = meta.forecast.backtest, n = meta.nisar;
+  const v = meta.validation, n = meta.nisar, f = meta.forecast, th = meta.thresholds;
   return (
     <div className="page">
       <h2 className="page-title">How we know</h2>
@@ -42,13 +50,13 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <table className="table">
         <thead><tr><th>Data</th><th>What it tells us</th><th>How we use it</th></tr></thead>
         <tbody>
-          <tr><td>NASA OPERA satellite radar, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}</td><td>How much each square moved, every few months</td><td>Main movement measurement</td></tr>
-          <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines coverage</td></tr>
-          <tr><td>NASA/ISRO NISAR, Nov 2025–Jan 2026</td><td>The newest radar satellite</td><td>Quality check; too new to measure slow sinking (see below)</td></tr>
-          <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's evidence</td></tr>
-          <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's evidence</td></tr>
-          <tr><td>FEMA flood zones</td><td>Official high-risk flood areas</td><td>Raises priority for sinking squares</td></tr>
-          {Object.entries(meta.nasaLayers).map(([k, s]) => <tr key={k}><td>{s}</td><td>{k === "nasadem" ? "Ground elevation" : k === "dswx" ? "Standing water" : "Construction and clearing"}</td><td>{k === "dswx" ? "Removes water squares from rankings" : "Context in each square's evidence"}</td></tr>)}
+          <tr><td>NASA OPERA satellite radar, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} ({meta.record.products} time periods)</td><td>How much each square moved</td><td>Main movement measurement and the forecast's training data</td></tr>
+          <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines sensor coverage</td></tr>
+          <tr><td>NASA/ISRO NISAR, Nov 2025–Jan 2026</td><td>The newest radar satellite</td><td>Quality check and "how long to confirm" in every square</td></tr>
+          <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's card</td></tr>
+          <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's card</td></tr>
+          <tr><td>FEMA flood zones</td><td>Official high-risk flood areas</td><td>Part of the priority rules</td></tr>
+          {Object.entries(meta.nasaLayers).map(([k, src]) => <tr key={k}><td>{src}</td><td>{k === "nasadem" ? "Ground elevation" : k === "dswx" ? "Standing water" : "Construction and clearing"}</td><td>{k === "dswx" ? "Marks water squares as no measurement" : "Context in each square's card"}</td></tr>)}
         </tbody>
       </table>
 
@@ -58,43 +66,51 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <div>
           <p className="big"><strong>{v.r.toFixed(2)}</strong> correlation with {v.stations} GPS stations we did not use to calibrate the satellite.</p>
           <p>Typical difference: <strong>{num(v.typical_diff_mm_year)} mm a year</strong>. Points near the dashed line mean the satellite and the GPS station agree.</p>
-          <p className="small">GPS stations cover longer time spans than the satellite record, so some difference is expected.</p>
+          <p className="small">GPS station records cover different years than the satellite, so some difference is expected.</p>
         </div>
       </div>
 
-      <h3>Can we predict where it will go?</h3>
-      <p>We tested it. Using only {b.train[0].slice(0, 4)}–{b.train[1].slice(0, 4)} data, we predicted each square's rate for {b.test[0].slice(0, 4)}–{b.test[1].slice(0, 4)}, then checked against what actually happened.</p>
-      <div className="facts">
-        <div><strong>{num(b.fast_median_before_mm_year)} → {num(b.fast_median_after_mm_year)}</strong><span>mm a year: the fastest-sinking areas before and after {b.test[0].slice(0, 4)}. Sinking slowed down.</span></div>
-        <div><strong>{b.correlation.toFixed(2)}</strong><span>correlation between earlier and later rates. Two years of satellite data per side is too short and noisy to predict reliably.</span></div>
-      </div>
-      <p>{meta.forecast.mode === "tested"
-        ? `So the map's Future view uses a tested forecast: earlier rates scaled by ${meta.forecast.damping}.`
-        : "So the Future view is a clearly labeled \"if the trend continues\" scenario with a wide range, not a tested forecast. Because sinking has been slowing, it is most likely an overestimate."}</p>
-      {!meta.record.extendedThroughOpera2026 && <p className="note-block">With OPERA data through 2026 (11 more files, about 3.7 GB), we can test five years against the next five years, which is long enough for a real forecast. Run <code>scripts/fetch_opera_extension.py</code> and the site updates itself.</p>}
+      <h3>How the forecast works, and how we tested it</h3>
+      {f ? (
+        <>
+          <p>A machine-learning model (gradient-boosted trees) learns how each square's future rate relates to its past: its overall rate, whether it was speeding up or slowing down, how steady its record was, what the squares around it were doing, and where it is. Groundwater, compaction, and GPS rates are left out because their records overlap the years being predicted.</p>
+          <p>To test it honestly, we trained it only on {f.train_window[0].slice(0, 4)}–{f.train_window[1].slice(0, 4)} data and asked it to predict each square's rate for {f.test_window[0].slice(0, 4)}–{f.test_window[1].slice(0, 4)}. We scored it on parts of the city it never trained on (10 km blocks), and compared it with simpler guesses:</p>
+          <table className="table">
+            <thead><tr><th>Method</th><th>Typical error, mm/yr</th><th>In fast-sinking areas</th></tr></thead>
+            <tbody>{(["model", "past_rate_continues", "area_rate", "damped_past_rate", "no_motion"] as const).map((k) => <tr key={k} className={k === "model" ? "win" : ""}><td>{BASELINE_NAMES[k]}</td><td>{num(f.scores[k].median_abs_error)}</td><td>{num(f.scores[k].fast_median_abs_error)}</td></tr>)}</tbody>
+          </table>
+          <p>{f.passes ? `The model beats every simpler method, so the Future view uses it.` : "The model did not clearly beat the simpler methods, so no forecast is shown."} The ranges are calibrated so that {Math.round(f.interval_coverage_10_90 * 100)}% of test squares fell inside them. We tested about {f.tested_horizon_years.toFixed(0)} years ahead, so the forecast stops at {f.years[f.years.length - 1]}.</p>
+          <ul className="small">{f.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
+        </>
+      ) : <p>No forecast has been built yet. Run scripts/build_forecast.py.</p>}
 
-      <h3>Why doesn't NASA's newest satellite (NISAR) change the map yet?</h3>
-      <p>NISAR started imaging Houston in late 2025. Houston sinks a few millimetres over a few weeks, and the atmosphere alone shifts a single radar reading by centimetres.</p>
+      <h3>NASA's newest satellite: NISAR</h3>
+      <p>NISAR started imaging Houston in late 2025. Houston sinks a few millimetres over a few weeks, but the atmosphere shifts a single radar reading by centimetres, so one pass can't measure Houston's slow sinking yet.</p>
       <Gauge signal={n.pair.signal_mm} noise={n.pair.noise_mm} label="One 12-day NISAR pair" />
       <Gauge signal={n.chain.signal_mm} noise={n.chain.noise_mm} label="Five pairs combined, 60 days" />
-      <p>At one pass every 12 days, NISAR needs about {n.detect.find((d) => d.rate === 10)?.years ?? "—"} years of passes to detect 10 mm a year, and about {n.detect.find((d) => d.rate === 5)?.years ?? "—"} years for 5 mm a year (best case). Until then, TerraGauge uses it as a quality check.</p>
+      <p>That's why every square's card says how long NISAR needs to confirm it. Using NISAR's measured noise over Houston ({num(n.sigma_mm)} mm per pass) and one pass every 12 days:</p>
+      <table className="table">
+        <thead><tr><th>If the ground sinks</th><th>NISAR passes needed</th><th>Time</th></tr></thead>
+        <tbody>{n.detect.map((d) => <tr key={d.rate}><td>{d.rate} mm a year</td><td>{d.passes ?? "—"}</td><td>{d.years !== null ? `about ${d.years} years` : "—"}</td></tr>)}</tbody>
+      </table>
+      <p className="small">Best case. Real atmospheric noise is correlated from pass to pass, so the true wait is longer.</p>
 
       <h3>How each answer is decided</h3>
       <h4>Movement</h4>
-      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as stable: that's twice the wobble we see at GPS stations that aren't moving.</p>
+      <p>The satellite rate (converted from its slanted view to up and down, assuming vertical motion at a {th.incidence_deg}° viewing angle) is blended with a GPS station's rate when one sits within {th.gps_blend_km} km. Changes smaller than {num(th.stable_mm_year)} mm a year count as no clear motion: that's twice the wobble at GPS stations that aren't moving.</p>
       <h4>Confidence</h4>
       <ul>{(["high", "medium", "low"] as const).map((k) => <li key={k}><b>{CONFIDENCE[k].name}:</b> {CONFIDENCE[k].meaning}</li>)}</ul>
-      <h4>Priority</h4>
-      <ul>{(["urgent", "high", "watch", "stable", "check", "no_data"] as const).map((k) => <li key={k}><b>{PRIORITY[k].name}:</b> {PRIORITY[k].meaning}</li>)}</ul>
-      <h4>Suggested sensor sites</h4>
-      <p>Squares that are sinking and have no GPS station within {meta.thresholds.gps_covered_km} km, ranked by how fast they sink, how sure we are, how far the nearest station is, and whether they're in a high-risk flood zone. Sites are kept at least 4 km apart so the list covers different areas.</p>
+      <h4>Priority (first rule that matches wins)</h4>
+      <ol>{(["insufficient_data", "review_disagreement", "investigate_first", "add_monitoring", "observe", "no_clear_motion"] as const).map((k) => <li key={k}><b>{ACTION[k].name}:</b> {ACTION[k].meaning}</li>)}</ol>
+      <h4>Sensor sites</h4>
+      <p>The numbered pins are the "Add monitoring here" squares in the fastest-sinking areas, ranked by the median rate of squares within 3 km (so one noisy square can't top the list) and kept at least {th.sensor_spacing_km} km apart.</p>
 
       <h3>Still provisional</h3>
       <p className="small">Satellite radar measures movement relative to a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move as that reference and held out {meta.reference.held_out_stable_stations.length} similar stations for checking. The team still needs to review this choice.</p>
 
       <h3>Sources</h3>
       <ul className="small">
-        <li>NASA JPL OPERA DISP-S1 surface displacement, frame F38238, via the Alaska Satellite Facility.</li>
+        <li>NASA JPL OPERA DISP-S1 surface displacement, frame F38238, {meta.record.start} to {meta.record.end}, via the Alaska Satellite Facility.</li>
         <li>NASA/ISRO NISAR L2 GUNW, track 062 frame 016, five pairs, 2 Nov 2025 to 1 Jan 2026.</li>
         <li>HoustonNet GPS 2024 release, University of Houston and Harris-Galveston Subsidence District.</li>
         <li>USGS groundwater daily values and the 2023 Houston extensometer release.</li>
