@@ -289,3 +289,52 @@ A passing report proves only stationary receiver repeatability. It never proves 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
 2. Acquire at least two valid redundant same-track pair edges, then run the existing temporal-network inversion.
 3. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.
+
+## Website (provisional build)
+
+A ready-made static website lives in `web/` (React + Vite + TypeScript + MapLibre). It reads precomputed JSON from `web/public/data/`; all science logic runs in Python.
+
+```bash
+cd web
+npm install
+npm run dev        # opens http://localhost:5173
+```
+
+Views: a 1 km priority map with three motion-evidence sources (OPERA 2016–2021, NISAR 12-day pair, NISAR 60-day chain), clickable evidence cards, a NISAR signal-vs-noise check, the GroundTruth Node planning calculator, methods and limits, and the data ledger.
+
+To regenerate the data the site shows:
+
+```bash
+python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
+python3 scripts/export_web.py          # writes web/public/data/
+```
+
+### What the provisional build does
+
+Everything is flagged `provisional_unreviewed` until the team approves the reference:
+
+1. **Ramp removal.** A best-fit plane is removed from each NISAR pair. The raw pairs have 13–43 mm of frame-wide ionospheric/atmospheric scatter; after removal, 3–10 mm. Raw values are kept.
+2. **Re-referencing.** Cells are referenced to the median at half of the long-history HoustonNet stations with |vertical rate| ≤ 1 mm/yr; the other half are held out. (The single-patch candidate in `terragauge_reference_review_candidates_2026-11-07.json` is farmland where OPERA has too few coherent pixels.)
+3. **60-day NISAR chain.** The five consecutive pairs are summed (intermediate-date noise cancels). Still not a rate.
+4. **OPERA velocity.** The 19 chained OPERA DISP-S1 products (2016-07-12 to 2021-05-05) are re-referenced and fit with a least-squares LOS velocity per cell.
+5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 103 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows).
+6. **NISAR signal check.** NISAR 12-day noise is ~18 mm vs. ~0.2 mm of expected real motion, and NISAR shows no correlation with OPERA (r ≈ 0). The map therefore defaults to OPERA-based priorities (`backend.decision.classify_opera_velocity`, same action order). NISAR views remain as a quality preview.
+
+To switch to a team-reviewed reference, change the reference selection in `scripts/build_provisional.py` and run it with `--reference-status reviewed`.
+
+### Fixes in this build
+
+- **OPERA water mask was inverted.** The DISP-S1 spec defines `water_mask` as 0 = water, 1 = land; the adapter counted `> 0` as water, so almost every Houston cell read as 100% water. Fixed in `backend/ingestion/opera.py`; derived artifacts corrected with `scripts/correct_opera_water_fraction.py` (water = 1 − old value).
+- **NISAR displacements were not re-referenced.** The scatter threshold was computed, but the reference median was never subtracted, so a frame-wide offset (~20 mm) would have turned most cells into "signals". `build_houston_evidence` now subtracts the reference median and keeps the raw value in `pair_los_displacement_raw_mm`.
+
+### More NASA layers
+
+`scripts/fetch_nasa_layers.py` downloads **NASADEM** elevation, **OPERA DSWx-S1** surface water, and **OPERA DIST-ALERT** land disturbance for Houston and samples them onto the 1 km cells (`backend/ingestion/raster_layers.py`). It needs an Earthdata login and a network that reaches NASA:
+
+```bash
+python3 -m pip install earthaccess rasterio numpy
+python3 scripts/fetch_nasa_layers.py
+python3 scripts/export_web.py
+```
+
+MERRA-2 weather correction is not needed: the NISAR GUNW products already have wet and hydrostatic tropospheric and ionospheric corrections applied (see `source_processing_corrections` in each pair artifact).
