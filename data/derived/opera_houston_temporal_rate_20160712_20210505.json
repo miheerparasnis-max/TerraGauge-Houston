@@ -1,7 +1,8 @@
 {
   "artifact_type": "opera_temporal_rate_withheld",
-  "network_diagnostic": {
-    "artifact_type": "nisar_gunw_temporal_network_diagnostic",
+  "local_stack": {
+    "date_count": 20,
+    "product_count": 19,
     "acquisition_dates": [
       "2016-07-12",
       "2016-11-09",
@@ -24,97 +25,15 @@
       "2021-02-04",
       "2021-05-05"
     ],
-    "pair_edges": [
-      {
-        "reference_date": "2016-07-12",
-        "secondary_date": "2016-11-09"
-      },
-      {
-        "reference_date": "2016-11-09",
-        "secondary_date": "2017-02-13"
-      },
-      {
-        "reference_date": "2017-02-13",
-        "secondary_date": "2017-05-14"
-      },
-      {
-        "reference_date": "2017-05-14",
-        "secondary_date": "2017-08-12"
-      },
-      {
-        "reference_date": "2017-08-12",
-        "secondary_date": "2017-11-10"
-      },
-      {
-        "reference_date": "2017-11-10",
-        "secondary_date": "2018-02-08"
-      },
-      {
-        "reference_date": "2018-02-08",
-        "secondary_date": "2018-05-15"
-      },
-      {
-        "reference_date": "2018-05-15",
-        "secondary_date": "2018-08-13"
-      },
-      {
-        "reference_date": "2018-08-13",
-        "secondary_date": "2018-11-11"
-      },
-      {
-        "reference_date": "2018-11-11",
-        "secondary_date": "2019-02-09"
-      },
-      {
-        "reference_date": "2019-02-09",
-        "secondary_date": "2019-05-10"
-      },
-      {
-        "reference_date": "2019-05-10",
-        "secondary_date": "2019-08-08"
-      },
-      {
-        "reference_date": "2019-08-08",
-        "secondary_date": "2019-11-06"
-      },
-      {
-        "reference_date": "2019-11-06",
-        "secondary_date": "2020-02-04"
-      },
-      {
-        "reference_date": "2020-02-04",
-        "secondary_date": "2020-05-04"
-      },
-      {
-        "reference_date": "2020-05-04",
-        "secondary_date": "2020-08-02"
-      },
-      {
-        "reference_date": "2020-08-02",
-        "secondary_date": "2020-10-31"
-      },
-      {
-        "reference_date": "2020-10-31",
-        "secondary_date": "2021-02-04"
-      },
-      {
-        "reference_date": "2021-02-04",
-        "secondary_date": "2021-05-05"
-      }
-    ],
-    "date_count": 20,
-    "pair_count": 19,
-    "independent_edges_needed_for_connectivity": 19,
-    "redundant_edges": 0,
-    "minimum_redundant_edges_for_rate": 2,
-    "rate_status": "withheld_insufficient_redundancy",
-    "next_requirement": "Add at least two valid same-track cross-pairs or repeat pairs before emitting a temporal LOS rate; select and document a stable reference region before inversion.",
-    "limitations": [
-      "A connected chain can reconstruct relative epochs but has no independent loop closure.",
-      "This diagnostic does not select a reference region or estimate motion."
-    ]
+    "product_interpretation": "DISP-S1 products are processed displacement time slices, not raw interferogram edges."
   },
   "span_days": 1758,
-  "rate_status": "withheld_insufficient_long_term_network",
-  "next_requirement": "Provide at least 20 acquisition dates spanning two years with at least 10 redundant edges, then select a science-reviewed stable reference cell."
+  "reference_cell_id": "pending_independent_stable_reference_review",
+  "rate_status": "withheld_reformat_and_reference_review_required",
+  "next_requirement": "Use the complete OPERA frame-level time series with a documented stable spatial reference (for example via opera-utils DISP-S1 reformat), then fit and validate a LOS rate against co-temporal GNSS.",
+  "limitations": [
+    "The local files are a sparse subset of an already processed OPERA displacement time series; they are not raw independent interferograms.",
+    "A rate must be calculated only after re-referencing the full time series to a scientifically reviewed stable spatial patch.",
+    "A fitted OPERA rate is line-of-sight motion, not automatically vertical subsidence."
+  ]
 }

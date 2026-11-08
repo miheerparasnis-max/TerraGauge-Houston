@@ -13,4 +13,4 @@ def pair(start, end, value=1.0):
 class OperaTemporalTests(unittest.TestCase):
     def test_withholds_short_network(self):
         result = invert_opera_network([pair("2016-01-01", "2016-01-13"), pair("2016-01-01", "2016-01-25")], "ref")
-        self.assertEqual(result["rate_status"], "withheld_insufficient_long_term_network")
+        self.assertEqual(result["rate_status"], "withheld_insufficient_long_term_stack")

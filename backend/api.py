@@ -34,6 +34,8 @@ class TerraGaugeHandler(BaseHTTPRequestHandler):
             return self._json(HTTPStatus.OK, {"cells": self.service.cells()})
         if parsed.path == "/v1/data-ledger":
             return self._json(HTTPStatus.OK, self.service.data_ledger())
+        if parsed.path == "/v1/opera-temporal-status":
+            return self._json(HTTPStatus.OK, self.service.opera_temporal_status())
         if parsed.path.startswith("/v1/review-packets/"):
             cell_id = parsed.path.removeprefix("/v1/review-packets/")
             result = self.service.review_packet(cell_id)

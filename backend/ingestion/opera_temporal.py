@@ -1,8 +1,10 @@
-"""Conservative long-term OPERA temporal-network inversion.
+"""Conservative status assessment for a local OPERA DISP-S1 subset.
 
-OPERA provides the historical Sentinel-1 record; NISAR remains the recent
-mission-era signal. This adapter refuses to publish a rate until the historical
-graph is long, connected, and redundant.
+DISP-S1 granules are already products of a time-series processing workflow.
+They must not be treated as raw NISAR GUNW interferogram edges and subjected to
+a synthetic loop-closure requirement. A rate needs a re-referenced full stack
+and a reviewed stable spatial reference, neither of which this lightweight
+adapter silently invents.
 """
 
 from __future__ import annotations
@@ -11,9 +13,6 @@ import json
 from datetime import date
 from pathlib import Path
 from typing import Any
-
-from .temporal import diagnose_gunw_network, invert_gunw_network
-
 
 def _as_generic(artifact: dict[str, Any]) -> dict[str, Any]:
     if artifact.get("artifact_type") != "opera_disp_pair_cells":
@@ -32,19 +31,35 @@ def _as_generic(artifact: dict[str, Any]) -> dict[str, Any]:
 
 def invert_opera_network(pair_artifacts: list[dict[str, Any]], reference_cell_id: str) -> dict[str, Any]:
     generic = [_as_generic(artifact) for artifact in pair_artifacts]
-    diagnostic = diagnose_gunw_network(generic)
-    dates = diagnostic["acquisition_dates"]
+    dates = sorted({value for item in generic for value in item["parameters"]["acquisition_dates"]})
     span_days = (date.fromisoformat(dates[-1]) - date.fromisoformat(dates[0])).days
-    if len(dates) < 20 or span_days < 730 or diagnostic["redundant_edges"] < 10:
+    local_stack = {
+        "date_count": len(dates),
+        "product_count": len(pair_artifacts),
+        "acquisition_dates": dates,
+        "product_interpretation": "DISP-S1 products are processed displacement time slices, not raw interferogram edges.",
+    }
+    if len(dates) < 20 or span_days < 730:
         return {
             "artifact_type": "opera_temporal_rate_withheld",
-            "network_diagnostic": diagnostic,
+            "local_stack": local_stack,
             "span_days": span_days,
-            "rate_status": "withheld_insufficient_long_term_network",
-            "next_requirement": "Provide at least 20 acquisition dates spanning two years with at least 10 redundant edges, then select a science-reviewed stable reference cell.",
+            "rate_status": "withheld_insufficient_long_term_stack",
+            "next_requirement": "Provide a longer OPERA DISP-S1 time series, re-reference it to a reviewed stable spatial patch, and validate the fitted LOS rate against co-temporal GNSS.",
         }
-    inverted = invert_gunw_network(generic, reference_cell_id)
-    return {**inverted, "artifact_type": "opera_temporal_los_rate", "span_days": span_days, "rate_status": "source_derived_historical_los_rate", "limitations": [*inverted["limitations"], "OPERA rate is historical Sentinel-1 line-of-sight motion, not automatically vertical subsidence.", "Rate uncertainty remains incomplete until spatial/temporal covariance is modeled."]}
+    return {
+        "artifact_type": "opera_temporal_rate_withheld",
+        "local_stack": local_stack,
+        "span_days": span_days,
+        "reference_cell_id": reference_cell_id,
+        "rate_status": "withheld_reformat_and_reference_review_required",
+        "next_requirement": "Use the complete OPERA frame-level time series with a documented stable spatial reference (for example via opera-utils DISP-S1 reformat), then fit and validate a LOS rate against co-temporal GNSS.",
+        "limitations": [
+            "The local files are a sparse subset of an already processed OPERA displacement time series; they are not raw independent interferograms.",
+            "A rate must be calculated only after re-referencing the full time series to a scientifically reviewed stable spatial patch.",
+            "A fitted OPERA rate is line-of-sight motion, not automatically vertical subsidence.",
+        ],
+    }
 
 
 def invert_opera_files(input_paths: list[str], output_path: str, reference_cell_id: str) -> None:

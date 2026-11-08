@@ -44,7 +44,7 @@ class TerraGaugeService:
         return classify_cell(cell, self.thresholds).to_dict()
 
     def data_ledger(self) -> dict[str, Any]:
-        data_root = next((path for path in (self.dataset_path.parent, *self.dataset_path.parents) if path.name == "data"), None)
+        data_root = self._data_root()
         manifests = data_root / "manifests" if data_root else self.dataset_path.parent / "manifests"
         entries = []
         if manifests.is_dir():
@@ -54,6 +54,37 @@ class TerraGaugeService:
                 elif path.suffix == ".sha256":
                     entries.append({"manifest": path.name, "sha256": path.read_text(encoding="utf-8").strip()})
         return {"dataset": str(self.dataset_path), "entries": entries, "disclaimer": "Source records document provenance; they do not upgrade a pairwise observation into an annual rate."}
+
+    def opera_temporal_status(self) -> dict[str, Any]:
+        """Return the checked historical OPERA rate status for direct UI display.
+
+        This is deliberately a status record rather than a map endpoint: when
+        the network is insufficient, the frontend must show why no rate exists.
+        """
+        data_root = self._data_root()
+        path = (data_root / "derived" / "opera_houston_temporal_rate_20160712_20210505.json") if data_root else None
+        if path is None or not path.is_file():
+            return {
+                "available": False,
+                "rate_status": "not_loaded",
+                "message": "No checked OPERA temporal-status artifact is available in this deployment.",
+            }
+        record = json.loads(path.read_text(encoding="utf-8"))
+        stack = record.get("local_stack", {})
+        return {
+            "available": True,
+            "source_artifact": path.name,
+            "rate_status": record.get("rate_status"),
+            "span_days": record.get("span_days"),
+            "date_count": stack.get("date_count"),
+            "product_count": stack.get("product_count"),
+            "next_requirement": record.get("next_requirement"),
+            "display_message": "Historical LOS rate withheld: the locally processed OPERA subset has not been re-referenced as a full time series to an independently reviewed stable spatial patch.",
+            "disclaimer": "This is an evidence-status record, not a subsidence-rate map. OPERA displacement is line of sight, not automatically vertical motion.",
+        }
+
+    def _data_root(self) -> Path | None:
+        return next((path for path in (self.dataset_path.parent, *self.dataset_path.parents) if path.name == "data"), None)
 
     def node_noise_floor(self, payload: dict[str, Any]) -> dict[str, Any]:
         heights = payload.get("session_heights_mm")

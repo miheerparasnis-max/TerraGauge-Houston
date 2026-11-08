@@ -40,6 +40,7 @@ The API starts at `http://127.0.0.1:8000`.
 | `GET` | `/v1/cells` | All analyzed 1 km cells |
 | `GET` | `/v1/cells/{cell_id}` | One evidence card payload |
 | `GET` | `/v1/data-ledger` | Versioned source-manifest records |
+| `GET` | `/v1/opera-temporal-status` | Historical OPERA rate status and the reason a rate is withheld |
 | `GET` | `/v1/review-packets/{cell_id}` | Required human checks before a priority is presented as a finding |
 | `POST` | `/v1/analyze-cell` | Analyze a validated cell without saving it |
 | `POST` | `/v1/gnss/noise-floor` | Calculate stationary GNSS session scatter |
@@ -49,6 +50,7 @@ The API starts at `http://127.0.0.1:8000`.
 ```bash
 curl http://127.0.0.1:8000/v1/summary
 curl http://127.0.0.1:8000/v1/data-ledger
+curl http://127.0.0.1:8000/v1/opera-temporal-status
 curl http://127.0.0.1:8000/v1/cells/hou-001
 curl -X POST http://127.0.0.1:8000/v1/gnss/noise-floor \
   -H 'Content-Type: application/json' \
@@ -178,10 +180,12 @@ handling.
 
 ### OPERA long-term rate engine
 
-`opera-temporal-invert` is ready for the historical OPERA stack. It requires a
-science-reviewed stable reference cell, at least 20 dates spanning two years,
-and at least 10 redundant graph edges. Those gates prevent a short or merely
-chain-like stack from producing a fake "precise" rate.
+`opera-temporal-invert` records the status of a local historical OPERA subset.
+Unlike raw NISAR GUNW, OPERA DISP-S1 products are already processed time-series
+outputs; their reference/secondary timestamps must not be mistaken for a raw
+interferogram network. A rate is withheld until the complete frame-level stack
+is re-referenced to a science-reviewed stable spatial patch and checked against
+co-temporal GNSS.
 
 ```bash
 python3 -m backend.ingestion.cli opera-temporal-invert data/derived/opera_houston_temporal_rate.json \

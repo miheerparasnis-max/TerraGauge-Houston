@@ -1,9 +1,11 @@
 import unittest
+from pathlib import Path
 
 from backend.decision import classify_cell
 from backend.detection import detectability, gnss_session_noise_floor, rate_uncertainty_mm_year
 from backend.model import CellInput, Evidence, Label, Thresholds
 from backend.repository import ValidationError, cell_from_dict
+from backend.service import TerraGaugeService
 
 
 def cell(**overrides):
@@ -78,6 +80,17 @@ class InputValidationTests(unittest.TestCase):
         payload["longitude"] = float("nan")
         with self.assertRaises(ValidationError):
             cell_from_dict(payload)
+
+
+class OperaTemporalStatusTests(unittest.TestCase):
+    def test_exposes_withheld_rate_reason_for_frontend(self):
+        dataset = Path(__file__).resolve().parents[1] / "data" / "sample_cells.json"
+        status = TerraGaugeService(dataset).opera_temporal_status()
+        self.assertTrue(status["available"])
+        self.assertEqual(status["rate_status"], "withheld_reformat_and_reference_review_required")
+        self.assertEqual(status["date_count"], 20)
+        self.assertEqual(status["product_count"], 19)
+        self.assertIn("withheld", status["display_message"].lower())
 
 
 if __name__ == "__main__":
