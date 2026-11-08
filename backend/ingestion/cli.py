@@ -87,6 +87,7 @@ def main() -> None:
     evidence.add_argument("--cell-flood-context", default=None, help="output of fema-cell-context; omitted means no cell-level flood label is assigned")
     evidence.add_argument("--compaction", default=None, help="normalized USGS extensometer-compaction summary; adds mechanism context only")
     evidence.add_argument("--opera-historic-pair", default=None, help="quality-masked OPERA historical pair; adds context only, never a rate")
+    evidence.add_argument("--reference-status", default="reviewed", choices=["reviewed", "provisional_unreviewed"], help="mark a reference region that the team has not yet science-reviewed")
     groundtruth = commands.add_parser("groundtruth-report", help="validate GroundTruth Node session artifacts")
     groundtruth.add_argument("manifest")
     groundtruth.add_argument("output")
@@ -136,7 +137,7 @@ def main() -> None:
     elif args.command == "fema-cell-context":
         write_cell_center_flood_context(args.nisar, args.overlay, args.output)
     elif args.command == "build-houston-evidence":
-        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None, args.cell_flood_context, args.compaction, args.opera_historic_pair)
+        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None, args.cell_flood_context, args.compaction, args.opera_historic_pair, args.reference_status)
     elif args.command == "groundtruth-report":
         write_groundtruth_report(args.manifest, args.output)
     elif args.command == "reference-review-candidates":

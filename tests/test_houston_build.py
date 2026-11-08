@@ -72,3 +72,26 @@ class HoustonEvidenceBuildTests(unittest.TestCase):
             self.assertEqual(evidence["cumulative_compaction_change_ft"], 1.5)
             self.assertEqual(evidence["opera_historic_pair_displacement_mm"], -3.0)
 
+
+
+class ReReferencingTests(unittest.TestCase):
+    def test_cells_are_re_referenced_to_the_reference_region_median(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            # A frame-wide +20 mm offset must not turn every cell into a signal.
+            cells = [{"cell_id": f"r{i}", "longitude": -95.3 + i * 0.001, "latitude": 29.7, "pair_los_displacement_mm": 20 + d, "coherence_median": 0.8, "valid_fraction": 0.9, "in_main_connected_component": True} for i, d in enumerate([-1, 0, 1, 0.5, -0.5])]
+            cells.append({"cell_id": "far", "longitude": -95.0, "latitude": 29.9, "pair_los_displacement_mm": 20.2, "coherence_median": 0.8, "valid_fraction": 0.9, "in_main_connected_component": True})
+            nisar = {"parameters": {"acquisition_dates": ["2025-11-02", "2025-11-14"]}, "cells": cells}
+            empty = {"stations": []}
+            paths = []
+            for name, payload in (("nisar.json", nisar), ("gps.json", empty), ("water.json", {"series": []}), ("fema.json", empty)):
+                path = root / name
+                path.write_text(json.dumps(payload), encoding="utf-8")
+                paths.append(path)
+            result = build_houston_evidence(*paths, reference_bbox=(-95.31, 29.69, -95.29, 29.71), reference_status="provisional_unreviewed")
+            self.assertAlmostEqual(result["reference_median_mm"], 20.0)
+            far = next(cell for cell in result["cells"] if cell["cell_id"] == "far")
+            self.assertAlmostEqual(far["pair_los_displacement_mm"], 0.2)
+            self.assertAlmostEqual(far["pair_los_displacement_raw_mm"], 20.2)
+            self.assertEqual(far["source_status"], "source_derived_provisional_reference")
+            self.assertEqual(result["reference_status"], "provisional_unreviewed")

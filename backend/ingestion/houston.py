@@ -30,7 +30,7 @@ def _robust_scatter(values: list[float]) -> float:
     return 1.4826 * median(deviations)
 
 
-def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None) -> dict[str, Any]:
+def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "reviewed", reference_cell_ids: set[str] | None = None) -> dict[str, Any]:
     """Join actual source-derived artifacts without fabricating a cell flood overlay.
 
     FEMA data currently exists only at USGS monitoring locations. Therefore
@@ -50,12 +50,21 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     if not good:
         raise ValueError("NISAR artifact contains no cells passing the reference quality gate")
     reference_cells = []
-    if reference_bbox is not None:
+    if reference_cell_ids is not None:
+        reference_cells = [row for row in good if row["cell_id"] in reference_cell_ids]
+        if len(reference_cells) < 3:
+            raise ValueError("reference cell set needs at least three quality-controlled cells")
+    elif reference_bbox is not None:
         west, south, east, north = reference_bbox
         reference_cells = [row for row in good if west <= float(row["longitude"]) <= east and south <= float(row["latitude"]) <= north]
         if len(reference_cells) < 3:
             raise ValueError("reference region needs at least three quality-controlled cells")
-    scatter = _robust_scatter([float(row["pair_los_displacement_mm"]) for row in reference_cells]) if reference_cells else None
+    # InSAR is relative: every cell is re-referenced to the median of the
+    # reference region before any threshold is applied. Without this step a
+    # constant phase offset across the frame would make every cell look like a
+    # "signal" (the raw Houston pair has a frame-wide offset of ~20 mm).
+    reference_median = median(float(row["pair_los_displacement_mm"]) for row in reference_cells) if reference_cells else None
+    scatter = _robust_scatter([float(row["pair_los_displacement_mm"]) - reference_median for row in reference_cells]) if reference_cells else None
     groundwater_by_site: dict[str, dict[str, Any]] = {}
     for row in groundwater["series"]:
         groundwater_by_site.setdefault(row["site_id"], row)
@@ -95,22 +104,26 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "cell_id": row["cell_id"],
             "longitude": longitude,
             "latitude": latitude,
-            "pair_los_displacement_mm": row.get("pair_los_displacement_mm"),
+            "pair_los_displacement_mm": (float(row["pair_los_displacement_mm"]) - reference_median) if (reference_median is not None and row.get("pair_los_displacement_mm") is not None) else row.get("pair_los_displacement_mm"),
+            "pair_los_displacement_raw_mm": row.get("pair_los_displacement_mm"),
             "reference_scatter_mm": scatter,
             "coherence_median": row.get("coherence_median"),
             "valid_fraction": row.get("valid_fraction"),
             "in_main_connected_component": bool(row.get("in_main_connected_component")),
             "flood_exposed": flood_cells.get(row["cell_id"], {}).get("flood_exposed") if flood_context else None,
             "evidence": evidence,
-            "source_status": "source_derived_context_only",
+            "source_status": "source_derived_context_only" if scatter is None else ("source_derived_provisional_reference" if reference_status != "reviewed" else "source_derived"),
             "temporal_los_rate_mm_year": None,
             "temporal_network_adequate": False,
         })
     return {
-        "dataset_status": "source_derived_pairwise_evidence_without_validated_reference_region" if scatter is None and flood_context else "source_derived_context_only_without_validated_reference_region_or_cell_flood_overlay" if scatter is None else "source_derived_context_only_without_cell_flood_overlay",
+        "dataset_status": ("source_derived_pairwise_evidence_provisional_reference_unreviewed" if reference_status != "reviewed" else "source_derived_pairwise_evidence_reviewed_reference") if scatter is not None and flood_context else "source_derived_pairwise_evidence_without_validated_reference_region" if scatter is None and flood_context else "source_derived_context_only_without_validated_reference_region_or_cell_flood_overlay" if scatter is None else "source_derived_context_only_without_cell_flood_overlay",
         "artifact_type": "terragauge_houston_pairwise_evidence_cells",
         "reference_scatter_mm": scatter,
-        "reference_region_bbox": list(reference_bbox) if reference_bbox is not None else None,
+        "reference_median_mm": reference_median,
+        "reference_status": reference_status if scatter is not None else None,
+        "reference_region_bbox": list(reference_bbox) if reference_bbox is not None and reference_cell_ids is None else None,
+        "reference_cell_ids": sorted(row["cell_id"] for row in reference_cells) if reference_cell_ids is not None else None,
         "reference_cell_count": len(reference_cells),
         "reference_scatter_method": "1.4826 times median absolute deviation inside the explicitly supplied, independently justified stable-reference region; this is a planning threshold, not a full atmospheric uncertainty model." if scatter is not None else "Not calculated: a stable reference region has not been independently justified.",
         "limitations": [
@@ -125,5 +138,5 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     }
 
 
-def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None) -> None:
-    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path, compaction_path, opera_path), indent=2), encoding="utf-8")
+def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "reviewed") -> None:
+    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path, compaction_path, opera_path, reference_status), indent=2), encoding="utf-8")

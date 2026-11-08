@@ -71,7 +71,7 @@ def extract_disp_cells(path: str | Path, config: OperaConfig) -> dict[str, Any]:
                 "latitude": lat,
                 "opera_pair_displacement_mm": median_or_none(np.where(valid, displacement[section] * 1000.0, np.nan)),
                 "opera_valid_fraction": float(np.count_nonzero(valid) / valid.size),
-                "opera_water_fraction": float(np.count_nonzero(water_mask[section] > 0) / water_mask[section].size),
+                "opera_water_fraction": water_fraction(water_mask[section]),
                 "source_status": "source_derived",
             })
     return {
@@ -85,6 +85,21 @@ def extract_disp_cells(path: str | Path, config: OperaConfig) -> dict[str, Any]:
         ],
         "cells": records,
     }
+
+
+def water_fraction(water_mask_section) -> float:
+    """Fraction of water pixels in an OPERA DISP-S1 water_mask window.
+
+    The DISP-S1 Product Specification (section 3.2) defines the layer as a
+    binary mask "where 0 indicates water and 1 indicates land". Counting
+    non-zero pixels would therefore measure land, not water.
+    """
+    import numpy as np
+
+    values = np.asarray(water_mask_section)
+    if values.size == 0:
+        return 0.0
+    return float(np.count_nonzero(values == 0) / values.size)
 
 
 def write_disp_cells(input_path: str | Path, output_path: str | Path, config: OperaConfig) -> None:
