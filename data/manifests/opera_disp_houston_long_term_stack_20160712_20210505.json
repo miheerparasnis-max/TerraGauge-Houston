@@ -1,0 +1,171 @@
+{
+  "artifact_type": "opera_disp_s1_houston_long_term_stack_manifest",
+  "product": "NASA JPL OPERA L3 DISP-S1 v1.0, frame F38238, VV",
+  "study_area_wgs84_bbox": [
+    -95.95,
+    29.4,
+    -94.8,
+    30.2
+  ],
+  "source_crs": "EPSG:32615",
+  "source_resolution_m": 30,
+  "quality_rule": "Aggregate only pixels where recommended_mask == 1; record water-mask fraction per 1 km cell.",
+  "source_files": [
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20160712T122240Z_20161109T122243Z_v1.0_20251023T225135Z.nc",
+      "sha256": "65b3bfefbcea57bc571588437983da81dceee75cfa7bc5268dbc4d21de892141",
+      "bytes": 360710144,
+      "reference_acquisition_utc": "20160712T122240Z",
+      "secondary_acquisition_utc": "20161109T122243Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20161109T122243Z_20170213T122240Z_v1.0_20251024T050024Z.nc",
+      "sha256": "7472e9fc6ca30c2f3034f5cbc3554524578dc568ab2124aa00f4ad83e08ed365",
+      "bytes": 352321536,
+      "reference_acquisition_utc": "20161109T122243Z",
+      "secondary_acquisition_utc": "20170213T122240Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20170213T122240Z_20170514T122200Z_v1.0_20251024T113225Z.nc",
+      "sha256": "2bf1a21a893ea5151872335251c1afe03d50bab707223055ff2bab04bd6b77c8",
+      "bytes": 356515840,
+      "reference_acquisition_utc": "20170213T122240Z",
+      "secondary_acquisition_utc": "20170514T122200Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20170514T122200Z_20170812T122247Z_v1.0_20251024T182409Z.nc",
+      "sha256": "c0915af3c3fdb328c0cf02b1c2aaf253e530da7da50b51217c23d28422806906",
+      "bytes": 364904448,
+      "reference_acquisition_utc": "20170514T122200Z",
+      "secondary_acquisition_utc": "20170812T122247Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20170812T122247Z_20171110T122207Z_v1.0_20251025T010759Z.nc",
+      "sha256": "204d42908ec05780dade9114c975209333bb05891bad79bfe3570fbad76f924a",
+      "bytes": 356515840,
+      "reference_acquisition_utc": "20170812T122247Z",
+      "secondary_acquisition_utc": "20171110T122207Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20171110T122207Z_20180208T122246Z_v1.0_20251025T074925Z.nc",
+      "sha256": "e57026d8a6702dfc126415e8964e3e9a313218227fcb64e083ec9fc04459c3b2",
+      "bytes": 327155712,
+      "reference_acquisition_utc": "20171110T122207Z",
+      "secondary_acquisition_utc": "20180208T122246Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20180208T122246Z_20180515T122248Z_v1.0_20251025T143227Z.nc",
+      "sha256": "b41c7802c08b8d01424414e2e34c44b09e25cdabcf7b6b1e811268698b9370ca",
+      "bytes": 356515840,
+      "reference_acquisition_utc": "20180208T122246Z",
+      "secondary_acquisition_utc": "20180515T122248Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20180515T122248Z_20180813T122212Z_v1.0_20251025T210720Z.nc",
+      "sha256": "9ea3bbf5bbd1f5975319a98a9536f69257b5f57bded9f6712a0492cdba5cbe94",
+      "bytes": 369098752,
+      "reference_acquisition_utc": "20180515T122248Z",
+      "secondary_acquisition_utc": "20180813T122212Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20180813T122212Z_20181111T122256Z_v1.0_20251026T034326Z.nc",
+      "sha256": "19e6e92c9351b592c4ec3f6a5771f295f354a21e40bbb9b7834d4744dd2044f0",
+      "bytes": 356515840,
+      "reference_acquisition_utc": "20180813T122212Z",
+      "secondary_acquisition_utc": "20181111T122256Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20181111T122256Z_20190209T122211Z_v1.0_20251026T101819Z.nc",
+      "sha256": "3568802b3845f77a6e30c9962e3a3fcb0fccf6d2c710af2f2079f05b8d99d5af",
+      "bytes": 335544320,
+      "reference_acquisition_utc": "20181111T122256Z",
+      "secondary_acquisition_utc": "20190209T122211Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20190209T122211Z_20190510T122254Z_v1.0_20251026T171236Z.nc",
+      "sha256": "c8375387d321d68b6b2ca74a9302d96ce66612bae5ee0f479d2c46e48e3dfed3",
+      "bytes": 364904448,
+      "reference_acquisition_utc": "20190209T122211Z",
+      "secondary_acquisition_utc": "20190510T122254Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20190510T122254Z_20190808T122218Z_v1.0_20251026T235822Z.nc",
+      "sha256": "93ac25ed13a16584b1407b448905fd76b6d2e988846ad005552a671bade9774d",
+      "bytes": 364904448,
+      "reference_acquisition_utc": "20190510T122254Z",
+      "secondary_acquisition_utc": "20190808T122218Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20190808T122218Z_20191106T122302Z_v1.0_20251027T063439Z.nc",
+      "sha256": "2fc910d929b8a3eeb1a435cf29e7755ad0a9d48207d26166a5794fc0d92f51fa",
+      "bytes": 356515840,
+      "reference_acquisition_utc": "20190808T122218Z",
+      "secondary_acquisition_utc": "20191106T122302Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20191106T122302Z_20200204T122218Z_v1.0_20251027T133252Z.nc",
+      "sha256": "203d4a4b84fcd0eaf3e81f719ac9e0b9d297b8cf2a8d3de26a5192ee06aa7610",
+      "bytes": 339738624,
+      "reference_acquisition_utc": "20191106T122302Z",
+      "secondary_acquisition_utc": "20200204T122218Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20200204T122218Z_20200504T122301Z_v1.0_20251027T204914Z.nc",
+      "sha256": "796c12e8901f594c63b2d180e3060fb3963bf1eca5d73a5b6152214f649bff8e",
+      "bytes": 373293056,
+      "reference_acquisition_utc": "20200204T122218Z",
+      "secondary_acquisition_utc": "20200504T122301Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20200504T122301Z_20200802T122224Z_v1.0_20251028T040520Z.nc",
+      "sha256": "d24ceb78ba5626792b93259f8ce1eb9756dd979f9bda4b0f53703036ee19834d",
+      "bytes": 369098752,
+      "reference_acquisition_utc": "20200504T122301Z",
+      "secondary_acquisition_utc": "20200802T122224Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20200802T122224Z_20201031T122309Z_v1.0_20251029T233033Z.nc",
+      "sha256": "733a0e2631adf0ee88e394840883d8ebec7aa0c59aa3d1692b4a3c5f50a1ceb7",
+      "bytes": 369098752,
+      "reference_acquisition_utc": "20200802T122224Z",
+      "secondary_acquisition_utc": "20201031T122309Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20201031T122309Z_20210204T122305Z_v1.0_20251030T061834Z.nc",
+      "sha256": "d0af01cbb027abd8de86913389486bce94f973342222427598ea0b69f920bc84",
+      "bytes": 360710144,
+      "reference_acquisition_utc": "20201031T122309Z",
+      "secondary_acquisition_utc": "20210204T122305Z"
+    },
+    {
+      "filename": "OPERA_L3_DISP-S1_IW_F38238_VV_20210204T122305Z_20210505T122225Z_v1.0_20251030T131314Z.nc",
+      "sha256": "764ea0afddb1ad19717b4e1ce612e18d90f75636232ff06d27f60e96d07bbf04",
+      "bytes": 364904448,
+      "reference_acquisition_utc": "20210204T122305Z",
+      "secondary_acquisition_utc": "20210505T122225Z"
+    }
+  ],
+  "derived_pair_artifacts": [
+    "data/derived/opera_disp_houston_20160712_20161109_pair_cells.json",
+    "data/derived/opera_disp_houston_20161109_20170213_pair_cells.json",
+    "data/derived/opera_disp_houston_20170213_20170514_pair_cells.json",
+    "data/derived/opera_disp_houston_20170514_20170812_pair_cells.json",
+    "data/derived/opera_disp_houston_20170812_20171110_pair_cells.json",
+    "data/derived/opera_disp_houston_20171110_20180208_pair_cells.json",
+    "data/derived/opera_disp_houston_20180208_20180515_pair_cells.json",
+    "data/derived/opera_disp_houston_20180515_20180813_pair_cells.json",
+    "data/derived/opera_disp_houston_20180813_20181111_pair_cells.json",
+    "data/derived/opera_disp_houston_20181111_20190209_pair_cells.json",
+    "data/derived/opera_disp_houston_20190209_20190510_pair_cells.json",
+    "data/derived/opera_disp_houston_20190510_20190808_pair_cells.json",
+    "data/derived/opera_disp_houston_20190808_20191106_pair_cells.json",
+    "data/derived/opera_disp_houston_20191106_20200204_pair_cells.json",
+    "data/derived/opera_disp_houston_20200204_20200504_pair_cells.json",
+    "data/derived/opera_disp_houston_20200504_20200802_pair_cells.json",
+    "data/derived/opera_disp_houston_20200802_20201031_pair_cells.json",
+    "data/derived/opera_disp_houston_20201031_20210204_pair_cells.json",
+    "data/derived/opera_disp_houston_20210204_20210505_pair_cells.json"
+  ],
+  "temporal_result": "data/derived/opera_houston_temporal_rate_20160712_20210505.json",
+  "rate_interpretation": "No rate is released unless the temporal diagnostic passes its redundancy and stable-reference safeguards."
+}
