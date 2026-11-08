@@ -52,3 +52,23 @@ class HoustonEvidenceBuildTests(unittest.TestCase):
             self.assertTrue(result["cells"][0]["flood_exposed"])
             self.assertEqual(result["cells"][0]["evidence"]["flood_zone"], "AE")
 
+    def test_build_adds_compaction_and_opera_as_context_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            nisar = {"parameters": {"acquisition_dates": ["2025-11-02", "2025-11-14"]}, "cells": [{"cell_id": "a", "longitude": -95.3, "latitude": 29.7, "pair_los_displacement_mm": -10, "coherence_median": 0.6, "valid_fraction": 0.8, "in_main_connected_component": True}]}
+            empty = {"stations": []}
+            groundwater = {"series": []}
+            fema = {"stations": []}
+            compaction = {"stations": [{"station_id": "EXT-1", "longitude": -95.3, "latitude": 29.7, "cumulative_compaction_change": 1.5}]}
+            opera = {"cells": [{"cell_id": "a", "opera_pair_displacement_mm": -3.0, "opera_valid_fraction": 0.8}]}
+            paths = []
+            for name, payload in (("nisar.json", nisar), ("gps.json", empty), ("water.json", groundwater), ("fema.json", fema), ("compaction.json", compaction), ("opera.json", opera)):
+                path = root / name
+                path.write_text(json.dumps(payload), encoding="utf-8")
+                paths.append(path)
+            result = build_houston_evidence(*paths[:4], compaction_path=paths[4], opera_path=paths[5])
+            evidence = result["cells"][0]["evidence"]
+            self.assertEqual(evidence["nearest_extensometer_station"], "EXT-1")
+            self.assertEqual(evidence["cumulative_compaction_change_ft"], 1.5)
+            self.assertEqual(evidence["opera_historic_pair_displacement_mm"], -3.0)
+

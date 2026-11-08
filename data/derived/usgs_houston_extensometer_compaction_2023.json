@@ -1,0 +1,322 @@
+{
+  "artifact_type": "usgs_extensometer_compaction_summary",
+  "source_release": "USGS DOI 10.5066/P9YGUE2V, version 6.0 (September 2024), cumulative compaction through 2023",
+  "source_directory": "data/raw/usgs_extensometer_2023",
+  "station_count": 14,
+  "stations": [
+    {
+      "station_id": "294726095351102",
+      "station_name": "LJ-65-12-726 (Addicks Extensometer)",
+      "general_name": "Addicks",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 1802.0,
+      "longitude": -95.5861,
+      "latitude": 29.7907,
+      "cell_id": "epsg3857-1km--10641-3476",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1974-07-11",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-29",
+        "cumulative_compaction": 3.883
+      },
+      "cumulative_compaction_change": 3.883,
+      "observation_count": 631,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "292458094534206",
+      "station_name": "KH-64-33-920 (Texas City Extensometer)",
+      "general_name": "Texas City",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 800.0,
+      "longitude": -94.895,
+      "latitude": 29.4163,
+      "cell_id": "epsg3857-1km--10564-3428",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-13",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-26",
+        "cumulative_compaction": 0.103
+      },
+      "cumulative_compaction_change": 0.103,
+      "observation_count": 647,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294338095270402",
+      "station_name": "LJ-65-21-226 (Southwest Extensometer)",
+      "general_name": "Southwest",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 2358.0,
+      "longitude": -95.4508,
+      "latitude": 29.727,
+      "cell_id": "epsg3857-1km--10626-3468",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1980-06-17",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-28",
+        "cumulative_compaction": 1.756
+      },
+      "cumulative_compaction_change": 1.756,
+      "observation_count": 555,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "293352095011601",
+      "station_name": "LJ-65-32-625 (Seabrook Extensometer)",
+      "general_name": "Seabrook",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 1381.0,
+      "longitude": -95.0215,
+      "latitude": 29.5648,
+      "cell_id": "epsg3857-1km--10578-3447",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-20",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-26",
+        "cumulative_compaction": 1.587
+      },
+      "cumulative_compaction_change": 1.587,
+      "observation_count": 656,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294237095093204",
+      "station_name": "LJ-65-23-322 (Pasadena Extensometer)",
+      "general_name": "Pasadena",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 2831.0,
+      "longitude": -95.1593,
+      "latitude": 29.7102,
+      "cell_id": "epsg3857-1km--10594-3466",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1975-10-08",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-27",
+        "cumulative_compaction": 0.474
+      },
+      "cumulative_compaction_change": 0.474,
+      "observation_count": 622,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294728095200106",
+      "station_name": "LJ-65-14-746 (Northeast Extensometer)",
+      "general_name": "Northeast",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 2170.0,
+      "longitude": -95.334,
+      "latitude": 29.7909,
+      "cell_id": "epsg3857-1km--10613-3476",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1980-06-24",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-28",
+        "cumulative_compaction": 1.128
+      },
+      "cumulative_compaction_change": 1.128,
+      "observation_count": 553,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "295449095084105",
+      "station_name": "LJ-65-07-909 (Lake Houston Extensometer)",
+      "general_name": "Lake Houston",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 2592.0,
+      "longitude": -95.1455,
+      "latitude": 29.9132,
+      "cell_id": "epsg3857-1km--10592-3492",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1980-07-22",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-28",
+        "cumulative_compaction": 0.683
+      },
+      "cumulative_compaction_change": 0.683,
+      "observation_count": 551,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "293306095054101",
+      "station_name": "LJ-65-32-401 (NASA Extensometer)",
+      "general_name": "Johnson Space Center",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 770.0,
+      "longitude": -95.096,
+      "latitude": 29.5519,
+      "cell_id": "epsg3857-1km--10587-3446",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-24",
+        "cumulative_compaction": 1.347
+      },
+      "last_observation": {
+        "date": "2023-12-27",
+        "cumulative_compaction": 2.591
+      },
+      "cumulative_compaction_change": 1.2440000000000002,
+      "observation_count": 646,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294206095162601",
+      "station_name": "LJ-65-22-622 (East End Extensometer)",
+      "general_name": "East End",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 995.0,
+      "longitude": -95.2741,
+      "latitude": 29.7017,
+      "cell_id": "epsg3857-1km--10606-3465",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-20",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-27",
+        "cumulative_compaction": 1.363
+      },
+      "cumulative_compaction_change": 1.363,
+      "observation_count": 650,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "293349095070901",
+      "station_name": "LJ-65-32-424 (Clear Lake Shallow Extensometer)",
+      "general_name": "Clear Lake Shallow",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 1740.0,
+      "longitude": -95.1193,
+      "latitude": 29.5638,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1976-05-26",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-27",
+        "cumulative_compaction": 0.691
+      },
+      "cumulative_compaction_change": 0.691,
+      "observation_count": 605,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "293348095070604",
+      "station_name": "LJ-65-32-428 (Clear Lake Deep Extensometer)",
+      "general_name": "Clear Lake Deep",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 3072.0,
+      "longitude": -95.1189,
+      "latitude": 29.5634,
+      "cell_id": "epsg3857-1km--10589-3447",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1976-05-26",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-27",
+        "cumulative_compaction": 0.706
+      },
+      "cumulative_compaction_change": 0.706,
+      "observation_count": 607,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294527095014910",
+      "station_name": "LJ-65-16-930 (Baytown C-1 Extensometer)",
+      "general_name": "Baytown Shallow",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 431.0,
+      "longitude": -95.0307,
+      "latitude": 29.75784,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-24",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-26",
+        "cumulative_compaction": 0.97
+      },
+      "cumulative_compaction_change": 0.97,
+      "observation_count": 696,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294527095014911",
+      "station_name": "LJ-65-16-931 (Baytown C-2 Extensometer)",
+      "general_name": "Baytown Deep",
+      "compaction_interval": "CHICOT",
+      "anchor_depth_ft": 1475.0,
+      "longitude": -95.0307,
+      "latitude": 29.75784,
+      "cell_id": "epsg3857-1km--10579-3472",
+      "unit": "ft",
+      "first_observation": {
+        "date": "1973-07-24",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2022-11-02",
+        "cumulative_compaction": 1.162
+      },
+      "cumulative_compaction_change": 1.162,
+      "observation_count": 701,
+      "source_status": "source_derived"
+    },
+    {
+      "station_id": "294327095445201",
+      "station_name": "JY-65-29-106 (Fort Bend Extensometer)",
+      "general_name": "Fort Bend",
+      "compaction_interval": "CHICOT AND EVANGELINE",
+      "anchor_depth_ft": 2000.0,
+      "longitude": -95.7478,
+      "latitude": 29.7242,
+      "cell_id": "epsg3857-1km--10659-3468",
+      "unit": "ft",
+      "first_observation": {
+        "date": "2017-01-13",
+        "cumulative_compaction": 0.0
+      },
+      "last_observation": {
+        "date": "2023-12-29",
+        "cumulative_compaction": 0.038
+      },
+      "cumulative_compaction_change": 0.038,
+      "observation_count": 76,
+      "source_status": "source_derived"
+    }
+  ],
+  "skipped_files": [],
+  "limitations": [
+    "Cumulative compaction is station-specific subsurface mechanism context, not a citywide motion map.",
+    "Do not compare values across stations until datum, monitored interval, and time span are reviewed.",
+    "A compaction change does not prove the cause of a radar observation."
+  ]
+}

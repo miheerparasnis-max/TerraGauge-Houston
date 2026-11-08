@@ -1,0 +1,12 @@
+{
+  "collection": "OPERA_L3_DISP-S1_V1",
+  "granule": "OPERA_L3_DISP-S1_IW_F38238_VV_20160712T122240Z_20161016T122243Z_v1.0_20251023T225135Z.nc",
+  "source": "NASA OPERA/ASF Earthdata",
+  "acquisition_dates": ["2016-07-12", "2016-10-16"],
+  "track": 143,
+  "frame": 38238,
+  "product_crs": "EPSG:32615",
+  "derived_artifact": "data/derived/opera_disp_houston_20160712_20161016_pair_cells.json",
+  "study_bounds_wgs84": [-95.95, 29.4, -94.8, 30.2],
+  "scientific_limit": "One quality-masked OPERA pairwise line-of-sight observation. It is historical context, not an annual trend, NISAR validation, or causal diagnosis."
+}

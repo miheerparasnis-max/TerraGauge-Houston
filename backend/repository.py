@@ -57,6 +57,11 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
         usgs_site_id=_optional_string(evidence_data.get("usgs_site_id"), "usgs_site_id"),
         usgs_distance_km=_number(evidence_data.get("usgs_distance_km"), "usgs_distance_km"),
         groundwater_depth_change_ft=_number(evidence_data.get("groundwater_depth_change_ft"), "groundwater_depth_change_ft"),
+        nearest_extensometer_station=_optional_string(evidence_data.get("nearest_extensometer_station"), "nearest_extensometer_station"),
+        extensometer_distance_km=_number(evidence_data.get("extensometer_distance_km"), "extensometer_distance_km"),
+        cumulative_compaction_change_ft=_number(evidence_data.get("cumulative_compaction_change_ft"), "cumulative_compaction_change_ft"),
+        opera_historic_pair_displacement_mm=_number(evidence_data.get("opera_historic_pair_displacement_mm"), "opera_historic_pair_displacement_mm"),
+        opera_historic_valid_fraction=_number(evidence_data.get("opera_historic_valid_fraction"), "opera_historic_valid_fraction"),
         flood_source=_optional_string(evidence_data.get("flood_source"), "flood_source"),
         flood_zone=_optional_string(evidence_data.get("flood_zone"), "flood_zone"),
     )

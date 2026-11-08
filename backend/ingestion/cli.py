@@ -16,7 +16,7 @@ from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
 from .temporal import write_network_diagnostic
 from .quality import write_pair_integrity_report
-from .compaction import write_extensometer_csv
+from .compaction import write_extensometer_csv, write_usgs_2023_release
 
 
 def main() -> None:
@@ -47,6 +47,7 @@ def main() -> None:
     opera.add_argument("--displacement-path", default="/displacement")
     opera.add_argument("--recommended-mask-path", default="/recommended_mask")
     opera.add_argument("--cell-pixels", type=int, default=33)
+    opera.add_argument("--bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="optional WGS84 bounds for a compact study-area artifact")
     opera.add_argument("--reference-date", required=True)
     opera.add_argument("--secondary-date", required=True)
     hn = commands.add_parser("houstonnet-velocities", help="normalize a checked HoustonNet velocity CSV")
@@ -82,6 +83,8 @@ def main() -> None:
     evidence.add_argument("output")
     evidence.add_argument("--reference-bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), help="independently justified stable-reference region; omitted means no signal threshold is calculated")
     evidence.add_argument("--cell-flood-context", default=None, help="output of fema-cell-context; omitted means no cell-level flood label is assigned")
+    evidence.add_argument("--compaction", default=None, help="normalized USGS extensometer-compaction summary; adds mechanism context only")
+    evidence.add_argument("--opera-historic-pair", default=None, help="quality-masked OPERA historical pair; adds context only, never a rate")
     groundtruth = commands.add_parser("groundtruth-report", help="validate GroundTruth Node session artifacts")
     groundtruth.add_argument("manifest")
     groundtruth.add_argument("output")
@@ -100,6 +103,9 @@ def main() -> None:
     compaction.add_argument("output")
     compaction.add_argument("--column-map", required=True, help="JSON mapping for station_id, longitude, latitude, date, cumulative_compaction")
     compaction.add_argument("--unit", default="ft")
+    compaction_release = commands.add_parser("usgs-extensometer-release", help="normalize the official USGS 2023 TABLE1/TABLE2-15 extensometer release")
+    compaction_release.add_argument("directory")
+    compaction_release.add_argument("output")
     args = parser.parse_args()
     if args.command == "inspect-h5":
         print(json.dumps(inspect_hdf5(args.input), indent=2))
@@ -112,7 +118,7 @@ def main() -> None:
         if args.components_path: kwargs["connected_components_path"] = args.components_path
         write_pair_cells(args.input, args.output, GunwConfig(**kwargs))
     elif args.command == "opera-disp":
-        write_disp_cells(args.input, args.output, OperaConfig(crs=args.crs, x_path=args.x_path, y_path=args.y_path, displacement_path=args.displacement_path, recommended_mask_path=args.recommended_mask_path, cell_pixels=args.cell_pixels, reference_date=args.reference_date, secondary_date=args.secondary_date))
+        write_disp_cells(args.input, args.output, OperaConfig(crs=args.crs, x_path=args.x_path, y_path=args.y_path, displacement_path=args.displacement_path, recommended_mask_path=args.recommended_mask_path, cell_pixels=args.cell_pixels, reference_date=args.reference_date, secondary_date=args.secondary_date, bounding_box=tuple(args.bbox) if args.bbox else None))
     elif args.command == "usgs-groundwater":
         write_groundwater_daily(args.input, args.output)
     elif args.command == "fema-nfhl-join":
@@ -124,7 +130,7 @@ def main() -> None:
     elif args.command == "fema-cell-context":
         write_cell_center_flood_context(args.nisar, args.overlay, args.output)
     elif args.command == "build-houston-evidence":
-        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None, args.cell_flood_context)
+        write_houston_evidence(args.nisar, args.houstonnet, args.groundwater, args.fema, args.output, tuple(args.reference_bbox) if args.reference_bbox else None, args.cell_flood_context, args.compaction, args.opera_historic_pair)
     elif args.command == "groundtruth-report":
         write_groundtruth_report(args.manifest, args.output)
     elif args.command == "reference-review-candidates":
@@ -135,6 +141,8 @@ def main() -> None:
         write_pair_integrity_report(args.input, args.output)
     elif args.command == "usgs-extensometer":
         write_extensometer_csv(args.input, args.output, json.loads(args.column_map), args.unit)
+    elif args.command == "usgs-extensometer-release":
+        write_usgs_2023_release(args.directory, args.output)
     else:
         write_velocity_stations(args.input, args.output, json.loads(args.column_map))
 

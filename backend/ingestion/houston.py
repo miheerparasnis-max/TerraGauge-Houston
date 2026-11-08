@@ -30,7 +30,7 @@ def _robust_scatter(values: list[float]) -> float:
     return 1.4826 * median(deviations)
 
 
-def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None) -> dict[str, Any]:
+def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None) -> dict[str, Any]:
     """Join actual source-derived artifacts without fabricating a cell flood overlay.
 
     FEMA data currently exists only at USGS monitoring locations. Therefore
@@ -42,6 +42,9 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     groundwater = json.loads(Path(groundwater_path).read_text(encoding="utf-8"))
     fema = json.loads(Path(fema_path).read_text(encoding="utf-8"))
     flood_context = json.loads(Path(cell_flood_context_path).read_text(encoding="utf-8")) if cell_flood_context_path else None
+    compaction = json.loads(Path(compaction_path).read_text(encoding="utf-8")) if compaction_path else None
+    opera = json.loads(Path(opera_path).read_text(encoding="utf-8")) if opera_path else None
+    opera_cells = {row["cell_id"]: row for row in opera.get("cells", [])} if opera else {}
     flood_cells = {row["cell_id"]: row for row in flood_context.get("cells", [])} if flood_context else {}
     good = [row for row in nisar["cells"] if row.get("in_main_connected_component") and row.get("coherence_median") is not None and row.get("coherence_median") >= 0.4 and row.get("valid_fraction", 0) >= 0.5 and row.get("pair_los_displacement_mm") is not None]
     if not good:
@@ -66,6 +69,8 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
         longitude, latitude = float(row["longitude"]), float(row["latitude"])
         gps, gps_distance = _nearest(longitude, latitude, houstonnet["stations"], "station_id")
         water, water_distance = _nearest(longitude, latitude, groundwater_sites, "site_id")
+        extensometer, extensometer_distance = _nearest(longitude, latitude, compaction.get("stations", []) if compaction else [], "station_id")
+        historic_opera = opera_cells.get(row["cell_id"])
         evidence = {
             "nisar_acquisition_dates": nisar["parameters"]["acquisition_dates"],
             "nearest_gps_station": gps.get("station_id") if gps else None,
@@ -77,6 +82,11 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "usgs_site_id": water.get("site_id") if water else None,
             "usgs_distance_km": water_distance,
             "groundwater_depth_change_ft": water.get("depth_change_ft") if water else None,
+            "nearest_extensometer_station": extensometer.get("station_id") if extensometer else None,
+            "extensometer_distance_km": extensometer_distance,
+            "cumulative_compaction_change_ft": extensometer.get("cumulative_compaction_change") if extensometer else None,
+            "opera_historic_pair_displacement_mm": historic_opera.get("opera_pair_displacement_mm") if historic_opera else None,
+            "opera_historic_valid_fraction": historic_opera.get("opera_valid_fraction") if historic_opera else None,
             "flood_source": flood_context.get("source_layer") if flood_context else (water.get("flood_source") if water else None),
             "flood_zone": flood_cells.get(row["cell_id"], {}).get("flood_zone") if flood_context else (water.get("flood_zone") if water else None),
         }
@@ -107,11 +117,12 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
             "No pair-signal threshold is applied until an independently justified stable-reference region is supplied.",
             "HoustonNet values are historic context and are not time-matched validation of the NISAR pair.",
             "FEMA classifications are available at USGS monitoring locations only; no cell-level flood overlay is asserted." if not flood_context else "FEMA context is sampled at the aggregated NISAR-cell center and is not flood depth, parcel advice, or a forecast.",
+            "OPERA historical values, when present, are a single 2016 pairwise LOS context field; they are not an annual historical trend or a direct validation of NISAR.",
         ],
-        "sources": {"nisar": str(nisar_path), "houstonnet": str(houstonnet_path), "groundwater": str(groundwater_path), "fema": str(fema_path), "cell_flood_context": str(cell_flood_context_path) if cell_flood_context_path else None},
+        "sources": {"nisar": str(nisar_path), "houstonnet": str(houstonnet_path), "groundwater": str(groundwater_path), "fema": str(fema_path), "cell_flood_context": str(cell_flood_context_path) if cell_flood_context_path else None, "compaction": str(compaction_path) if compaction_path else None, "opera_historic_pair": str(opera_path) if opera_path else None},
         "cells": cells,
     }
 
 
-def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None) -> None:
-    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path), indent=2), encoding="utf-8")
+def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None) -> None:
+    Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path, compaction_path, opera_path), indent=2), encoding="utf-8")

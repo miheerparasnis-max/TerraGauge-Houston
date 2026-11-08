@@ -158,11 +158,14 @@ python3 -m backend.ingestion.cli temporal-network-diagnostic data/derived/nisar_
 ### OPERA DISP-S1
 
 OPERA context is ingested from the raw displacement layer and recommended mask,
-not a portal screenshot or color ramp:
+not a portal screenshot or color ramp. The checked Houston artifact is
+`data/derived/opera_disp_houston_20160712_20161016_pair_cells.json`: 10,580
+quality-masked ~1 km cells from a real 2016 OPERA product. It is joined only as
+historical pairwise context; no annual trend is claimed.
 
 ```bash
-python3 -m backend.ingestion.cli opera-disp /path/to/OPERA_DISP.h5 data/derived/opera-pair.json \
-  --crs EPSG:32615 --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
+python3 -m backend.ingestion.cli opera-disp /path/to/OPERA_DISP.nc data/derived/opera-pair.json \
+  --crs EPSG:32615 --bbox -95.95 29.4 -94.8 30.2 --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
 ```
 
 Only `recommended_mask == 1` pixels are included. Build an OPERA historic trend
@@ -209,6 +212,11 @@ python3 -m backend.ingestion.cli usgs-extensometer input.csv data/derived/usgs_e
   --unit ft
 ```
 
+The checked Houston output is
+`data/derived/usgs_houston_extensometer_compaction_2023.json`, derived from the
+official USGS 2023 release's TABLE1 plus TABLE2–15 layout. It contains all 14
+published station series and is joined to the evidence cards by nearest station.
+
 ### FEMA flood-exposure evidence
 
 Save a FEMA National Flood Hazard Layer point-query response for each evidence
@@ -233,7 +241,10 @@ python3 -m backend.ingestion.cli build-houston-evidence \
   data/derived/houstonnet_2024_summary.json \
   data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json \
   data/derived/fema_nfhl_usgs_station_join_2026-11-07.json \
-  data/derived/terragauge_houston_evidence_pair_20251102_20251114.json
+  data/derived/terragauge_houston_evidence_pair_20251102_20251114.json \
+  --cell-flood-context data/derived/fema_nfhl_houston_cell_context_2026-11-07.json \
+  --compaction data/derived/usgs_houston_extensometer_compaction_2023.json \
+  --opera-historic-pair data/derived/opera_disp_houston_20160712_20161016_pair_cells.json
 ```
 
 It intentionally returns context-only results until the team supplies an independently justified stable reference region. Its provenance appears at `/v1/data-ledger`. The reference-candidate report is available at `data/derived/terragauge_reference_review_candidates_2026-11-07.json`; it is a reviewer aid, never a self-certifying threshold.

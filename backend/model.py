@@ -41,6 +41,11 @@ class Evidence:
     usgs_site_id: str | None = None
     usgs_distance_km: float | None = None
     groundwater_depth_change_ft: float | None = None
+    nearest_extensometer_station: str | None = None
+    extensometer_distance_km: float | None = None
+    cumulative_compaction_change_ft: float | None = None
+    opera_historic_pair_displacement_mm: float | None = None
+    opera_historic_valid_fraction: float | None = None
     flood_source: str | None = None
     flood_zone: str | None = None
 

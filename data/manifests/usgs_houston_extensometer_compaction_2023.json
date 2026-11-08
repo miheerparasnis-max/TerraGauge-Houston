@@ -1,0 +1,7 @@
+{
+  "source": "U.S. Geological Survey data release DOI 10.5066/P9YGUE2V, version 6.0 (September 2024)",
+  "coverage": "Cumulative compaction through 2023 at 14 extensometers in the greater Houston area",
+  "raw_layout": "TABLE1_CompactionSites.txt plus TABLE2 through TABLE15 site time-series tables",
+  "derived_artifact": "data/derived/usgs_houston_extensometer_compaction_2023.json",
+  "scientific_limit": "Station-specific subsurface compaction mechanism context. It is not a citywide surface-motion product and does not establish causation for a radar observation."
+}

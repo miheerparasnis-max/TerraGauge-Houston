@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from .common import SpatialGrid, coordinates_for_grid, median_or_none, one_km_cell_id
+from .common import SpatialGrid, coordinates_for_grid, median_or_none, one_km_cell_id, require_geospatial_dependencies
 from .nisar import _h5py
 
 
@@ -23,16 +23,34 @@ class OperaConfig:
     cell_pixels: int = 33
     reference_date: str = "unknown_reference"
     secondary_date: str = "unknown_secondary"
+    bounding_box: tuple[float, float, float, float] | None = None
+
+
+def _window(x: np.ndarray, y: np.ndarray, crs: str, bbox: tuple[float, float, float, float] | None) -> tuple[slice, slice]:
+    if bbox is None:
+        return slice(0, len(y)), slice(0, len(x))
+    Transformer = require_geospatial_dependencies()
+    west, south, east, north = bbox
+    transformer = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
+    corners = [transformer.transform(lon, lat) for lon in (west, east) for lat in (south, north)]
+    projected_x, projected_y = zip(*corners)
+    columns = np.flatnonzero((x >= min(projected_x)) & (x <= max(projected_x)))
+    rows = np.flatnonzero((y >= min(projected_y)) & (y <= max(projected_y)))
+    if not len(columns) or not len(rows):
+        raise ValueError("bounding box does not overlap the OPERA raster")
+    return slice(int(rows.min()), int(rows.max()) + 1), slice(int(columns.min()), int(columns.max()) + 1)
 
 
 def extract_disp_cells(path: str | Path, config: OperaConfig) -> dict[str, Any]:
     """Emit quality-masked OPERA displacement context, never a portal screenshot."""
     h5py = _h5py()
     with h5py.File(path, "r") as file:
-        displacement = np.asarray(file[config.displacement_path], dtype=float)
-        recommended_mask = np.asarray(file[config.recommended_mask_path])
         x = np.asarray(file[config.x_path], dtype=float)
         y = np.asarray(file[config.y_path], dtype=float)
+        row_window, column_window = _window(x, y, config.crs, config.bounding_box)
+        displacement = np.asarray(file[config.displacement_path][row_window, column_window], dtype=float)
+        recommended_mask = np.asarray(file[config.recommended_mask_path][row_window, column_window])
+        x, y = x[column_window], y[row_window]
     if displacement.shape != recommended_mask.shape or displacement.shape != (len(y), len(x)):
         raise ValueError("OPERA arrays and x/y vectors must describe the same grid")
     longitude, latitude = coordinates_for_grid(SpatialGrid(x=x, y=y, crs=config.crs))
