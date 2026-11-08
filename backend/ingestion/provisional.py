@@ -128,7 +128,7 @@ def _decimal_year(value: str) -> float:
     return day.year + (day - start).days / ((date(day.year + 1, 1, 1) - start).days)
 
 
-def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None) -> dict[str, Any]:
+def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None, cell_valid_min: float = 0.25, min_link_fraction: float = 0.75) -> dict[str, Any]:
     """Chain OPERA products, re-reference each, and fit LOS velocity per cell."""
     by_reference: dict[str, list[dict[str, Any]]] = {}
     for artifact in artifacts:
@@ -154,28 +154,54 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
         lookups.append(lookup); offsets.append(median(reference))
     dates = [chain[0]["parameters"]["reference_date"]] + [product["parameters"]["secondary_date"] for product in chain]
     years = [_decimal_year(value) for value in dates]
+    durations = [years[i + 1] - years[i] for i in range(len(chain))]
+    all_ids: dict[str, dict[str, Any]] = {}
+    for lookup in lookups:
+        for cid, row in lookup.items():
+            all_ids.setdefault(cid, row)
     cells = []
-    for cell in chain[0]["cells"]:
-        members = [lookup.get(cell["cell_id"]) for lookup in lookups]
-        ok = all(m is not None and m.get("opera_pair_displacement_mm") is not None and (m.get("opera_valid_fraction") or 0) >= valid_min and (m.get("opera_water_fraction") or 0) <= water_max for m in members)
-        if not ok:
+    for cid, cell in all_ids.items():
+        links: list[float | None] = []
+        for lookup, offset in zip(lookups, offsets):
+            m = lookup.get(cid)
+            good = m is not None and m.get("opera_pair_displacement_mm") is not None and (m.get("opera_valid_fraction") or 0) >= cell_valid_min and (m.get("opera_water_fraction") or 0) <= water_max
+            links.append(float(m["opera_pair_displacement_mm"]) - offset if good else None)
+        valid = [i for i, d in enumerate(links) if d is not None]
+        if len(valid) < max(3, min_link_fraction * len(links)):
             continue
-        series = [0.0]
-        for member, offset in zip(members, offsets):
-            series.append(series[-1] + float(member["opera_pair_displacement_mm"]) - offset)
-        mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
-        sxx = sum((t - mean_t) ** 2 for t in years)
-        slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
-        intercept = mean_d - slope * mean_t
-        residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
-        residual_sd = sqrt(sum(r * r for r in residuals) / (len(series) - 2))
+        if len(valid) == len(links):
+            series = [0.0]
+            for d in links:
+                series.append(series[-1] + d)
+            mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
+            sxx = sum((t - mean_t) ** 2 for t in years)
+            slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
+            intercept = mean_d - slope * mean_t
+            residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
+            residual_sd = sqrt(sum(x * x for x in residuals) / (len(series) - 2))
+            se = residual_sd / sqrt(sxx)
+            filled: list[int] = []
+        else:
+            # Missing links: rate = total displacement / total time over the
+            # links that passed, uncertainty from the spread of link rates.
+            span = sum(durations[i] for i in valid)
+            slope = sum(links[i] for i in valid) / span  # type: ignore[misc]
+            misfit = [links[i] - slope * durations[i] for i in valid]  # type: ignore[operator]
+            residual_sd = sqrt(sum(x * x for x in misfit) / (len(valid) - 1))
+            se = residual_sd / sqrt(sum(durations[i] ** 2 for i in valid))
+            series = [0.0]
+            filled = [i for i, d in enumerate(links) if d is None]
+            for i, d in enumerate(links):
+                series.append(series[-1] + (d if d is not None else slope * durations[i]))
         cells.append({
-            "cell_id": cell["cell_id"], "longitude": cell["longitude"], "latitude": cell["latitude"],
+            "cell_id": cid, "longitude": cell["longitude"], "latitude": cell["latitude"],
             "opera_los_velocity_mm_year": slope,
-            "opera_velocity_se_mm_year": residual_sd / sqrt(sxx),
+            "opera_velocity_se_mm_year": se,
             "opera_residual_sd_mm": residual_sd,
             "opera_cumulative_los_mm": series[-1],
             "opera_series_mm": [round(value, 2) for value in series],
+            "opera_links_used": len(valid),
+            "opera_links_filled": filled,
         })
     return {
         "artifact_type": "opera_houston_los_velocity_provisional",
@@ -190,7 +216,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "LOS velocity, not vertical subsidence. Positive = toward the satellite.",
             "Standard error assumes independent residuals; real uncertainty is larger (temporal correlation, seasonal clay motion).",
             "The reference patch is provisional and unreviewed; a moving reference biases every velocity.",
-            "A cell is included only if it passes valid-fraction and water checks in every product.",
+            "A cell is included if it passes the valid-pixel (>= 25%) and water checks in at least 75% of products; missing periods are filled with the cell's own average rate and flagged.",
             PROVISIONAL_NOTE,
         ],
         "cells": cells,

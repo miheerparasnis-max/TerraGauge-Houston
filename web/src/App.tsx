@@ -1,127 +1,150 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Cell, LabelCode, LedgerEntry, Meta, Sites, ViewKey } from "./types";
-import { MapView, type ColorMode, type Layers } from "./MapView";
-import { EvidenceCard } from "./EvidenceCard";
-import { GroundTruth, Ledger, Methods, SignalCheck } from "./Panels";
-import { LABELS, VIEWS, fmt, motionColor } from "./labels";
+import type { Cell, Meta, Mode, Sites } from "./types";
+import { MapView, type Layers } from "./MapView";
+import { Card } from "./Card";
+import { HowWeKnow, SensorPage } from "./Pages";
+import { CONFIDENCE, MODES, PRIORITY, movementColor, num } from "./labels";
 
-type Tab = "map" | "signal" | "node" | "methods" | "ledger";
-const TABS: { key: Tab; name: string }[] = [
-  { key: "map", name: "Map" },
-  { key: "signal", name: "Signal check" },
-  { key: "node", name: "GroundTruth Node" },
-  { key: "methods", name: "Methods and limits" },
-  { key: "ledger", name: "Data ledger" },
-];
-const COUNT_KEY: Record<LabelCode, string> = { I: "investigate_satellite_signal", A: "add_ground_monitoring", C: "context_only", R: "review_time_matched_mismatch", X: "insufficient_radar_evidence" };
-const VIEW_META = { o: "opera", p: "pair", c: "chain" } as const;
+type Tab = "map" | "how" | "sensor";
 
 async function getJSON<T>(name: string): Promise<T> {
   const res = await fetch(`./data/${name}`);
-  if (!res.ok) throw new Error(`Could not load ${name} (${res.status}). Run scripts/export_web.py, then reload.`);
+  if (!res.ok) throw new Error(`Couldn't load ${name}. Run python3 scripts/export_web.py, then reload.`);
   return res.json();
+}
+
+function Legend({ mode, year, meta }: { mode: Mode; year: number; meta: Meta }) {
+  if (mode === "movement" || mode === "future") {
+    const span = mode === "movement" ? 25 : 30;
+    const unit = mode === "movement" ? "mm a year" : `cm by ${year}`;
+    return (
+      <div>
+        <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
+        <div className="ramp-keys"><span>Sinking {span} {unit}</span><span>Stable</span><span>Rising</span></div>
+        {mode === "future" && meta.forecast.mode === "scenario" && <p className="legend-note">If the {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} trend continues. Likely an overestimate: sinking has been slowing.</p>}
+      </div>
+    );
+  }
+  const entries = mode === "priority"
+    ? (["urgent", "high", "watch", "stable", "check"] as const).map((k) => ({ ...PRIORITY[k], n: meta.counts.priority[k] ?? 0 }))
+    : (["high", "medium", "low"] as const).map((k) => ({ ...CONFIDENCE[k], n: meta.counts.confidence[k] ?? 0 }));
+  return (
+    <ul className="keys">{entries.map((e) => <li key={e.name} title={e.meaning}><span className="sw" style={{ background: e.color }} /><span><b>{e.name}</b><small>{e.meaning}</small></span><em>{e.n.toLocaleString()}</em></li>)}</ul>
+  );
 }
 
 export default function App() {
   const [cells, setCells] = useState<Cell[] | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [sites, setSites] = useState<Sites | null>(null);
-  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
-  const [view, setView] = useState<ViewKey>("o");
-  const [mode, setMode] = useState<ColorMode>("label");
-  const [layers, setLayers] = useState<Layers>({ flood: false, gps: true, ext: true, wells: false });
+  const [mode, setMode] = useState<Mode>("movement");
+  const [year, setYear] = useState(2035);
+  const [layers, setLayers] = useState<Layers>({ sensors: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
 
   useEffect(() => {
-    Promise.all([getJSON<Cell[]>("cells.json"), getJSON<Meta>("meta.json"), getJSON<Sites>("sites.json"), getJSON<LedgerEntry[]>("ledger.json")])
-      .then(([c, m, s, l]) => { setCells(c); setMeta(m); setSites(s); setLedger(l); })
+    Promise.all([getJSON<Cell[]>("cells.json"), getJSON<Meta>("meta.json"), getJSON<Sites>("sites.json")])
+      .then(([c, m, s]) => { setCells(c); setMeta(m); setSites(s); setYear(m.forecast.years[1] ?? m.forecast.years[0]); })
       .catch((e: Error) => setError(e.message));
   }, []);
-
   useEffect(() => { if (tab === "map") window.dispatchEvent(new Event("resize")); }, [tab]);
+
   const byId = useMemo(() => new Map((cells ?? []).map((c) => [c.id, c])), [cells]);
+  const stats = useMemo(() => {
+    if (!cells) return null;
+    const measured = cells.filter((c) => c.rate !== null && c.pri !== "no_data" && c.pri !== "check");
+    const fast = measured.filter((c) => (c.rate ?? 0) <= -10).length;
+    return { measured: measured.length, fast };
+  }, [cells]);
+
+  if (error) return <div className="loading">{error}</div>;
+  if (!cells || !meta || !sites || !stats) return <div className="loading">Loading Houston…</div>;
+
   const cell = selected ? byId.get(selected) ?? null : null;
-
-  if (error) return <div className="loading"><p>{error}</p></div>;
-  if (!cells || !meta || !sites) return <div className="loading"><p>Loading Houston evidence cells…</p></div>;
-
-  const counts = meta.views[VIEW_META[view]].counts;
+  const sensorFor = (id: string) => meta.sensors.find((s) => s.id === id);
+  const pick = (id: string) => { const c = byId.get(id); if (!c) return; setSelected(id); setFocus({ lon: c.lon, lat: c.lat, key: Date.now() }); };
   const toggle = (k: keyof Layers) => setLayers((l) => ({ ...l, [k]: !l[k] }));
+  const q = MODES.find((m) => m.key === mode)!;
 
   return (
     <div className="app">
       <header className="top">
         <div className="brand">
-          <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#B8862B" /><circle cx="16" cy="16" r="9" fill="none" stroke="#1D2B2A" strokeWidth="1.5" /><path d="M7 16h18M16 7v18" stroke="#1D2B2A" strokeWidth="2.5" /></svg>
-          <div><h1>TerraGauge</h1><p>Houston ground-motion triage</p></div>
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B8862B" /><path d="M6 19c4-5 7 2 10-3s7 1 10-3" fill="none" stroke="#14201F" strokeWidth="2.6" strokeLinecap="round" /></svg>
+          <div><h1>TerraGauge</h1><p>Where is Houston's ground sinking?</p></div>
         </div>
-        <nav aria-label="Sections">
-          {TABS.map((t) => <button key={t.key} className={tab === t.key ? "tab on" : "tab"} aria-current={tab === t.key ? "page" : undefined} onClick={() => setTab(t.key)}>{t.name}</button>)}
+        <nav aria-label="Pages">
+          {([["map", "Map"], ["how", "How we know"], ["sensor", "Our $74 sensor"]] as const).map(([k, name]) => (
+            <button key={k} className={tab === k ? "tab on" : "tab"} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>{name}</button>
+          ))}
         </nav>
       </header>
-      {meta.status !== "reviewed" && <div className="banner" role="status">Provisional build: reference stations and processing choices are not yet team-reviewed. Labels are monitoring priorities, not findings.</div>}
 
-      <main className={tab === "map" ? "stage" : "stage hidden"} aria-hidden={tab !== "map"}>
-        <MapView cells={cells} sites={sites} view={view} mode={mode} layers={layers} selected={selected} onSelect={setSelected} />
+      <main className={tab === "map" ? "stage" : "stage hidden"}>
+        <MapView cells={cells} sites={sites} sensors={meta.sensors} mode={mode} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
+
         <div className="controls">
-          <fieldset className="seg">
-            <legend>Motion evidence</legend>
-            {(Object.keys(VIEWS) as ViewKey[]).map((k) => (
-              <label key={k} className={view === k ? "on" : ""}><input type="radio" name="view" checked={view === k} onChange={() => setView(k)} />{VIEWS[k].short}</label>
+          <div className="box">
+            <p className="box-label">Color the map by</p>
+            <div className="seg" role="radiogroup" aria-label="Color the map by">
+              {MODES.map((m) => <button key={m.key} role="radio" aria-checked={mode === m.key} className={mode === m.key ? "on" : ""} onClick={() => setMode(m.key)}>{m.name}</button>)}
+            </div>
+            <p className="question">{q.question}</p>
+            {mode === "future" && (
+              <div className="years" role="radiogroup" aria-label="Year">
+                {meta.forecast.years.map((y) => <button key={y} role="radio" aria-checked={year === y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}</button>)}
+              </div>
+            )}
+            <Legend mode={mode} year={year} meta={meta} />
+          </div>
+          <details className="box layers">
+            <summary>Show on map</summary>
+            {([["sensors", "Suggested sensor sites"], ["gps", "GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]] as const).map(([k, name]) => (
+              <label key={k}><input type="checkbox" checked={layers[k]} onChange={() => toggle(k)} />{name}</label>
             ))}
-          </fieldset>
-          <fieldset className="seg small">
-            <legend>Color by</legend>
-            <label className={mode === "label" ? "on" : ""}><input type="radio" name="mode" checked={mode === "label"} onChange={() => setMode("label")} />Priority</label>
-            <label className={mode === "value" ? "on" : ""}><input type="radio" name="mode" checked={mode === "value"} onChange={() => setMode("value")} />Motion</label>
-          </fieldset>
-          <fieldset className="checks">
-            <legend>Show</legend>
-            <label><input type="checkbox" checked={layers.gps} onChange={() => toggle("gps")} />GPS stations</label>
-            <label><input type="checkbox" checked={layers.ext} onChange={() => toggle("ext")} />Extensometers</label>
-            <label><input type="checkbox" checked={layers.wells} onChange={() => toggle("wells")} />Groundwater wells</label>
-            <label><input type="checkbox" checked={layers.flood} onChange={() => toggle("flood")} />FEMA flood zones</label>
-          </fieldset>
+          </details>
         </div>
 
-        <aside className="legend" aria-label="Legend">
-          <p className="legend-title">{VIEWS[view].long}</p>
-          {mode === "label" ? (
-            <ul>{(["I", "A", "C", "X"] as LabelCode[]).map((c) => <li key={c}><span className={`swatch badge-${c}`} />{LABELS[c].name}<b>{(counts[COUNT_KEY[c]] ?? 0).toLocaleString()}</b></li>)}</ul>
-          ) : (
-            <div className="ramp">
-              <div className="ramp-bar" style={{ background: `linear-gradient(90deg, ${[-1, -0.5, 0, 0.5, 1].map((t) => motionColor(t * (view === "o" ? 18 : 40), view === "o" ? 18 : 40)).join(",")})` }} />
-              <div className="ramp-keys"><span>{view === "o" ? "−18 mm/yr" : "−40 mm"} away (sinking)</span><span>toward</span></div>
-            </div>
-          )}
-          <ul className="site-keys">
-            <li><span className="dot gps-ref" />Reference GPS station</li>
-            <li><span className="dot gps" />GPS station</li>
-            <li><span className="dot ext" />Extensometer</li>
-          </ul>
-          {view !== "o" && <p className="legend-warn">NISAR noise is about {fmt(meta.signal_check.pair.nisar_sd_mm, 0)} mm here; most labels in this view are noise. See Signal check.</p>}
-        </aside>
-
         <section className={cell ? "panel open" : "panel"} aria-live="polite">
-          {cell ? <EvidenceCard cell={cell} view={view} meta={meta} onClose={() => setSelected(null)} /> : (
-            <div className="intro">
-              <h2>Where should Houston look first?</h2>
-              <p>Each square is about 1 km. TerraGauge checks whether the radar there is trustworthy, compares it with nearby GPS, wells, compaction records, and flood zones, and then sorts it into one of four priorities.</p>
-              <p className="big-stat"><strong>{(meta.views.opera.counts.add_ground_monitoring ?? 0).toLocaleString()}</strong> cells show significant 2016–2021 motion with no permanent GPS station within 2 km.</p>
-              <p className="big-stat"><strong>{meta.gps_validation.pearson_r.toFixed(2)}</strong> correlation between the OPERA record and {meta.gps_validation.station_count} independent GPS stations.</p>
-              <p className="hint">Click any colored square to open its evidence card.</p>
+          {cell ? <Card cell={cell} meta={meta} sensor={sensorFor(cell.id)} onClose={() => setSelected(null)} /> : (
+            <div className="summary">
+              <h2>Houston at a glance</h2>
+              <p className="fine">{meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} satellite record combined with GPS, wells, compaction gauges, and flood zones. Click any square for its full story.</p>
+              <button className="answer" onClick={() => setMode("movement")}>
+                <span className="q">Where is the ground moving?</span>
+                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares sank 1 cm a year or more. The darkest purple areas are sinking fastest.</span>
+              </button>
+              <button className="answer" onClick={() => setMode("confidence")}>
+                <span className="q">How sure are we?</span>
+                <span className="a">The satellite matches {meta.validation.stations} GPS stations to within about <strong>{num(meta.validation.typical_diff_mm_year)} mm a year</strong>. Each square gets its own confidence level.</span>
+              </button>
+              <button className="answer" onClick={() => setMode("future")}>
+                <span className="q">Where is it heading?</span>
+                <span className="a">{meta.forecast.mode === "tested" ? "A tested forecast to " : "A what-if projection to "}{meta.forecast.years[meta.forecast.years.length - 1]} with a likely range. {meta.forecast.mode === "scenario" && "Sinking has been slowing, so treat it as an upper estimate."}</span>
+              </button>
+              <button className="answer" onClick={() => setMode("priority")}>
+                <span className="q">Where should we act first?</span>
+                <span className="a"><strong>{(meta.counts.priority.urgent ?? 0).toLocaleString()}</strong> urgent squares. Below are the top {meta.sensors.length} places to add a GPS sensor.</span>
+              </button>
+              <h3>Suggested sensor sites</h3>
+              <ol className="sensor-list">
+                {meta.sensors.map((s) => (
+                  <li key={s.id}><button onClick={() => pick(s.id)}>
+                    <span className="rank">{s.rank}</span>
+                    <span><b>Area sinking about {num(Math.abs(s.areaRate / 10))} cm a year</b><small>{num(s.gpsKm)} km from the nearest GPS{s.sfha ? ", high-risk flood zone" : ""}, {CONFIDENCE[s.conf].name.toLowerCase()} confidence</small></span>
+                  </button></li>
+                ))}
+              </ol>
             </div>
           )}
         </section>
       </main>
-
-      {tab === "signal" && <SignalCheck meta={meta} />}
-      {tab === "node" && <GroundTruth />}
-      {tab === "methods" && <Methods meta={meta} />}
-      {tab === "ledger" && <Ledger ledger={ledger} meta={meta} />}
-      <footer className="foot">NASA Space Apps Challenge 2026, Dancing with the SARs. Data: NASA/ISRO NISAR, NASA JPL OPERA, HoustonNet, USGS, FEMA. Not a flood forecast, property assessment, or diagnosis of cause.</footer>
+      {tab === "how" && <HowWeKnow meta={meta} />}
+      {tab === "sensor" && <SensorPage />}
+      {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). Not a flood forecast or a property assessment.</footer>}
     </div>
   );
 }

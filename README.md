@@ -300,7 +300,14 @@ npm install
 npm run dev        # opens http://localhost:5173
 ```
 
-Views: a 1 km priority map with three motion-evidence sources (OPERA 2016–2021, NISAR 12-day pair, NISAR 60-day chain), clickable evidence cards, a NISAR signal-vs-noise check, the GroundTruth Node planning calculator, methods and limits, and the data ledger.
+One combined map of 1 km squares answers four questions (color the map by each):
+
+- **Movement:** OPERA satellite rate converted to vertical, blended with a GPS station's rate where one is within 1 km (inverse-variance weighting).
+- **Confidence:** High / Medium / Low from the fit error, a GPS cross-check within 3 km, record jumpiness, and agreement with the squares around it (`backend/insights.py`).
+- **Future:** projection to 2030/2035/2040 with an ~80% range. A backtest decides whether it's shown as a tested forecast or as a labeled "if the trend continues" scenario.
+- **Priority:** Urgent / High / Watch / Stable / Check data, plus the top 15 suggested GPS sensor sites (sinking areas with no active station within 2 km, kept 4 km apart).
+
+Clicking a square opens a plain-language card with the evidence, the trend chart, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, prediction test, why NISAR can't measure this yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
 
 To regenerate the data the site shows:
 
@@ -326,6 +333,15 @@ To switch to a team-reviewed reference, change the reference selection in `scrip
 
 - **OPERA water mask was inverted.** The DISP-S1 spec defines `water_mask` as 0 = water, 1 = land; the adapter counted `> 0` as water, so almost every Houston cell read as 100% water. Fixed in `backend/ingestion/opera.py`; derived artifacts corrected with `scripts/correct_opera_water_fraction.py` (water = 1 − old value).
 - **NISAR displacements were not re-referenced.** The scatter threshold was computed, but the reference median was never subtracted, so a frame-wide offset (~20 mm) would have turned most cells into "signals". `build_houston_evidence` now subtracts the reference median and keeps the raw value in `pair_los_displacement_raw_mm`.
+
+### Extending the record to 2026
+
+The OPERA record in the repo ends in May 2021. `scripts/fetch_opera_extension.py` downloads the 11 OPERA products (about 3.7 GB) that continue the chain to March 2026, ingests them, and rebuilds the site data. With ~10 years of data the backtest compares five years against the next five, which is long enough for a real forecast test.
+
+```bash
+python3 -m pip install earthaccess numpy h5py pyproj
+python3 scripts/fetch_opera_extension.py --delete-raw
+```
 
 ### More NASA layers
 

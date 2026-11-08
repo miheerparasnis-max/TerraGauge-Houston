@@ -1,49 +1,55 @@
-export type ViewKey = "o" | "p" | "c";
-export type LabelCode = "I" | "A" | "C" | "R" | "X";
+export type Priority = "urgent" | "high" | "watch" | "stable" | "check" | "no_data";
+export type Confidence = "high" | "medium" | "low";
+export type Mode = "movement" | "confidence" | "future" | "priority";
+
+export interface Projection { center_mm: number; low_mm: number; high_mm: number } // values are in cm (exported /10)
 
 export interface Cell {
   id: string;
   lon: number;
   lat: number;
-  L: Record<ViewKey, LabelCode>;
-  R: Record<ViewKey, number[]>;
-  n: { d: number | null; raw: number | null; coh: number | null; vf: number | null; main: boolean };
-  ch: { d: number | null; coh: number | null; vf: number | null };
-  o: { v: number; se: number; cum: number; s: number[] } | null;
-  f: { z: string | null; sub: string | null; x: boolean | null };
-  g: { id: string | null; km: number | null; up: number | null; y0: number | null; y1: number | null };
-  w: { id: string | null; km: number | null; dd: number | null };
-  e: { id: string | null; km: number | null; c: number | null };
-  nasadem?: Record<string, number | string | null>;
-  dswx?: Record<string, number | string | null>;
-  dist?: Record<string, number | string | null>;
+  rate: number | null;          // mm/yr, negative = sinking
+  se: number | null;            // mm/yr
+  src: ("satellite" | "gps")[];
+  sig: boolean;
+  conf: Confidence | null;
+  confWhy: string[];
+  pri: Priority;
+  priWhy: string;
+  needsSensor: boolean;
+  future: Record<string, Projection> | null;
+  series: number[] | null;      // cumulative mm along the satellite line of sight
+  gps: { id: string; km: number; up: number; y0: number | null; y1: number | null };
+  check: { id: string; km: number; diff: number } | null;
+  flood: { zone: string | null; sub: string | null; sfha: boolean };
+  well: { km: number; dd: number | null } | null;
+  ext: { km: number; c: number | null } | null;
+  nisar: { d: number | null; ok: boolean };
+  nasadem?: { elevation_m?: number };
+  dswx?: { water_fraction?: number };
+  dist?: { disturbed_fraction?: number };
 }
 
-export interface CheckStats { cells: number; days: number; nisar_sd_mm: number; expected_signal_sd_mm: number; pearson_r_vs_opera: number }
+export interface SensorSite { rank: number; id: string; lon: number; lat: number; rate: number; areaRate: number; conf: Confidence; gpsKm: number; sfha: boolean; zone: string | null; future2035: Projection | null }
 
 export interface Meta {
-  generated: string;
   status: string;
-  reasons: string[];
-  thresholds: { coherence_min: number; valid_fraction_min: number; sigma_multiplier: number; gps_nearby_km: number };
-  views: {
-    opera: { title: string; dates: string[]; dates_all: string[]; products: number; noise_floor_mm_year: number; threshold_mm_year: number; counts: Record<string, number> };
-    pair: { title: string; dates: string[]; reference_scatter_mm: number; reference_median_mm: number; threshold_mm: number; counts: Record<string, number> };
-    chain: { title: string; dates: string[]; reference_scatter_mm: number; reference_median_mm: number; threshold_mm: number; counts: Record<string, number> };
+  record: { start: string; end: string; dates: string[]; products: number; extendedThroughOpera2026: boolean };
+  thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number };
+  counts: { priority: Record<string, number>; confidence: Record<string, number> };
+  validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
+  forecast: {
+    mode: "tested" | "scenario"; damping: number; model_error_mm_year: number; base: string; years: number[];
+    backtest: { train: string[]; test: string[]; cells: number; correlation: number; mae_persistence_mm_year: number; mae_no_motion_mm_year: number; best_damping: number; fast_cells: number; fast_median_before_mm_year: number | null; fast_median_after_mm_year: number | null; beats_no_motion: boolean };
   };
+  nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };
-  signal_check: { pair: CheckStats; chain: CheckStats };
-  detectability: { sigma_mm: number; interval_days: number; rows: { rate_mm_year: number; observations: number | null; years: number | null }[] };
-  gps_validation: { station_count: number; pearson_r: number; median_abs_residual_mm_year: number; median_residual_mm_year: number; incidence_deg_assumed: number; method: string; limitations: string[] };
-  gps_validation_points: { station_id: string; gps_los_approx_mm_year: number; opera_los_mm_year: number; residual_mm_year: number; distance_km: number }[];
-  nasa_layers: Record<string, Record<string, unknown>>;
-  limitations: { opera: string[]; nisar: string[] };
+  sensors: SensorSite[];
+  nasaLayers: Record<string, string>;
 }
 
 export interface Sites {
-  gps: { id: string; lon: number; lat: number; up: number; y0: number; y1: number; ref: boolean }[];
-  ext: { id: string; name: string; lon: number; lat: number; c: number; d0: string; d1: string; interval: string }[];
+  gps: { id: string; lon: number; lat: number; up: number; y0: number; y1: number }[];
+  ext: { id: string; name: string; lon: number; lat: number; c: number; d0: string; d1: string }[];
   wells: { id: string; name: string; lon: number; lat: number; dd: number | null; t0: string; t1: string }[];
 }
-
-export interface LedgerEntry { manifest: string; record: Record<string, unknown> }
