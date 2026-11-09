@@ -91,6 +91,7 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
           <dl>
             <Row k={`Rate, ${f.base.slice(0, 4)}–${f.years[f.years.length - 1]}`} v={`${num(cell.future.rate)} mm/yr`} note={`likely ${num(cell.future.low)} to ${num(cell.future.high)}; it was ${num(cell.future.recent)} mm/yr over the last 5 years`} />
           </dl>
+          <details className="fine"><summary>Why is the forecast line straight?</summary>The model predicts this square's average speed for the next five years, so the forecast is a straight line at that speed. We tested a bending path (speed changing smoothly) and it was less accurate every year. Real ground wiggles around any line, for example when dry years shrink Houston's clay, and nobody can predict those years ahead, so the shaded range is built from the real wiggles we saw in testing.</details>
           <p className="fine">Change in ground level since {f.base.slice(0, 7)}</p>
           <dl>{f.years.map((y) => { const v = cell.future!.by[String(y)]; return <Row key={y} k={`By ${y}`} v={`${num(v.c)} cm`} note={`likely ${num(v.lo)} to ${num(v.hi)} cm`} />; })}</dl>
         </section>

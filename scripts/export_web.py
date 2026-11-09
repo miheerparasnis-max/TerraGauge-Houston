@@ -88,6 +88,25 @@ def main() -> None:
     base_year = decimal_year(dates[-1])
     years = list(range(int(base_year) + 1, int(base_year + (ml["tested_horizon_years"] if ml else 0) + 0.5) + 1)) if ml_cells else []
 
+    # Year-by-year 80% half-widths from the held-out test, made non-decreasing
+    # (a wiggle like the one seen 2-3 years into the test could come any year).
+    bands = []
+    if ml and ml.get("horizon_bands"):
+        running = 0.0
+        for b in ml["horizon_bands"]:
+            running = max(running, b["scale_mm"])
+            bands.append((b["years_ahead"], running))
+
+    def band_at(h: float) -> float:
+        if not bands:
+            return 0.0
+        if h <= bands[0][0]:
+            return bands[0][1] * h / bands[0][0]
+        for (h0, b0), (h1, b1) in zip(bands, bands[1:]):
+            if h <= h1:
+                return b0 + (b1 - b0) * (h - h0) / (h1 - h0)
+        return bands[-1][1]
+
     reference_ids = set(opera.get("reference_cell_ids") or [])
     noise_los = robust_sd([opera_cells[c]["opera_los_velocity_mm_year"] for c in reference_ids if c in opera_cells])
     stable_vertical = vertical_rate(t.pair_signal_sigma_multiplier * noise_los)
@@ -153,8 +172,13 @@ def main() -> None:
         future = None
         fc = ml_cells.get(cid)
         if fc and act != "insufficient_data":
-            future = {"rate": r(fc["rate_mm_year"]), "low": r(fc["low_mm_year"]), "high": r(fc["high_mm_year"]), "recent": r(fc["recent_rate_mm_year"]),
-                      "by": {str(y): {"c": r(fc["rate_mm_year"] * (y - base_year) / 10), "lo": r(fc["low_mm_year"] * (y - base_year) / 10), "hi": r(fc["high_mm_year"] * (y - base_year) / 10)} for y in years}}
+            by = {}
+            for y in years:
+                h = y - base_year
+                half = band_at(h) * fc.get("relative_uncertainty", 1.0)
+                center = fc["rate_mm_year"] * h
+                by[str(y)] = {"c": r(center / 10), "lo": r((center - half) / 10), "hi": r((center + half) / 10)}
+            future = {"rate": r(fc["rate_mm_year"]), "low": r(fc["low_mm_year"]), "high": r(fc["high_mm_year"]), "recent": r(fc["recent_rate_mm_year"]), "by": by}
 
         detect = None
         if rate is not None and act != "insufficient_data" and rate < 0:
@@ -301,6 +325,7 @@ def main() -> None:
         forecast_meta["scores"] = {name: {k: r(v, 2) for k, v in s.items()} for name, s in ml["scores"].items()}
         forecast_meta["base"] = dates[-1]
         forecast_meta["years"] = years
+        forecast_meta["horizon_bands"] = [{k: r(v, 2) for k, v in b.items()} for b in ml.get("horizon_bands", [])]
 
     meta = {
         "status": "provisional_unreviewed",

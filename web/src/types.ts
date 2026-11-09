@@ -47,6 +47,7 @@ export interface Meta {
     passes: boolean; train_window: string[]; test_window: string[]; tested_horizon_years: number; cells: number; best_baseline: string;
     interval_coverage_10_90: number; interval_coverage_raw: number; model: string; features: string[]; feature_importance: Record<string, number> | null;
     limitations: string[]; scores: Record<string, Score>; base: string; years: number[];
+    horizon_bands: { years_ahead: number; scale_mm: number; coverage: number; model_mae_mm: number; past_rate_mae_mm: number; no_motion_mae_mm: number }[];
   };
   nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };

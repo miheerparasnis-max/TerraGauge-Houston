@@ -80,6 +80,13 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
             <tbody>{(["model", "past_rate_continues", "area_rate", "damped_past_rate", "no_motion"] as const).map((k) => <tr key={k} className={k === "model" ? "win" : ""}><td>{BASELINE_NAMES[k]}</td><td>{num(f.scores[k].median_abs_error)}</td><td>{num(f.scores[k].fast_median_abs_error)}</td></tr>)}</tbody>
           </table>
           <p>{f.passes ? `The model beats every simpler method, so the Future view uses it.` : "The model did not clearly beat the simpler methods, so no forecast is shown."} The ranges are calibrated so that {Math.round(f.interval_coverage_10_90 * 100)}% of test squares fell inside them. We tested about {f.tested_horizon_years.toFixed(0)} years ahead, so the forecast stops at {f.years[f.years.length - 1]}.</p>
+          <h4>Year by year</h4>
+          <p>We also checked the total change 1 to 5 years after the training data ended, against what really happened:</p>
+          <table className="table">
+            <thead><tr><th>Years ahead</th><th>Model, typical error</th><th>"Past rate continues"</th><th>"No motion"</th></tr></thead>
+            <tbody>{f.horizon_bands.map((b) => <tr key={b.years_ahead}><td>{b.years_ahead.toFixed(b.years_ahead % 1 ? 1 : 0)}</td><td><b>{num(b.model_mae_mm / 10, 1)} cm</b></td><td>{num(b.past_rate_mae_mm / 10, 1)} cm</td><td>{num(b.no_motion_mae_mm / 10, 1)} cm</td></tr>)}</tbody>
+          </table>
+          <p>The forecast is a straight line at the model's predicted speed: a path that bends (speed changing smoothly) tested worse at every horizon. Errors peak 2–3 years out because the real ground wiggles from year to year, likely from dry and wet years shrinking and swelling Houston's clay. Those wiggles can't be predicted years ahead, so each year's range uses the largest wiggle seen up to that point in testing.</p>
           <ul className="small">{f.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
         </>
       ) : <p>No forecast has been built yet. Run scripts/build_forecast.py.</p>}

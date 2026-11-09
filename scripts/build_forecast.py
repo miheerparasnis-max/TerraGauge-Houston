@@ -42,6 +42,7 @@ def main() -> None:
     use_static = "--no-static" not in sys.argv
     result = train_and_forecast(velocity, SPLIT_DATE, static=static_features() if use_static else None)
     (PROV / "ml_forecast.json").write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
+    print(json.dumps(result["horizon_bands"], indent=1))
     summary = {k: result[k] for k in ("train_window", "test_window", "tested_horizon_years", "cells", "scores", "best_baseline", "interval_coverage_10_90", "passes", "feature_importance")}
     print(json.dumps(summary, indent=1))
 

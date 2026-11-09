@@ -80,6 +80,18 @@ def window_features(np, times, series, lon, lat, start: int, stop: int):
     return np.c_[rate, first, second, acceleration, scatter, area_rate, area_acc, lon, lat]
 
 
+def _level_at(np, times, series, t_target: float, half_width: float = 0.6):
+    """Smoothed ground level at ``t_target``: local straight-line fit to the
+    epochs within ±half_width years (falls back to the nearest 3 epochs)."""
+    mask = np.abs(times - t_target) <= half_width
+    if mask.sum() < 3:
+        mask = np.zeros_like(times, dtype=bool)
+        mask[np.argsort(np.abs(times - t_target))[:3]] = True
+    tt = times[mask]
+    design = np.c_[np.ones(len(tt)), tt - t_target]
+    return np.linalg.lstsq(design, series[:, mask].T, rcond=None)[0][0]
+
+
 def _model(kind: str, alpha: float | None = None):
     from sklearn.ensemble import HistGradientBoostingRegressor
 
@@ -149,6 +161,30 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
     half = np.maximum((high - low) / 2.0, 0.25)
     scale = float(np.quantile(np.abs(y - pred) / half, 0.8))
     coverage = float(np.mean(np.abs(y - pred) <= scale * half))
+
+    # Year-by-year ranges. The forecast path is a straight line at the
+    # predicted average rate (tested: it beat a bending "speed changes
+    # smoothly" path at every horizon). The real ground wiggles around any
+    # line (dry years shrink Houston's clay), so each year's range comes from
+    # the actual held-out errors of the straight path at that many years
+    # ahead, scaled per cell by its own uncertainty and calibrated to 80%.
+    level_split = _level_at(np, times, series, times[split])
+    available = float(times[-1] - times[split])
+    test_horizons = [h for h in (1.0, 2.0, 3.0, 4.0) if h < available - 0.3] + [round(available - 0.3, 2)]
+    relative = np.clip(half / np.median(half), 0.5, 2.0)
+    horizon_bands = []
+    for h in test_horizons:
+        actual = _level_at(np, times, series, times[split] + h) - level_split
+        err = np.abs(actual - pred * h)
+        k_scale = float(np.quantile(err / relative, 0.8))
+        horizon_bands.append({
+            "years_ahead": h,
+            "scale_mm": k_scale,
+            "coverage": float(np.mean(err <= k_scale * relative)),
+            "model_mae_mm": float(np.median(err)),
+            "past_rate_mae_mm": float(np.median(np.abs(actual - X[:, 0] * h))),
+            "no_motion_mae_mm": float(np.median(np.abs(actual))),
+        })
     best_baseline = min(baselines, key=lambda k: baselines[k]["median_abs_error"])
     passes = model_score["median_abs_error"] < baselines[best_baseline]["median_abs_error"] * 0.9
 
@@ -159,8 +195,10 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
     q10 = _model("quantile", 0.1).fit(X, y)
     q90 = _model("quantile", 0.9).fit(X, y)
     future_rate = final.predict(X_now)
-    future_half = scale * np.maximum((q90.predict(X_now) - q10.predict(X_now)) / 2.0, 0.25)
+    now_half = np.maximum((q90.predict(X_now) - q10.predict(X_now)) / 2.0, 0.25)
+    future_half = scale * now_half
     future_low, future_high = future_rate - future_half, future_rate + future_half
+    now_relative = np.clip(now_half / np.median(half), 0.5, 2.0)
     horizon_years = float(times[-1] - times[split])
     importances = None
     try:
@@ -192,8 +230,9 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
         "passes": bool(passes),
         "feature_importance": importances,
         "forecast_base_date": dates[-1],
+        "horizon_bands": horizon_bands,
         "cell_forecasts": [
-            {"cell_id": c["cell_id"], "rate_mm_year": float(r), "low_mm_year": float(lo), "high_mm_year": float(hi), "recent_rate_mm_year": float(X_now[i, 0])}
+            {"cell_id": c["cell_id"], "rate_mm_year": float(r), "low_mm_year": float(lo), "high_mm_year": float(hi), "recent_rate_mm_year": float(X_now[i, 0]), "relative_uncertainty": float(now_relative[i])}
             for i, (c, r, lo, hi) in enumerate(zip(cells, future_rate, future_low, future_high))
         ],
         "limitations": [
