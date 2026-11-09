@@ -324,7 +324,7 @@ Everything is flagged `provisional_unreviewed` until the team approves the refer
 2. **Re-referencing.** Cells are referenced to the median at half of the long-history HoustonNet stations with |vertical rate| ≤ 1 mm/yr; the other half are held out. (The single-patch candidate in `terragauge_reference_review_candidates_2026-11-07.json` is farmland where OPERA has too few coherent pixels.)
 3. **60-day NISAR chain.** The five consecutive pairs are summed (intermediate-date noise cancels). Still not a rate.
 4. **OPERA velocity.** The 19 chained OPERA DISP-S1 products (2016-07-12 to 2021-05-05) are re-referenced and fit with a least-squares LOS velocity per cell.
-5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 103 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows).
+5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 105 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows). Cells with an incomplete OPERA series are withheld rather than imputed.
 6. **NISAR signal check.** NISAR 12-day noise is ~18 mm vs. ~0.2 mm of expected real motion, and NISAR shows no correlation with OPERA (r ≈ 0). The map therefore defaults to OPERA-based priorities (`backend.decision.classify_opera_velocity`, same action order). NISAR views remain as a quality preview.
 
 To switch to a team-reviewed reference, change the reference selection in `scripts/build_provisional.py` and run it with `--reference-status reviewed`.

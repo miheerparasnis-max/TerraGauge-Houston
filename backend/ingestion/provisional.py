@@ -148,7 +148,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
     lookups, offsets = [], []
     for product in chain:
         lookup = {cell["cell_id"]: cell for cell in product["cells"]}
-        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox))]
+        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and (c.get("opera_water_fraction") or 0) <= water_max and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox))]
         if len(reference) < 3:
             raise ValueError(f"reference patch has fewer than three valid OPERA cells in product starting {product['parameters']['reference_date']}")
         lookups.append(lookup); offsets.append(median(reference))
@@ -167,32 +167,21 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             good = m is not None and m.get("opera_pair_displacement_mm") is not None and (m.get("opera_valid_fraction") or 0) >= cell_valid_min and (m.get("opera_water_fraction") or 0) <= water_max
             links.append(float(m["opera_pair_displacement_mm"]) - offset if good else None)
         valid = [i for i, d in enumerate(links) if d is not None]
-        if len(valid) < max(3, min_link_fraction * len(links)):
+        # A time-series rate must be based on observed intervals.  Do not fill
+        # missing links with a cell's own fitted rate: that is circular and can
+        # manufacture a smooth-looking velocity where the data are incomplete.
+        if len(valid) != len(links):
             continue
-        if len(valid) == len(links):
-            series = [0.0]
-            for d in links:
-                series.append(series[-1] + d)
-            mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
-            sxx = sum((t - mean_t) ** 2 for t in years)
-            slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
-            intercept = mean_d - slope * mean_t
-            residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
-            residual_sd = sqrt(sum(x * x for x in residuals) / (len(series) - 2))
-            se = residual_sd / sqrt(sxx)
-            filled: list[int] = []
-        else:
-            # Missing links: rate = total displacement / total time over the
-            # links that passed, uncertainty from the spread of link rates.
-            span = sum(durations[i] for i in valid)
-            slope = sum(links[i] for i in valid) / span  # type: ignore[misc]
-            misfit = [links[i] - slope * durations[i] for i in valid]  # type: ignore[operator]
-            residual_sd = sqrt(sum(x * x for x in misfit) / (len(valid) - 1))
-            se = residual_sd / sqrt(sum(durations[i] ** 2 for i in valid))
-            series = [0.0]
-            filled = [i for i, d in enumerate(links) if d is None]
-            for i, d in enumerate(links):
-                series.append(series[-1] + (d if d is not None else slope * durations[i]))
+        series = [0.0]
+        for d in links:
+            series.append(series[-1] + d)  # type: ignore[operator]
+        mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
+        sxx = sum((t - mean_t) ** 2 for t in years)
+        slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
+        intercept = mean_d - slope * mean_t
+        residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
+        residual_sd = sqrt(sum(x * x for x in residuals) / (len(series) - 2))
+        se = residual_sd / sqrt(sxx)
         cells.append({
             "cell_id": cid, "longitude": cell["longitude"], "latitude": cell["latitude"],
             "opera_los_velocity_mm_year": slope,
@@ -201,7 +190,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "opera_cumulative_los_mm": series[-1],
             "opera_series_mm": [round(value, 2) for value in series],
             "opera_links_used": len(valid),
-            "opera_links_filled": filled,
+            "opera_links_filled": [],
         })
     return {
         "artifact_type": "opera_houston_los_velocity_provisional",
@@ -216,7 +205,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "LOS velocity, not vertical subsidence. Positive = toward the satellite.",
             "Standard error assumes independent residuals; real uncertainty is larger (temporal correlation, seasonal clay motion).",
             "The reference patch is provisional and unreviewed; a moving reference biases every velocity.",
-            "A cell is included if it passes the valid-pixel (>= 25%) and water checks in at least 75% of products; missing periods are filled with the cell's own average rate and flagged.",
+            "A cell is included only if it passes the valid-pixel (>= 25%) and water checks in every product in the chosen chain; incomplete time series are withheld rather than imputed.",
             PROVISIONAL_NOTE,
         ],
         "cells": cells,

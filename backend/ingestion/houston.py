@@ -30,7 +30,7 @@ def _robust_scatter(values: list[float]) -> float:
     return 1.4826 * median(deviations)
 
 
-def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "reviewed", reference_cell_ids: set[str] | None = None) -> dict[str, Any]:
+def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "provisional_unreviewed", reference_cell_ids: set[str] | None = None) -> dict[str, Any]:
     """Join actual source-derived artifacts without fabricating a cell flood overlay.
 
     FEMA data currently exists only at USGS monitoring locations. Therefore
@@ -138,5 +138,5 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     }
 
 
-def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "reviewed") -> None:
+def write_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, groundwater_path: str | Path, fema_path: str | Path, output_path: str | Path, reference_bbox: tuple[float, float, float, float] | None = None, cell_flood_context_path: str | Path | None = None, compaction_path: str | Path | None = None, opera_path: str | Path | None = None, reference_status: str = "provisional_unreviewed") -> None:
     Path(output_path).write_text(json.dumps(build_houston_evidence(nisar_path, houstonnet_path, groundwater_path, fema_path, reference_bbox, cell_flood_context_path, compaction_path, opera_path, reference_status), indent=2), encoding="utf-8")

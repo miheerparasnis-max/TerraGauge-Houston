@@ -87,7 +87,7 @@ def main() -> None:
     evidence.add_argument("--cell-flood-context", default=None, help="output of fema-cell-context; omitted means no cell-level flood label is assigned")
     evidence.add_argument("--compaction", default=None, help="normalized USGS extensometer-compaction summary; adds mechanism context only")
     evidence.add_argument("--opera-historic-pair", default=None, help="quality-masked OPERA historical pair; adds context only, never a rate")
-    evidence.add_argument("--reference-status", default="reviewed", choices=["reviewed", "provisional_unreviewed"], help="mark a reference region that the team has not yet science-reviewed")
+    evidence.add_argument("--reference-status", default="provisional_unreviewed", choices=["reviewed", "provisional_unreviewed"], help="use reviewed only after the team documents a science review of the reference region")
     groundtruth = commands.add_parser("groundtruth-report", help="validate GroundTruth Node session artifacts")
     groundtruth.add_argument("manifest")
     groundtruth.add_argument("output")
