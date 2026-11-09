@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Cell, Mode, SensorSite, Sites } from "./types";
+import type { Cell, Mode, NodeSite, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";
 import { cellColor } from "./labels";
 
-export interface Layers { sensors: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
+export interface Layers { sensors: boolean; nodes: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
 
 interface Props {
   cells: Cell[];
   sites: Sites;
   sensors: SensorSite[];
+  nodes: NodeSite[];
   mode: Mode;
   year: number;
   layers: Layers;
@@ -42,7 +43,7 @@ function cellsGeoJSON(cells: Cell[], mode: Mode, year: number) {
     type: "FeatureCollection" as const,
     features: cells.flatMap((c) => {
       const ring = cellRing(c.id);
-      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year), sfha: c.flood.sfha }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
+      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year), sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
     }),
   };
 }
@@ -52,7 +53,7 @@ const points = (rows: { lon: number; lat: number }[]) => ({
   features: rows.map((r) => ({ type: "Feature" as const, properties: { ...r }, geometry: { type: "Point" as const, coordinates: [r.lon, r.lat] } })),
 });
 
-export function MapView({ cells, sites, sensors, mode, year, layers, selected, focus, onSelect }: Props) {
+export function MapView({ cells, sites, sensors, nodes, mode, year, layers, selected, focus, onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const ready = useRef<Promise<void> | null>(null);
@@ -74,7 +75,7 @@ export function MapView({ cells, sites, sensors, mode, year, layers, selected, f
         const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
         const { cells: c, mode: md, year: y } = latest.current;
         m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y) });
-        m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": 0.8 } }, firstLabel);
+        m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": ["get", "op"] } }, firstLabel);
         m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
         m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
         m.addSource("gps", { type: "geojson", data: points(sites.gps) });
@@ -126,16 +127,25 @@ export function MapView({ cells, sites, sensors, mode, year, layers, selected, f
   useEffect(() => whenReady((m) => {
     markers.current.forEach((mk) => mk.remove());
     markers.current = [];
-    if (!layers.sensors) return;
-    for (const s of sensors) {
+    const add = (el: HTMLElement, id: string, lon: number, lat: number) => {
+      el.addEventListener("click", (ev) => { ev.stopPropagation(); latest.current.onSelect(id); });
+      markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(m));
+    };
+    if (layers.nodes) for (const n of nodes) {
+      const el = document.createElement("button");
+      el.className = "node-pin";
+      el.setAttribute("aria-label", `Suggested low-cost node ${n.rank}`);
+      el.title = `Low-cost node site ${n.rank}`;
+      add(el, n.id, n.lon, n.lat);
+    }
+    if (layers.sensors) for (const s of sensors) {
       const el = document.createElement("button");
       el.className = "pin";
       el.textContent = String(s.rank);
-      el.setAttribute("aria-label", `Suggested sensor site ${s.rank}`);
-      el.addEventListener("click", (ev) => { ev.stopPropagation(); latest.current.onSelect(s.id); });
-      markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([s.lon, s.lat]).addTo(m));
+      el.setAttribute("aria-label", `Suggested GPS station site ${s.rank}`);
+      add(el, s.id, s.lon, s.lat);
     }
-  }), [sensors, layers.sensors]);
+  }), [sensors, nodes, layers.sensors, layers.nodes]);
 
   useEffect(() => { if (focus) whenReady((m) => m.flyTo({ center: [focus.lon, focus.lat], zoom: Math.max(m.getZoom(), 11.5), duration: 900 })); }, [focus]);
 

@@ -44,24 +44,31 @@ def cell_bounds_lonlat(cell_id: str) -> tuple[float, float, float, float]:
 
 
 def _windows(paths: Iterable[str | Path], cells: list[dict[str, Any]]):
+    """Yield (cell, pixel block, nodata) for every tile that overlaps a cell.
+
+    Each tile is read into memory once; only cells whose centre lies inside
+    the tile's footprint are visited, so 100+ tiles stay fast.
+    """
     import numpy as np
     import rasterio
-    from rasterio.warp import transform_bounds
-    from rasterio.windows import from_bounds
+    from pyproj import Transformer
 
     for path in paths:
         with rasterio.open(path) as src:
-            left, bottom, right, top = src.bounds
+            data = src.read(1)
             nodata = src.nodata
+            to_src = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
+            inverse = ~src.transform
+            height, width = data.shape
             for cell in cells:
-                bounds = transform_bounds("EPSG:4326", src.crs, *cell_bounds_lonlat(cell["cell_id"]))
-                if bounds[2] <= left or bounds[0] >= right or bounds[3] <= bottom or bounds[1] >= top:
+                west, south, east, north = cell_bounds_lonlat(cell["cell_id"])
+                xs, ys = to_src.transform([west, east, west, east], [south, south, north, north])
+                cols, rows = zip(*(inverse * (x, y) for x, y in zip(xs, ys)))
+                c0, c1 = max(int(min(cols)), 0), min(int(max(cols)) + 1, width)
+                r0, r1 = max(int(min(rows)), 0), min(int(max(rows)) + 1, height)
+                if c0 >= c1 or r0 >= r1:
                     continue
-                window = from_bounds(*bounds, transform=src.transform).round_offsets().round_lengths()
-                data = src.read(1, window=window, boundless=True, fill_value=nodata if nodata is not None else 255)
-                if data.size == 0:
-                    continue
-                yield cell, np.asarray(data), nodata
+                yield cell, np.asarray(data[r0:r1, c0:c1]), nodata
 
 
 def sample_layer(paths: list[str | Path], cells: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:

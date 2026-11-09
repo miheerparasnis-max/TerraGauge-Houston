@@ -12,6 +12,7 @@ class InsightTests(unittest.TestCase):
         self.assertEqual(confidence(se_vertical=1.0, residual_sd_mm=10, gps_difference_mm_year=None)[0], "medium")
         self.assertEqual(confidence(se_vertical=6.0, residual_sd_mm=25, gps_difference_mm_year=8)[0], "low")
         self.assertEqual(confidence(se_vertical=1.0, residual_sd_mm=10, gps_difference_mm_year=None, neighbor_difference_mm_year=15)[0], "low")
+        self.assertEqual(confidence(se_vertical=1.0, residual_sd_mm=10, gps_difference_mm_year=None, disturbed_share=0.5)[0], "low")
 
     def test_priority_order(self):
         self.assertEqual(priority(rate_vertical=None, significant=False, level=None, flood_zone_sfha=False)[0], "no_data")

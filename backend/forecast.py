@@ -89,7 +89,14 @@ def _model(kind: str, alpha: float | None = None):
     return HistGradientBoostingRegressor(**params)
 
 
-def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5, block_deg: float = 0.1, seed: int = 0) -> dict[str, Any]:
+def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5, block_deg: float = 0.1, seed: int = 0, static: dict[str, dict[str, float]] | None = None) -> dict[str, Any]:
+    """Train, test and run the forecast.
+
+    ``static`` optionally maps cell_id -> {feature name: value} for inputs that
+    do not change over the forecast period (elevation, FEMA zone, surface-water
+    share, land disturbance). Missing values are passed as NaN, which the
+    gradient-boosted trees handle natively.
+    """
     import numpy as np
 
     dates = velocity["dates"]
@@ -103,7 +110,9 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
     if split < 6 or len(dates) - split < 6:
         raise ValueError("need at least six dates on each side of the split")
     span_train = times[split] - times[0]
-    X = window_features(np, times, series, lon, lat, 0, split + 1)
+    static_names = sorted({k for row in (static or {}).values() for k in row})
+    S = np.array([[float((static or {}).get(c["cell_id"], {}).get(k, np.nan)) for k in static_names] for c in cells], dtype=float).reshape(len(cells), len(static_names))
+    X = np.c_[window_features(np, times, series, lon, lat, 0, split + 1), S]
     y, _ = _slopes(np, times, series, split, len(dates))
 
     blocks = np.floor(lon / block_deg).astype(int) * 100000 + np.floor(lat / (block_deg * 0.9)).astype(int)
@@ -145,7 +154,7 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
 
     # Final models on all cells, applied to the most recent window of equal length.
     start = int(np.searchsorted(times, times[-1] - span_train))
-    X_now = window_features(np, times, series, lon, lat, start, len(dates))
+    X_now = np.c_[window_features(np, times, series, lon, lat, start, len(dates)), S]
     final = _model("mean").fit(X, y)
     q10 = _model("quantile", 0.1).fit(X, y)
     q90 = _model("quantile", 0.9).fit(X, y)
@@ -159,7 +168,7 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
 
         # In-sample diagnostic: which inputs the final model leans on most.
         result = permutation_importance(final, X, y, n_repeats=3, random_state=seed, scoring="neg_median_absolute_error")
-        importances = {name: float(v) for name, v in zip(FEATURES, result.importances_mean)}
+        importances = {name: float(v) for name, v in zip(FEATURES + static_names, result.importances_mean)}
     except Exception:  # pragma: no cover - optional diagnostic
         pass
 
@@ -168,7 +177,7 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
         "status": "provisional",
         "method": __doc__.strip().split("\n\n")[1] if __doc__ else "",
         "model": "Gradient-boosted trees (scikit-learn HistGradientBoostingRegressor) for the mean; quantile versions for the 10th and 90th percentiles.",
-        "features": FEATURES,
+        "features": FEATURES + static_names,
         "train_window": [dates[0], dates[split]],
         "test_window": [dates[split], dates[-1]],
         "forecast_features_window": [dates[start], dates[-1]],

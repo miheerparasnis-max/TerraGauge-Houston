@@ -45,16 +45,20 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
   const th = meta.thresholds;
   const f = meta.forecast;
   const measured = cell.act !== "insufficient_data" && cell.rate !== null;
-  const sources = cell.src.length === 2 ? "satellite and a GPS station inside the square, combined" : cell.src[0] === "gps" ? "a GPS station inside the square" : "satellite (NASA OPERA)";
+  const estimated = cell.src.includes("estimated");
+  const sources = estimated ? `an estimate from ${cell.est} measured squares nearby` : cell.src.length === 2 ? "satellite and a GPS station inside the square, combined" : cell.src[0] === "gps" ? "a GPS station inside the square" : "satellite (NASA OPERA)";
   return (
     <article className="card" aria-labelledby="card-title">
       <button className="close" onClick={onClose} aria-label="Close">×</button>
       <p className="eyebrow-label">Priority</p>
       <h2 id="card-title"><span className="badge" style={{ background: a.color }} />{a.name}</h2>
       <p className="why">{cell.actWhy}</p>
+      <div className="matters"><h3>Why it matters here</h3><p>{a.why}</p></div>
       <div className="chips">
         {cell.conf && <span className="chip" style={{ ["--c" as string]: CONFIDENCE[cell.conf].color }}><i />Confidence: {CONFIDENCE[cell.conf].name}</span>}
-        {sensor && <span className="chip pin-chip">Sensor site #{sensor.rank} of {meta.sensors.length}</span>}
+        {sensor && <span className="chip pin-chip">GPS station site #{sensor.rank}</span>}
+        {cell.nodeRank && <span className="chip">Low-cost node site #{cell.nodeRank}</span>}
+        {estimated && <span className="chip">Estimated, not measured</span>}
       </div>
 
       <section className="block">
@@ -62,7 +66,7 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
         {measured ? (
           <dl>
             <Row k="Up and down" v={`${num(cell.rate)} ± ${num(cell.se)} mm/yr`} note={`${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}, from ${sources}`} />
-            {cell.los !== null && <Row k="Satellite's slanted view" v={`${num(cell.los)} mm/yr`} note={`What the radar measures directly. Converted to up/down assuming the ground moves vertically (${th.incidence_deg}° viewing angle).`} />}
+            {!estimated && cell.los !== null && <Row k="Satellite's slanted view" v={`${num(cell.los)} mm/yr`} note={`What the radar measures directly. Converted to up/down assuming the ground moves vertically (${th.incidence_deg}° viewing angle).`} />}
           </dl>
         ) : <p className="muted">The satellite couldn't get a reliable reading here, and no GPS station is inside the square.</p>}
       </section>
@@ -98,6 +102,7 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
           <dl>
             <Row k="NASA's NISAR satellite" v={duration(cell.detect.nisarMonths)} note="of passes every 12 days, based on NISAR's measured noise over Houston" />
             <Row k="A permanent GPS station" v={cell.detect.gpsWeeks === null ? "—" : `about ${Math.max(1, cell.detect.gpsWeeks)} weeks`} note={`assuming ${th.gps_daily_sigma_mm} mm of daily noise`} />
+            <Row k="A low-cost GPS node" v={cell.detect.nodeWeeks === null ? "more than 4 years" : `about ${Math.max(1, cell.detect.nodeWeeks)} weeks`} note={`assuming ${meta.hardware.node_daily_sigma_mm} mm of daily noise until our hardware test measures it`} />
           </dl>
           <p className="fine">Best-case estimates. Real atmospheric and site noise make the wait longer.</p>
         </section>
@@ -106,10 +111,11 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
       <section className="block">
         <h3>Sensors</h3>
         <dl><Row k="Nearest active GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}: ${num(cell.gps.up)} mm/yr${cell.gps.y0 ? ` over ${cell.gps.y0}–${cell.gps.y1}` : ""}`} /></dl>
-        {sensor ? <p className="good">Suggested sensor site #{sensor.rank}: the area around it is sinking about {num(Math.abs(sensor.areaRate))} mm/yr in a high-risk flood zone, and the nearest GPS is {num(sensor.gpsKm)} km away.</p>
+        {sensor ? <p className="good">Suggested permanent GPS station site #{sensor.rank} of {meta.sensors.length}: the area around it is sinking about {num(Math.abs(sensor.areaRate))} mm/yr in a high-risk flood zone, and the nearest GPS is {num(sensor.gpsKm)} km away.</p>
+          : cell.nodeRank ? <p className="good">Suggested low-cost node site #{cell.nodeRank} of {meta.nodes.length}: sinking fast enough that a cheap node could confirm it in about {cell.detect?.nodeWeeks} weeks, and no GPS within {th.gps_covered_km} km.</p>
           : cell.act === "add_monitoring" ? <p className="good">Needs a sensor: no GPS within {th.gps_covered_km} km. Faster-sinking areas rank higher on the sensor list.</p>
           : cell.gps.km <= th.gps_covered_km ? <p className="muted">Covered: a GPS station is within {th.gps_covered_km} km.</p>
-          : <p className="muted">Not a sensor priority under the rules (sensors go to sinking squares in high-risk flood zones).</p>}
+          : <p className="muted">Not a sensor priority right now: no clear sinking here.</p>}
       </section>
 
       <section className="block">

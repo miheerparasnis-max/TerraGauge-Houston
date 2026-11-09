@@ -47,13 +47,14 @@ def _slope(times: list[float], values: list[float]) -> float:
     return sum((t - mt) * (v - mv) for t, v in zip(times, values)) / sxx
 
 
-def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_year: float | None, neighbor_difference_mm_year: float | None = None) -> tuple[str, list[str]]:
+def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_year: float | None, neighbor_difference_mm_year: float | None = None, disturbed_share: float | None = None) -> tuple[str, list[str]]:
     """High / Medium / Low confidence in a cell's rate, with plain reasons.
 
     Points: precise fit (+2 if standard error <= 2.5 mm/yr, +1 if <= 5);
     nearby GPS agrees within 3 mm/yr (+1) or disagrees by more than 5 (-1);
     very jumpy record (residual scatter > 18 mm) (-1);
-    differs from the median of squares within 3 km by more than 10 mm/yr (-1).
+    differs from the median of squares within 3 km by more than 10 mm/yr (-1);
+    more than 20% of the square disturbed by construction or clearing (-1).
     High >= 3, Medium = 2, Low <= 1.
     """
     score, reasons = 0, []
@@ -78,6 +79,8 @@ def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_y
             score -= 1; reasons.append(f"It differs from the squares around it by {abs(neighbor_difference_mm_year):.0f} mm/yr, which can mean a local glitch.")
         elif abs(neighbor_difference_mm_year) <= 4.0:
             reasons.append("It matches the squares around it.")
+    if disturbed_share is not None and disturbed_share > 0.2:
+        score -= 1; reasons.append(f"About {disturbed_share * 100:.0f}% of the square shows construction or land clearing (NASA OPERA DIST), which can look like ground movement.")
     level = "high" if score >= 3 else "medium" if score == 2 else "low"
     return level, reasons
 

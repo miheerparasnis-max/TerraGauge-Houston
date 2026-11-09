@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { Cell, Meta, Mode, Sites } from "./types";
 import { MapView, type Layers } from "./MapView";
 import { Card } from "./Card";
-import { HowWeKnow, SensorPage } from "./Pages";
+import { HardwarePage, HowWeKnow } from "./Pages";
 import { ACTION, CONFIDENCE, MODES, NO_MEASUREMENT, movementColor, num } from "./labels";
 
-type Tab = "map" | "how" | "sensor";
+type Tab = "map" | "how" | "hardware";
 
 async function getJSON<T>(name: string): Promise<T> {
   const res = await fetch(`./data/${name}`);
@@ -43,7 +43,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("map");
   const [mode, setMode] = useState<Mode>("movement");
   const [year, setYear] = useState(2035);
-  const [layers, setLayers] = useState<Layers>({ sensors: true, gps: false, ext: false, wells: false, flood: false });
+  const [layers, setLayers] = useState<Layers>({ sensors: true, nodes: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
 
@@ -80,14 +80,14 @@ export default function App() {
           <div><h1>TerraGauge</h1><p>Where is Houston's ground sinking?</p></div>
         </div>
         <nav aria-label="Pages">
-          {([["map", "Map"], ["how", "How we know"], ["sensor", "Our $74 sensor"]] as const).map(([k, name]) => (
+          {([["map", "Map"], ["how", "How we know"], ["hardware", "Hardware"]] as const).map(([k, name]) => (
             <button key={k} className={tab === k ? "tab on" : "tab"} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>{name}</button>
           ))}
         </nav>
       </header>
 
       <main className={tab === "map" ? "stage" : "stage hidden"}>
-        <MapView cells={cells} sites={sites} sensors={meta.sensors} mode={mode} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
+        <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} mode={mode} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
 
         <div className="controls">
           <div className="box">
@@ -107,7 +107,7 @@ export default function App() {
           </div>
           <details className="box layers">
             <summary>Show on map</summary>
-            {([["sensors", "Suggested sensor sites"], ["gps", "GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]] as const).map(([k, name]) => (
+            {([["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost nodes (diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]] as const).map(([k, name]) => (
               <label key={k}><input type="checkbox" checked={layers[k]} onChange={() => toggle(k)} />{name}</label>
             ))}
           </details>
@@ -117,10 +117,15 @@ export default function App() {
           {cell ? <Card cell={cell} meta={meta} sensor={sensorFor(cell.id)} onClose={() => setSelected(null)} /> : (
             <div className="summary">
               <h2>Houston at a glance</h2>
+              <div className="matters">
+                <h3>Why this matters</h3>
+                <p>Pumping groundwater makes Houston's clay soils squeeze and the land sink. Some areas sank over 9 feet in four decades, and sinking ground adds to flood risk, because land that sinks gets closer to the water that floods it and drainage stops working as designed (Harris-Galveston Subsidence District).</p>
+                <p>TerraGauge uses NASA satellites to show where that's still happening, how sure we are, how much more is likely by {fc ? fc.years[fc.years.length - 1] : "2031"}, and where new sensors would do the most good.</p>
+              </div>
               <p className="fine">NASA satellite record {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} combined with GPS, NISAR, wells, compaction gauges, and flood zones on one map. Click any square for its full story.</p>
               <button className="answer" onClick={() => setMode("movement")}>
                 <span className="q">Where is the ground moving?</span>
-                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares sank 10 mm a year or more from {meta.record.start.slice(0, 4)} to {meta.record.end.slice(0, 4)}. Gray squares have no measurement.</span>
+                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} squares sank 10 mm a year or more from {meta.record.start.slice(0, 4)} to {meta.record.end.slice(0, 4)}. Lighter squares are estimated from their neighbors; gray squares have no reading.</span>
               </button>
               <button className="answer" onClick={() => setMode("confidence")}>
                 <span className="q">How sure are we?</span>
@@ -132,10 +137,10 @@ export default function App() {
               </button>
               <button className="answer" onClick={() => setMode("priority")}>
                 <span className="q">What should Houston do here?</span>
-                <span className="a"><strong>{(meta.counts.action.investigate_first ?? 0).toLocaleString()}</strong> squares to investigate first, <strong>{(meta.counts.action.add_monitoring ?? 0).toLocaleString()}</strong> that need a GPS sensor, and <strong>{(meta.counts.action.review_disagreement ?? 0).toLocaleString()}</strong> where satellite and GPS disagree.</span>
+                <span className="a"><strong>{(meta.counts.action.investigate_first ?? 0).toLocaleString()}</strong> squares to investigate first, <strong>{(meta.counts.action.add_monitoring ?? 0).toLocaleString()}</strong> that need a sensor, and <strong>{(meta.counts.action.review_disagreement ?? 0).toLocaleString()}</strong> where satellite and GPS disagree. Numbered pins: permanent GPS stations. Diamonds: low-cost nodes.</span>
               </button>
-              <h3>Suggested sensor sites</h3>
-              <p className="fine">The "Add monitoring here" squares in the fastest-sinking areas (median of squares within 3 km), at least {meta.thresholds.sensor_spacing_km} km apart.</p>
+              <h3>Suggested permanent GPS stations</h3>
+              <p className="fine">The measured "Add monitoring here" squares in the fastest-sinking areas, at least {meta.thresholds.sensor_spacing_km} km apart. {meta.nodes.length} more low-cost node sites (diamonds) are on the Hardware page.</p>
               <ol className="sensor-list">
                 {meta.sensors.map((s) => (
                   <li key={s.id}><button onClick={() => pick(s.id)}>
@@ -149,7 +154,7 @@ export default function App() {
         </section>
       </main>
       {tab === "how" && <HowWeKnow meta={meta} />}
-      {tab === "sensor" && <SensorPage />}
+      {tab === "hardware" && <HardwarePage meta={meta} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true })); pick(id); }} />}
       {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). Not a flood forecast or a property assessment.</footer>}
     </div>
   );

@@ -307,7 +307,13 @@ One combined map of 1 km squares answers four questions (color the map by each):
 - **Future:** a machine-learning forecast (`backend/forecast.py`, gradient-boosted trees) to 2031. Trained on 2016–2021, tested on 2021–2026 with spatial-block cross-validation: typical error 1.4 mm/yr vs 2.5 for "the past rate continues" and 7.2 for "no motion". Ranges are conformally calibrated to 80% coverage. Only shown if it beats every baseline.
 - **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
 
-Each square's card also shows how long NISAR (and a permanent GPS station) would need to confirm its rate.
+Each square's card also shows why the label matters (flooding, drainage, infrastructure) and how long NISAR, a permanent GPS station, or a low-cost node would need to confirm its rate.
+
+Squares with no reliable satellite reading (but not water) are estimated from at least 4 measured squares within 3 km (inverse-distance weighting; tested by hiding measured squares: typical error ~0.9 mm/yr, 80% within ~3 mm/yr). They are drawn lighter and always get Low confidence.
+
+The forecast also uses NASADEM elevation, OPERA DSWx surface water, OPERA DIST land disturbance, and FEMA zone as static inputs (`scripts/build_forecast.py`); DIST also lowers confidence where >20% of a square is disturbed.
+
+The Hardware page compares a low-cost GPS node (~$74–500) with a permanent station (~$20–30k) and lists where each would go: 15 permanent-station sites (numbered pins) and 30 low-cost node sites (diamonds).
 
 To regenerate the data the site shows:
 

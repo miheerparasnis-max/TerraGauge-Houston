@@ -122,10 +122,11 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
 
 const rateUncertainty = (sigma: number, days: number, n: number) => (sigma / (days / 365.25)) * Math.sqrt(12 / (n * (n * n - 1)));
 
-export function SensorPage() {
+export function HardwarePage({ meta, onShow }: { meta: Meta; onShow: (id: string) => void }) {
+  const hw = meta.hardware;
   const [heights, setHeights] = useState("");
   const [rate, setRate] = useState(10);
-  const [gap, setGap] = useState(7);
+  const [gap, setGap] = useState(1);
   const values = heights.split(/[\s,]+/).filter(Boolean).map(Number).filter(Number.isFinite);
   const sigma = useMemo(() => {
     if (values.length < 3) return null;
@@ -139,13 +140,50 @@ export function SensorPage() {
   }, [sigma, rate, gap]);
   return (
     <div className="page">
-      <h2 className="page-title">Our $74 sensor</h2>
-      <p className="lede">Professional GPS stations cost thousands of dollars. We're testing whether a $74 GPS board (Waveshare LC29H) could fill the gaps on the map.</p>
-      <h3>The test</h3>
-      <p>We bolt the antenna to a metal sheet in a backyard and never move it. Because it isn't moving, any change in its readings is pure measurement noise. Knowing the noise tells us how long a cheap sensor would need to spot real sinking.</p>
-      <div className="status-box"><p><strong>Status: no recordings yet.</strong> Recording starts in the first hour of the hackathon. We'll report a result only if we get three good sessions compared against NOAA's NETP reference station.</p></div>
-      <h3>Try it</h3>
-      <p className="small">Enter the height from each recording session. The numbers below are just an example until real data comes in.</p>
+      <h2 className="page-title">Hardware</h2>
+      <p className="lede">Satellites show where Houston is sinking. A GPS sensor on the ground confirms it. TerraGauge suggests two kinds of sensors and exactly where each would help most.</p>
+
+      <h3>What a ground sensor does</h3>
+      <p>A GPS receiver bolted to the ground measures its own height every day against NOAA's reference stations. If the ground under it sinks, the daily heights slowly drift down. After enough days, the drift stands out from the daily wobble and the sinking is confirmed. Faster sinking and a quieter sensor mean a shorter wait.</p>
+
+      <div className="tier">
+        <div>
+          <h4>Basic: low-cost GPS node</h4>
+          <dl>
+            <div className="row"><dt>What it is</dt><dd>A small dual-band GPS board and antenna on a fixed post, with power and a data link</dd></div>
+            <div className="row"><dt>Cost</dt><dd>About $74 (our Waveshare LC29H prototype) to about $350–500 for a u-blox ZED-F9P kit with a better antenna</dd></div>
+            <div className="row"><dt>Daily noise</dt><dd>~{hw.node_daily_sigma_mm} mm (planning guess until our test measures it)</dd></div>
+            <div className="row"><dt>Time to confirm 10 mm/yr</dt><dd>about {hw.node_weeks_10} weeks (best case)</dd></div>
+            <div className="row"><dt>Time to confirm 5 mm/yr</dt><dd>about {hw.node_weeks_5} weeks (best case)</dd></div>
+            <div className="row"><dt>Best for</dt><dd>Covering many sinking areas cheaply, especially squares the satellite can only estimate</dd></div>
+          </dl>
+        </div>
+        <div>
+          <h4>Advanced: permanent GPS station</h4>
+          <dl>
+            <div className="row"><dt>What it is</dt><dd>A survey-grade receiver and antenna on a deep, stable mount, like the 257 HoustonNet stations</dd></div>
+            <div className="row"><dt>Cost</dt><dd>About $20,000–30,000 per station</dd></div>
+            <div className="row"><dt>Daily noise</dt><dd>~{hw.gps_daily_sigma_mm} mm</dd></div>
+            <div className="row"><dt>Time to confirm 10 mm/yr</dt><dd>about {hw.gps_weeks_10} weeks (best case)</dd></div>
+            <div className="row"><dt>Time to confirm 5 mm/yr</dt><dd>about {hw.gps_weeks_5} weeks (best case)</dd></div>
+            <div className="row"><dt>Best for</dt><dd>Long-term anchors in the most important flood-zone sinking areas</dd></div>
+          </dl>
+        </div>
+      </div>
+      <p className="small">"Best case" assumes the daily wobble is random. Real GPS noise has seasonal and slow drifts, so agencies usually wait a few years before trusting a station's long-term rate. Low-cost costs and performance are from a published test of u-blox ZED-F9P receivers for deformation monitoring (Hohensinn et al., 2022), which found centimetre-level precision and called them an excellent way to add stations to existing networks.</p>
+
+      <h3>Where we'd put them</h3>
+      <h4>{meta.sensors.length} permanent GPS stations (numbered pins on the map)</h4>
+      <p className="small">Rule: measured squares that are clearly sinking inside a FEMA high-risk flood zone with no GPS station within {meta.thresholds.gps_covered_km} km ("Add monitoring here"), ranked by how fast the surrounding area is sinking, kept {meta.thresholds.sensor_spacing_km} km apart.</p>
+      <ol className="site-list">{meta.sensors.map((s) => <li key={s.id}><button className="link" onClick={() => onShow(s.id)}>Area sinking {num(Math.abs(s.areaRate))} mm/yr</button> <small>, zone {s.zone}, {num(s.gpsKm)} km from GPS</small></li>)}</ol>
+      <h4>{meta.nodes.length} low-cost nodes (diamonds on the map)</h4>
+      <p className="small">Rule: squares that are clearly sinking ("Add monitoring here" or "Observe", measured or estimated) with no GPS within {meta.thresholds.gps_covered_km} km, where a node could confirm the sinking within {hw.node_max_years} years, ranked by sinking speed, kept {hw.node_spacing_km} km apart and away from the permanent-station sites.</p>
+      <ol className="site-list">{meta.nodes.map((n) => <li key={n.id}><button className="link" onClick={() => onShow(n.id)}>Sinking {num(Math.abs(n.areaRate))} mm/yr</button> <small>, about {n.weeks} weeks to confirm{n.est ? ", estimated square" : ""}</small></li>)}</ol>
+
+      <h3>Our hackathon test</h3>
+      <p>During the event we test the basic node ourselves: the antenna is fixed to a metal sheet in a backyard and never moved, so any change in its readings is pure noise. That measured noise replaces the {hw.node_daily_sigma_mm} mm planning guess above.</p>
+      <div className="status-box"><p><strong>Status: no recordings yet.</strong> We report a result only with three good sessions checked against NOAA's NETP reference station. The node measures its own noise, not Houston's sinking.</p></div>
+      <h4>Try the calculator</h4>
       <label className="field">Heights from each session, in mm<input value={heights} onChange={(e) => setHeights(e.target.value)} placeholder="for example 11.2, 8.9, 10.4" inputMode="decimal" /></label>
       <div className="field-row">
         <label className="field">Sinking to detect, mm a year<input type="number" min={1} value={rate} onChange={(e) => setRate(Number(e.target.value))} /></label>
@@ -154,7 +192,12 @@ export function SensorPage() {
       {sigma !== null
         ? <p className="result">Noise between sessions: <strong>{sigma.toFixed(1)} mm</strong>. To spot {rate} mm a year you'd need about <strong>{needed ?? "20,000+"}</strong> sessions{needed ? `, roughly ${Math.round(((needed - 1) * gap) / 7)} weeks` : ""}.</p>
         : <p className="muted">Enter at least three heights to see an estimate.</p>}
-      <p className="small">Best-case estimate. Weather, nearby buildings, and the site itself can make the real wait longer. The sensor measures its own noise, not Houston's sinking.</p>
+
+      <h3>Sources</h3>
+      <ul className="small">
+        <li>Hohensinn, R. et al. (2022), Low-cost GNSS and real-time PPP: assessing the precision of the u-blox ZED-F9P for kinematic monitoring applications, Remote Sensing 14(20), 5100.</li>
+        <li>Harris-Galveston Subsidence District, Subsidence FAQs.</li>
+      </ul>
     </div>
   );
 }

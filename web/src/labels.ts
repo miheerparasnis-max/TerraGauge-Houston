@@ -8,13 +8,13 @@ export const MODES: { key: Mode; name: string; question: string }[] = [
 ];
 
 /** The plan's action labels. Order = rule order (first match wins). */
-export const ACTION: Record<Action, { name: string; color: string; meaning: string }> = {
-  investigate_first: { name: "Investigate first", color: "#7A1F3D", meaning: "Clearly sinking in a FEMA high-risk flood zone, and a nearby GPS station confirms it." },
-  add_monitoring: { name: "Add monitoring here", color: "#B8862B", meaning: "Clearly sinking in a FEMA high-risk flood zone, but no GPS station within 2 km to confirm it. The numbered pins are the top sites." },
-  review_disagreement: { name: "Review disagreement", color: "#2F6FB0", meaning: "The satellite and a GPS station within 2 km disagree by more than 5 mm a year." },
-  observe: { name: "Observe", color: "#D9C7E8", meaning: "Clearly sinking, but outside FEMA's high-risk flood zone." },
-  no_clear_motion: { name: "No clear motion", color: "#EEF1EC", meaning: "No sinking beyond what our measurements can tell apart from noise." },
-  insufficient_data: { name: "No measurement", color: "rgba(110,120,116,0.32)", meaning: "Trees, fields, or water block the satellite here, so there's no reliable reading." },
+export const ACTION: Record<Action, { name: string; color: string; meaning: string; why: string }> = {
+  investigate_first: { name: "Investigate first", color: "#7A1F3D", meaning: "Clearly sinking in a FEMA high-risk flood zone, and a nearby GPS station confirms it.", why: "Land that sinks in a flood zone gets closer to the water that floods it, so the same storm can flood it deeper over time, and drainage and levees designed for the old ground level work less well. Because GPS confirms it, flood planners and the Subsidence District can act on this with confidence." },
+  add_monitoring: { name: "Add monitoring here", color: "#B8862B", meaning: "Clearly sinking in a FEMA high-risk flood zone, but no GPS station within 2 km to confirm it. The numbered pins are the top sites.", why: "Same flood concern as Investigate first, but only the satellite sees it. A sensor here turns a satellite reading into proof before anyone spends money on drainage or flood fixes." },
+  review_disagreement: { name: "Review disagreement", color: "#2F6FB0", meaning: "The satellite and a GPS station within 2 km disagree by more than 5 mm a year.", why: "When two measurements disagree, one of them is missing something: a GPS station that has shifted, local construction, or a radar glitch. Checking these keeps bad numbers out of flood and planning decisions." },
+  observe: { name: "Observe", color: "#D9C7E8", meaning: "Clearly sinking, but outside FEMA's high-risk flood zone.", why: "Sinking outside today's flood zones still strains pipes, roads, and foundations, and flood maps are drawn on today's ground level. Keep watching so these areas aren't a surprise later." },
+  no_clear_motion: { name: "No clear motion", color: "#EEF1EC", meaning: "No sinking beyond what our measurements can tell apart from noise.", why: "Knowing where the ground is stable is useful too: it tells the city where it doesn't need to spend limited monitoring money." },
+  insufficient_data: { name: "No measurement", color: "rgba(110,120,116,0.32)", meaning: "Water, or too few measured squares nearby to estimate from, so there's no reliable reading.", why: "We'd rather show a gap than guess. A sensor or more satellite passes would fill it." },
 };
 
 export const CONFIDENCE: Record<Confidence, { name: string; color: string; meaning: string }> = {
@@ -44,6 +44,7 @@ export function cellColor(cell: Cell, mode: Mode, year: number): string {
   if (mode === "priority") return ACTION[cell.act].color;
   if (mode === "confidence") return cell.conf ? CONFIDENCE[cell.conf].color : NO_MEASUREMENT;
   if (mode === "future") return cell.future ? movementColor(cell.future.by[String(year)]?.c ?? null, 12) : NO_MEASUREMENT;
+  // estimated squares use the same colors; MapView draws them lighter
   return movementColor(cell.rate);
 }
 
