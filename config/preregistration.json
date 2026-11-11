@@ -1,0 +1,93 @@
+{
+  "artifact_type": "terragauge_preregistration",
+  "version": 1,
+  "written": "2026-11-10",
+  "document": "docs/preregistration/2026-11-10-preregistration.md",
+  "epoch_set": {
+    "collection": "NISAR_L2_GUNW_PROVISIONAL_V1",
+    "track": 62,
+    "frame": 16,
+    "direction": "ASCENDING",
+    "product_version": "1.0.11",
+    "inventory": "data/manifests/nisar_track062_inventory_20261110.json",
+    "granule_count": 27,
+    "date_count": 28,
+    "additions_allowed_only_at": "hour-0 input freeze, via a re-run and committed inventory",
+    "partial_processing_rule": "longest contiguous chain starting 2025-11-02"
+  },
+  "quality": {
+    "coherence_min": 0.40,
+    "valid_fraction_min": 0.50,
+    "require_main_connected_component": true,
+    "require_in_every_pair": true
+  },
+  "continuity": {
+    "wavelength_m": 0.241962,
+    "max_abs_pair_displacement_mm": 60.5,
+    "basis": "half of one 2*pi unwrapping cycle = (wavelength/2)/2"
+  },
+  "resolution_test": {
+    "alpha_two_sided": 0.05,
+    "critical_value": "student_t(0.975, N-2)",
+    "report_expected_chance_count": true,
+    "sensitivity_rule": "abs(v) >= 2 * sigma_v"
+  },
+  "headline": {
+    "sigma": "median per-cell residual sigma over reference-region cells",
+    "target_rate_mm_year": 5.0,
+    "detection_sigma": 2.0,
+    "start_date": "2025-11-02",
+    "extension_cadence_days": 12,
+    "geometry": "LOS",
+    "statement": "lower bound"
+  },
+  "reference": {
+    "station_rule": {
+      "min_samples_per_day": 0.5,
+      "min_history_years": 10.0,
+      "min_end_decimal_year": 2021.0,
+      "max_abs_up_mm_year": 1.0,
+      "quality_cell_within_km": 1.0,
+      "split": "sorted by station_id, reference = [0::2], held_out = [1::2]"
+    },
+    "reference_stations": ["ADKS", "DEN2", "NETP", "TMCC"],
+    "held_out_stable_stations": ["COH2", "LKHU", "THSU"],
+    "region_a_radius_km": 3.0,
+    "region_b_radius_km": 5.0,
+    "min_region_cells": 50,
+    "exclude_fema_zones": ["OPEN WATER"],
+    "max_opera_water_fraction": 0.5,
+    "cell_list_frozen_before_statistics": true
+  },
+  "validation_stations": {
+    "v1_min_samples_per_day": 0.5,
+    "v1_quality_cell_within_km": 1.0,
+    "v1_exclude": "reference_stations",
+    "v1_candidates_from_2024_summary": 63,
+    "cell_level_match_km": 1.0
+  },
+  "corrections": {
+    "primary": "apply each product-supplied correction layer not marked applied, exactly once",
+    "plane_removal_primary": false,
+    "invalid_correction_layer_fails_quality": true
+  },
+  "labels": {
+    "order": ["TG-L1", "TG-L2", "TG-L3", "TG-L4", "TG-L5"],
+    "gnss_nearby_km": 2.0,
+    "flood_requires_true": true,
+    "null_flood_is_unknown": true
+  },
+  "validation_metrics": {
+    "pass_fraction_within_2sigma_comb": 0.80,
+    "min_n_v1": 10,
+    "min_n_v2": 30,
+    "informative_max_median_2sigma_comb_mm_year": 10.0,
+    "pearson_min_n_v1": 10,
+    "pearson_min_n_v2": 30,
+    "gnss_date_window_days": 1
+  },
+  "sensitivity": {
+    "tier1": ["coherence 0.30/0.40/0.50", "region A vs B", "no corrections", "drop each correction", "plane removal", "2-sigma rule"],
+    "tier2": "full cross-product, cut first"
+  }
+}
