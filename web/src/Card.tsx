@@ -89,9 +89,9 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
           <TrendChart cell={cell} meta={meta} />
           <p className="legend-line"><span className="k-past" />Measured <span className="k-mid" />Forecast <span className="k-cone" />Likely range (80%)</p>
           <dl>
-            <Row k={`Rate, ${f.base.slice(0, 4)}–${f.years[f.years.length - 1]}`} v={`${num(cell.future.rate)} mm/yr`} note={`likely ${num(cell.future.low)} to ${num(cell.future.high)}; it was ${num(cell.future.recent)} mm/yr over the last 5 years`} />
+            <Row k={`Rate, ${f.base.slice(0, 4)}–${f.years[f.years.length - 1]}`} v={`${num(cell.future.rate)} mm/yr`} note={`its ${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)} average, continued${cell.future.recent !== null ? `; the last 5 years alone were ${num(cell.future.recent)} mm/yr` : ""}`} />
           </dl>
-          <details className="fine"><summary>Why is the forecast line straight?</summary>The model predicts this square's average speed for the next five years, so the forecast is a straight line at that speed. We tested a bending path (speed changing smoothly) and it was less accurate every year. Real ground wiggles around any line, for example when dry years shrink Houston's clay, and nobody can predict those years ahead, so the shaded range is built from the real wiggles we saw in testing.</details>
+          <details className="fine"><summary>Why a straight line?</summary>We tested several ways to forecast by pretending it was 2021, 2022, 2023, 2024 or 2025 and predicting up to 2026. Continuing each square's long-term rate was the most accurate overall, better than a machine-learning model and better than assuming no motion. Real ground wiggles around the line (dry years shrink Houston's clay), and nobody can predict those years ahead, so the shaded range comes from the real errors in those tests.</details>
           <p className="fine">Change in ground level since {f.base.slice(0, 7)}</p>
           <dl>{f.years.map((y) => { const v = cell.future!.by[String(y)]; return <Row key={y} k={`By ${y}`} v={`${num(v.c)} cm`} note={`likely ${num(v.lo)} to ${num(v.hi)} cm`} />; })}</dl>
         </section>

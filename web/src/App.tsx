@@ -22,7 +22,7 @@ function Legend({ mode, year, meta }: { mode: Mode; year: number; meta: Meta }) 
       <div>
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
         <div className="ramp-keys"><span>Sinking {span} {unit}</span><span>None</span><span>Rising</span></div>
-        {mode === "future" && meta.forecast && <p className="legend-note">Machine-learning forecast, tested on 2021–2026: typical error {num(meta.forecast.scores.model.median_abs_error)} mm/yr.</p>}
+        {mode === "future" && meta.forecast && <p className="legend-note">Each square's 2016–2026 rate continued. In tests on past years it beat a machine-learning model and "no motion" in most cases.</p>}
         <ul className="keys" style={{ marginTop: 8 }}>{noData}</ul>
       </div>
     );
@@ -133,7 +133,7 @@ export default function App() {
               </button>
               <button className="answer" onClick={() => setMode("future")}>
                 <span className="q">How much will it sink?</span>
-                <span className="a">{fc ? <>A machine-learning forecast to {fc.years[fc.years.length - 1]}. Tested on 2021–2026, it was off by a typical <strong>{num(fc.scores.model.median_abs_error)} mm/yr</strong>, versus {num(fc.scores.past_rate_continues.median_abs_error)} for "the past rate continues."</> : "No tested forecast yet."}</span>
+                <span className="a">{fc ? (() => { const best = fc.backtest.find((b) => Math.round(b.years_ahead) === 4); return <>Each square's long-term rate continued to {fc.years[fc.years.length - 1]}. Tested by pretending it was earlier: predicting 4 years ahead it was off by a typical <strong>{best ? num(best.long_term_rate_typical_error_cm) : "—"} cm</strong>, versus {best ? num(best.no_motion_typical_error_cm) : "—"} cm for "no motion"{best?.ml_typical_error_cm ? ` and ${num(best.ml_typical_error_cm)} cm for a machine-learning model` : ""}.</>; })() : "No tested forecast yet."}</span>
               </button>
               <button className="answer" onClick={() => setMode("priority")}>
                 <span className="q">What should Houston do here?</span>

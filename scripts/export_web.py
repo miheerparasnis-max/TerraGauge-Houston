@@ -71,12 +71,14 @@ def main() -> None:
     chain = load(PROV / "terragauge_houston_evidence_chain_20251102_20260101.json")
     ml_path = PROV / "ml_forecast.json"
     ml = load(ml_path) if ml_path.is_file() else None
+    backtest_path = PROV / "backtest_recent.json"
+    backtest = load(backtest_path)["results"] if backtest_path.is_file() else []
     stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
     extensometers = load(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = load(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
     flood = {row["cell_id"]: row for row in load(DERIVED / "fema_nfhl_houston_cell_context_2026-11-07.json")["cells"]}
     opera_cells = {row["cell_id"]: row for row in opera["cells"]}
-    ml_cells = {row["cell_id"]: row for row in ml["cell_forecasts"]} if ml and ml["passes"] else {}
+    ml_cells = {row["cell_id"]: row for row in ml["cell_forecasts"]} if ml else {}
     nasa = {}
     for name in ("nasadem", "dswx", "dist"):
         path = LAYERS / f"{name}_houston_cells.json"
@@ -86,16 +88,20 @@ def main() -> None:
 
     dates = opera["dates"]
     base_year = decimal_year(dates[-1])
-    years = list(range(int(base_year) + 1, int(base_year + (ml["tested_horizon_years"] if ml else 0) + 0.5) + 1)) if ml_cells else []
+    tested = max((b["years_ahead"] for b in backtest), default=0.0)
+    years = list(range(int(base_year) + 1, int(base_year + tested + 0.5) + 1)) if backtest else []
 
     # Year-by-year 80% half-widths from the held-out test, made non-decreasing
     # (a wiggle like the one seen 2-3 years into the test could come any year).
+    # Forecast = each square's long-term (2016-2026) rate continued. Chosen
+    # because it beat the ML model in out-of-time tests (scripts/backtest_recent.py).
+    # Each year's 80% range = the 80th-percentile error seen that many years
+    # ahead in those tests, made non-decreasing.
     bands = []
-    if ml and ml.get("horizon_bands"):
-        running = 0.0
-        for b in ml["horizon_bands"]:
-            running = max(running, b["scale_mm"])
-            bands.append((b["years_ahead"], running))
+    running = 0.0
+    for b in sorted(backtest, key=lambda b: b["years_ahead"]):
+        running = max(running, b["long_term_rate_p80_error_cm"] * 10)
+        bands.append((b["years_ahead"], running))
 
     def band_at(h: float) -> float:
         if not bands:
@@ -171,14 +177,14 @@ def main() -> None:
 
         future = None
         fc = ml_cells.get(cid)
-        if fc and act != "insufficient_data":
+        if rate is not None and act != "insufficient_data" and years:
             by = {}
             for y in years:
                 h = y - base_year
-                half = band_at(h) * fc.get("relative_uncertainty", 1.0)
-                center = fc["rate_mm_year"] * h
-                by[str(y)] = {"c": r(center / 10), "lo": r((center - half) / 10), "hi": r((center + half) / 10)}
-            future = {"rate": r(fc["rate_mm_year"]), "low": r(fc["low_mm_year"]), "high": r(fc["high_mm_year"]), "recent": r(fc["recent_rate_mm_year"]), "by": by}
+                half = band_at(h)
+                by[str(y)] = {"c": r(rate * h / 10), "lo": r((rate * h - half) / 10), "hi": r((rate * h + half) / 10)}
+            per_year = band_at(tested) / tested
+            future = {"rate": r(rate), "low": r(rate - per_year), "high": r(rate + per_year), "recent": r(fc["recent_rate_mm_year"]) if fc else None, "by": by}
 
         detect = None
         if rate is not None and act != "insufficient_data" and rate < 0:
@@ -252,13 +258,15 @@ def main() -> None:
         act, act_why = action_label(rate_vertical=est, significant=sig, flood_zone_sfha=c["flood"]["sfha"], gps_km=c["gps"]["km"], gps_rate=c["gps"]["up"], covered_km=t.gps_nearby_km)
         counts["action"][act] = counts["action"].get(act, 0) + 1
         counts["confidence"]["low"] = counts["confidence"].get("low", 0) + 1
-        futures = [(wi, o["future"]) for wi, (_, o) in zip(w, near) if o.get("future")]
         future = None
-        if futures:
-            sw = sum(wi for wi, _ in futures)
-            avg = lambda key: sum(wi * f[key] for wi, f in futures) / sw  # noqa: E731
-            fr, lo_, hi_ = avg("rate"), avg("low") - est_se, avg("high") + est_se
-            future = {"rate": r(fr), "low": r(lo_), "high": r(hi_), "recent": r(avg("recent")), "by": {str(y): {"c": r(fr * (y - base_year) / 10), "lo": r(lo_ * (y - base_year) / 10), "hi": r(hi_ * (y - base_year) / 10)} for y in years}}
+        if years:
+            by = {}
+            for y in years:
+                h = y - base_year
+                half = sqrt(band_at(h) ** 2 + (est_se * h) ** 2)
+                by[str(y)] = {"c": r(est * h / 10), "lo": r((est * h - half) / 10), "hi": r((est * h + half) / 10)}
+            per_year = sqrt(band_at(tested) ** 2 + (est_se * tested) ** 2) / tested
+            future = {"rate": r(est), "low": r(est - per_year), "high": r(est + per_year), "recent": None, "by": by}
         n_nisar = passes_to_detect(est * COS, nisar_sigma, 12) if est < 0 else None
         n_gps = passes_to_detect(est, GPS_DAILY_SIGMA_MM, 1) if est < 0 else None
         n_node = passes_to_detect(est, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) if est < 0 else None
@@ -320,12 +328,22 @@ def main() -> None:
         detect_table.append({"rate": v, "passes": n, "years": r((n - 1) * 12 / 365.25, 1) if n else None})
 
     forecast_meta = None
-    if ml:
-        forecast_meta = {k: ml[k] for k in ("passes", "train_window", "test_window", "tested_horizon_years", "cells", "best_baseline", "interval_coverage_10_90", "interval_coverage_raw", "model", "features", "feature_importance", "limitations")}
-        forecast_meta["scores"] = {name: {k: r(v, 2) for k, v in s.items()} for name, s in ml["scores"].items()}
-        forecast_meta["base"] = dates[-1]
-        forecast_meta["years"] = years
-        forecast_meta["horizon_bands"] = [{k: r(v, 2) for k, v in b.items()} for b in ml.get("horizon_bands", [])]
+    if backtest:
+        forecast_meta = {
+            "method": "long_term_rate",
+            "base": dates[-1],
+            "years": years,
+            "tested_horizon_years": tested,
+            "bands_cm": [{"years_ahead": h, "half_width_cm": r(b / 10, 2)} for h, b in bands],
+            "backtest": backtest,
+            "ml_tested": ml is not None,
+            "limitations": [
+                "The forecast continues each square's 2016-2026 average rate; it cannot foresee changes in groundwater pumping or rules.",
+                f"Tested only up to {tested:.1f} years ahead; later years are not offered.",
+                "Ranges come from real out-of-time test errors (80% of squares fell inside), not from a formula.",
+                "Year-to-year wiggles (for example dry years shrinking Houston's clay) cannot be predicted; the range covers them.",
+            ],
+        }
 
     meta = {
         "status": "provisional_unreviewed",

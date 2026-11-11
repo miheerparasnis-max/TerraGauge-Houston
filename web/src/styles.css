@@ -181,3 +181,4 @@ dl { margin: 0; }
 .site-list { columns: 2; font-size: 13.5px; padding-left: 20px; }
 @media (max-width: 860px) { .tier { grid-template-columns: 1fr; } .site-list { columns: 1; } }
 .link { background: none; border: 0; padding: 0; color: var(--violet); text-decoration: underline; cursor: pointer; font: inherit; }
+.table td.best { font-weight: 750; }

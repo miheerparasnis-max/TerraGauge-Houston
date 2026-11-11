@@ -44,10 +44,10 @@ export interface Meta {
   counts: { action: Record<string, number>; confidence: Record<string, number> };
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
   forecast: null | {
-    passes: boolean; train_window: string[]; test_window: string[]; tested_horizon_years: number; cells: number; best_baseline: string;
-    interval_coverage_10_90: number; interval_coverage_raw: number; model: string; features: string[]; feature_importance: Record<string, number> | null;
-    limitations: string[]; scores: Record<string, Score>; base: string; years: number[];
-    horizon_bands: { years_ahead: number; scale_mm: number; coverage: number; model_mae_mm: number; past_rate_mae_mm: number; no_motion_mae_mm: number }[];
+    method: string; base: string; years: number[]; tested_horizon_years: number; ml_tested: boolean;
+    bands_cm: { years_ahead: number; half_width_cm: number }[];
+    limitations: string[];
+    backtest: { cutoff: string; predict_to: string; years_ahead: number; ml_typical_error_cm: number | null; long_term_rate_typical_error_cm: number; past_rate_typical_error_cm: number; no_motion_typical_error_cm: number; long_term_within_2cm_pct: number; fast_actual_median_cm: number; fast_long_term_predicted_median_cm: number }[];
   };
   nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };

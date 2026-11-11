@@ -304,7 +304,7 @@ One combined map of 1 km squares answers four questions (color the map by each):
 
 - **Movement:** OPERA satellite rate 2016–2026 converted to vertical, blended with a GPS station's rate where one is within 1 km.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check, record jumpiness, and agreement with neighboring squares.
-- **Future:** a machine-learning forecast (`backend/forecast.py`, gradient-boosted trees) to 2031. Trained on 2016–2021, tested on 2021–2026 with spatial-block cross-validation: typical error 1.4 mm/yr vs 2.5 for "the past rate continues" and 7.2 for "no motion". Ranges are conformally calibrated to 80% coverage. Only shown if it beats every baseline.
+- **Future:** each square's 2016–2026 rate continued to 2031, with year-by-year 80% ranges from out-of-time tests. `scripts/backtest_recent.py` pretends it is 2021, 2022, 2023, 2024 or 2025, uses only data up to then, and predicts to March 2026. The long-term rate was most accurate overall (e.g. 0.9 cm typical error 4 years ahead vs 2.2 cm for "no motion" and 5.6 cm for a gradient-boosted ML model), so it is the forecast. The ML model (`backend/forecast.py`) is kept as a documented experiment: it scored well on spatial cross-validation within one period but did not transfer to later years.
 - **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
 
 Each square's card also shows why the label matters (flooding, drainage, infrastructure) and how long NISAR, a permanent GPS station, or a low-cost node would need to confirm its rate.
@@ -319,7 +319,8 @@ To regenerate the data the site shows:
 
 ```bash
 python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
-python3 scripts/build_forecast.py      # needs scikit-learn; trains and tests the forecast
+python3 scripts/build_forecast.py      # needs scikit-learn; ML experiment + static features
+python3 scripts/backtest_recent.py     # out-of-time test that picks the forecast method
 python3 scripts/export_web.py          # writes web/public/data/
 ```
 

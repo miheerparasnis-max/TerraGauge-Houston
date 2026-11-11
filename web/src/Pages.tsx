@@ -31,14 +31,6 @@ function Gauge({ signal, noise, label }: { signal: number; noise: number; label:
   );
 }
 
-const BASELINE_NAMES: Record<string, string> = {
-  model: "Machine-learning model",
-  past_rate_continues: "The past rate continues",
-  area_rate: "The surrounding area's rate",
-  damped_past_rate: "The past rate, scaled down",
-  no_motion: "No motion",
-};
-
 export function HowWeKnow({ meta }: { meta: Meta }) {
   const v = meta.validation, n = meta.nisar, f = meta.forecast, th = meta.thresholds;
   return (
@@ -73,23 +65,20 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <h3>How the forecast works, and how we tested it</h3>
       {f ? (
         <>
-          <p>A machine-learning model (gradient-boosted trees) learns how each square's future rate relates to its past: its overall rate, whether it was speeding up or slowing down, how steady its record was, what the squares around it were doing, and where it is. Groundwater, compaction, and GPS rates are left out because their records overlap the years being predicted.</p>
-          <p>To test it honestly, we trained it only on {f.train_window[0].slice(0, 4)}–{f.train_window[1].slice(0, 4)} data and asked it to predict each square's rate for {f.test_window[0].slice(0, 4)}–{f.test_window[1].slice(0, 4)}. We scored it on parts of the city it never trained on (10 km blocks), and compared it with simpler guesses:</p>
+          <p>To test a forecast honestly, we pretended it was an earlier date. The forecast could only use satellite data up to that date, and then had to predict how much each square would sink by {f.backtest[0]?.predict_to.slice(0, 7)}. We compared each prediction with what really happened.</p>
+          <p>We tried three approaches: a machine-learning model (gradient-boosted trees that learn from each square's past speed, speeding up or slowing down, neighbors, elevation, water, and construction), continuing each square's long-term rate, and assuming no motion.</p>
           <table className="table">
-            <thead><tr><th>Method</th><th>Typical error, mm/yr</th><th>In fast-sinking areas</th></tr></thead>
-            <tbody>{(["model", "past_rate_continues", "area_rate", "damped_past_rate", "no_motion"] as const).map((k) => <tr key={k} className={k === "model" ? "win" : ""}><td>{BASELINE_NAMES[k]}</td><td>{num(f.scores[k].median_abs_error)}</td><td>{num(f.scores[k].fast_median_abs_error)}</td></tr>)}</tbody>
+            <thead><tr><th>Pretend it's…</th><th>Years ahead</th><th>Machine learning</th><th>Long-term rate</th><th>No motion</th></tr></thead>
+            <tbody>{f.backtest.map((b) => { const vals = [b.ml_typical_error_cm, b.long_term_rate_typical_error_cm, b.no_motion_typical_error_cm].filter((v): v is number => v !== null); const best = Math.min(...vals); const cell = (v: number | null) => v === null ? <td>—</td> : <td className={v === best ? "best" : ""}>{num(v)} cm</td>; return <tr key={b.cutoff}><td>{b.cutoff.slice(0, 7)}</td><td>{b.years_ahead.toFixed(0)}</td>{cell(b.ml_typical_error_cm)}{cell(b.long_term_rate_typical_error_cm)}{cell(b.no_motion_typical_error_cm)}</tr>; })}</tbody>
           </table>
-          <p>{f.passes ? `The model beats every simpler method, so the Future view uses it.` : "The model did not clearly beat the simpler methods, so no forecast is shown."} The ranges are calibrated so that {Math.round(f.interval_coverage_10_90 * 100)}% of test squares fell inside them. We tested about {f.tested_horizon_years.toFixed(0)} years ahead, so the forecast stops at {f.years[f.years.length - 1]}.</p>
-          <h4>Year by year</h4>
-          <p>We also checked the total change 1 to 5 years after the training data ended, against what really happened:</p>
-          <table className="table">
-            <thead><tr><th>Years ahead</th><th>Model, typical error</th><th>"Past rate continues"</th><th>"No motion"</th></tr></thead>
-            <tbody>{f.horizon_bands.map((b) => <tr key={b.years_ahead}><td>{b.years_ahead.toFixed(b.years_ahead % 1 ? 1 : 0)}</td><td><b>{num(b.model_mae_mm / 10, 1)} cm</b></td><td>{num(b.past_rate_mae_mm / 10, 1)} cm</td><td>{num(b.no_motion_mae_mm / 10, 1)} cm</td></tr>)}</tbody>
-          </table>
-          <p>The forecast is a straight line at the model's predicted speed: a path that bends (speed changing smoothly) tested worse at every horizon. Errors peak 2–3 years out because the real ground wiggles from year to year, likely from dry and wet years shrinking and swelling Houston's clay. Those wiggles can't be predicted years ahead, so each year's range uses the largest wiggle seen up to that point in testing.</p>
+          <p className="small">Typical (median) error per square. Bold = most accurate in that test.</p>
+          <p><b>Result:</b> continuing the long-term rate was the most accurate overall, so the Future view uses it. The machine-learning model looked great when we tested it on different parts of the city over the same years, but when it had to predict genuinely later years it did worse. It had learned quirks of one particular period instead of how Houston's ground behaves. With more years of satellite data, a model may eventually win; for now the simplest method is the most trustworthy.</p>
+          <p>The one test the long-term rate lost (starting April 2024) shows the fastest-sinking areas apparently rising about 1 cm by 2026, which is physically unlikely and may be a problem in the newest satellite products. We kept it in the results anyway.</p>
+          <h4>How wide are the ranges?</h4>
+          <p>Each year's shaded range is the error that 80% of squares stayed within in these tests, at that many years ahead: about ±{num(f.bands_cm[0]?.half_width_cm)} cm one year out and ±{num(f.bands_cm[f.bands_cm.length - 1]?.half_width_cm)} cm from two years out. We tested up to about {f.tested_horizon_years.toFixed(0)} years ahead, so the forecast stops at {f.years[f.years.length - 1]}.</p>
           <ul className="small">{f.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
         </>
-      ) : <p>No forecast has been built yet. Run scripts/build_forecast.py.</p>}
+      ) : <p>No forecast test has been run yet. Run scripts/backtest_recent.py.</p>}
 
       <h3>NASA's newest satellite: NISAR</h3>
       <p>NISAR started imaging Houston in late 2025. Houston sinks a few millimetres over a few weeks, but the atmosphere shifts a single radar reading by centimetres, so one pass can't measure Houston's slow sinking yet.</p>
