@@ -205,6 +205,66 @@ The sensor list changed as well. All of these changes come from the already-comm
 - **Render:** a headless Chromium pass over all three pages showed no application errors and no forbidden phrases in the rendered text. The map layer itself cannot draw without WebGL in headless mode, so it was not checked visually.
 - **Freeze:** `data/derived/` is unchanged.
 
+## 2026-11-11
+
+### D-032: Teammate's "4% better" change: not found
+- `origin` has no commits after `5c0513c` (2026-11-09). The only branches are `main` and the already-merged `reyansh/website-and-fixes`, plus pull request #1. No forks exist under the contributors' names, and nothing is stashed locally. The change has not been pushed.
+- His latest pushed commit, `5c0513c`, is consistent with this work: it removes circular imputation from the OPERA fit and makes the reference status default to provisional. Its effect on the GPS check was r 0.694 → 0.664 (about 4% *lower*), because the imputed cells left.
+
+*Reported to the repository owner.*
+
+### D-033: Pre-registration amendment A1, commit `051ca6c` (before any governed result)
+- **Change.** Deep-seated GNSS stations (ADKS, LKHU, NETP, TXEX, UHKD) are removed after the v1 split, so every other station keeps its side. Reference: DEN2, TMCC. Held-out stable: COH2, THSU. V1 candidates: 62.
+- **Source.** Wang et al. 2022, *J. Surv. Eng.* 148(4): 04022008.
+- **Rejected alternative.** Excluding first and then re-splitting would have swapped COH2/THSU with DEN2/TMCC; that was rejected as a larger change than the physical reason requires.
+- **Timing.** No NISAR reference-cell statistic or per-cell rate existed.
+
+*Delegated (the 2026-11-11 instruction: "bulletproof, fact-check, and verify from sources and datasets").*
+
+### D-034: Provisional OPERA and NISAR datum moved to the pre-registered region, commit `3abe067`
+The old datum, the nearest cell to each of 17–19 stations, rested on 4–6 cells with complete OPERA velocities, so it swung when two stations were removed. Results under each rule (MASTER §0.4 asks for both):
+
+| Datum | GPS n | r | Median \|d\| (LOS) | Bias (LOS) | Urgent | High | Watch | Stable | Threshold |
+|---|---|---|---|---|---|---|---|---|---|
+| Old rule, deep-seated stations included (published until now) | 105 | 0.664 | 1.71 | −0.21 | 358 | 112 | 1,322 | 2,682 | 6.0 |
+| Old rule, deep-seated removed | 103 | 0.653 | 2.71 | +2.21 | 202 | 85 | 980 | 3,205 | 3.0 |
+| **Region A, 3 km (adopted)** | **106** | **0.660** | **1.68** | **+0.34** | **391** | **118** | **1,148** | **2,813** | **1.5** |
+| Region A, 5 km (sensitivity) | 106 | 0.660 | 1.68 | +0.31 | — | — | — | — | — |
+
+Median |d| and bias are in mm/yr; the threshold is the up/down-equivalent floor in mm/yr.
+
+**Why adopted.**
+- It is MASTER §6.5's instruction (OPERA shares NISAR's reference region).
+- It uses a rule fixed before any results.
+- It is stable across radius.
+- It leaves 106 GPS stations independent for validation.
+
+**Threshold.** The "no clear motion" floor fell to 1.5 mm/yr because the region's scatter is now measured over 31 cells. Each square must also exceed twice its own uncertainty (about 6 mm/yr up/down equivalent including model error), which dominates.
+
+*Delegated (as D-033).*
+
+### D-035: Site fact-check corrections, commit `3abe067`
+1. "Check data" no longer claims rates above 40 mm/yr are "faster than anything ever measured in Houston". USGS reports about 0.12 m/yr at Pasadena in 1964–73. The text now refers to the fastest *reliable* rate in the 2024 GPS release (P111, −32.2 mm/yr).
+2. P102's source rate (−615.6 mm/yr) is withheld, with the reason.
+3. Deep-seated stations are not blended, cross-checked, or counted as surface coverage; the GPS layer explains what they measure.
+4. "Matches … to within X" becomes "typical (median) difference".
+5. OPERA is credited as NASA JPL products from Copernicus Sentinel-1 data, with Copernicus attribution added.
+
+*Delegated (as D-033).*
+
+### D-036: Verified and unverified facts
+See `docs/factcheck/2026-11-11-source-verification.md` (16 rows).
+- **Still open:** the NISAR GUNW sign convention (F-4); the OPERA sign is confirmed empirically but not yet from its specification; the DEN2/TMCC mount type.
+- **Needs a teammate:** the "$74" price and the sensor recording status.
+
+### D-037: Input freeze
+`data/manifests/input_freeze_2026-11-11.json` at `3abe067`. The three provisional OPERA files changed against the 2026-11-10 freeze, all explained by D-034.
+
+### D-038: Push
+The repository owner asked for a push before the UI pivot if the teammate's changes were in line. The only teammate work on the remote (`5c0513c`) is already the base of this branch and is consistent with it. The branch `chore/audit-baseline-2026-11-10` is pushed as a branch, not to `main`, so the teammate can rebase his unpushed change and the team can review and merge.
+
+*Approved by the repository owner (2026-11-11 instruction).*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.

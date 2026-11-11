@@ -35,7 +35,10 @@ Where this plan and MASTER disagree on a fact, the audit evidence wins and the d
 | W-4 replace Urgent/High/Watch with the PR-7 labels | Open; needs released NISAR rates (B6, D-1) | — |
 | W-5 1.6-year NISAR figure removed; archive facts shown | Done. The headline number waits for PR-3. | `558978f`; D-028 |
 | W-6 claims sweep as a regression test | Done | `558978f`; D-030 |
-| Test suite (Python 3.14 venv) | 94 run, 94 OK, 0 skipped | — |
+| Pre-registration amendment A1 (deep-seated stations removed) | Done, before any governed result | `051ca6c`; D-033 |
+| Provisional datum moved to pre-registered region A | Done: 106 GPS, r = 0.660, bias +0.34 mm/yr LOS | `3abe067`; D-034 |
+| Source fact-check (16 claims) | Done. Open: F-4 NISAR sign; OPERA sign from its spec; DEN2/TMCC mount type; sensor price and status | `docs/factcheck/2026-11-11-source-verification.md`; D-036 |
+| Test suite (Python 3.14 venv) | 101 run, 101 OK, 0 skipped | — |
 
 The archive finding (audit A0) moves the critical path. The work is no longer "explain why six epochs cannot resolve anything". It is "download and ingest 22 more granules (51.2 GB) before the event, then fit 28 epochs".
 
