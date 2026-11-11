@@ -46,6 +46,7 @@ export interface Meta {
   forecast: null | {
     method: string; base: string; years: number[]; tested_horizon_years: number; ml_tested: boolean;
     bands_cm: { years_ahead: number; half_width_cm: number }[];
+    benchmark: { test_cases: number; origins: string[]; table: { method: string; label: string; overall_cm: number; by_horizon_cm: Record<string, number> }[] };
     limitations: string[];
     backtest: { cutoff: string; predict_to: string; years_ahead: number; ml_typical_error_cm: number | null; long_term_rate_typical_error_cm: number; past_rate_typical_error_cm: number; no_motion_typical_error_cm: number; long_term_within_2cm_pct: number; fast_actual_median_cm: number; fast_long_term_predicted_median_cm: number }[];
   };

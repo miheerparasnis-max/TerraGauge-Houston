@@ -304,7 +304,7 @@ One combined map of 1 km squares answers four questions (color the map by each):
 
 - **Movement:** OPERA satellite rate 2016–2026 converted to vertical, blended with a GPS station's rate where one is within 1 km.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check, record jumpiness, and agreement with neighboring squares.
-- **Future:** each square's 2016–2026 rate continued to 2031, with year-by-year 80% ranges from out-of-time tests. `scripts/backtest_recent.py` pretends it is 2021, 2022, 2023, 2024 or 2025, uses only data up to then, and predicts to March 2026. The long-term rate was most accurate overall (e.g. 0.9 cm typical error 4 years ahead vs 2.2 cm for "no motion" and 5.6 cm for a gradient-boosted ML model), so it is the forecast. The ML model (`backend/forecast.py`) is kept as a documented experiment: it scored well on spatial cross-validation within one period but did not transfer to later years.
+- **Future:** each square's season-aware trend (trend + yearly sine/cosine for clay shrink-swell), averaged 50/50 with the median rate within 3 km, continued to 2031 (`backend.forecast.seasonal_area_rates`). Chosen by `scripts/forecast_benchmark.py`, a walk-forward test of 9 methods from 21 start dates (2018–2025) at 1–5 years ahead, 84 tests each. Typical error per square: chosen 1.50 cm; long-term rate 1.56; Theil-Sen 1.59; recency-weighted 1.63; gradient-boosted ML 1.97; no motion 2.20. Year-by-year 80% ranges come from the same tests (±1.7, 2.6, 3.3, 4.1, 5.0 cm for 1–5 years). The ML model (`backend/forecast.py` train_and_forecast) is kept as a documented experiment: it scored well on spatial cross-validation but not on later years. Pooled ML (HistGradientBoosting, ExtraTrees, Ridge) and mean-reversion of the shared shrink-swell signal were also tried and did not help overall.
 - **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
 
 Each square's card also shows why the label matters (flooding, drainage, infrastructure) and how long NISAR, a permanent GPS station, or a low-cost node would need to confirm its rate.
@@ -320,7 +320,8 @@ To regenerate the data the site shows:
 ```bash
 python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
 python3 scripts/build_forecast.py      # needs scikit-learn; ML experiment + static features
-python3 scripts/backtest_recent.py     # out-of-time test that picks the forecast method
+python3 scripts/backtest_recent.py     # earlier out-of-time test (to March 2026)
+python3 scripts/forecast_benchmark.py  # walk-forward benchmark that picks the forecast method
 python3 scripts/export_web.py          # writes web/public/data/
 ```
 

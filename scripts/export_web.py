@@ -73,6 +73,10 @@ def main() -> None:
     ml = load(ml_path) if ml_path.is_file() else None
     backtest_path = PROV / "backtest_recent.json"
     backtest = load(backtest_path)["results"] if backtest_path.is_file() else []
+    bench_path = PROV / "forecast_benchmark.json"
+    bench = load(bench_path) if bench_path.is_file() else None
+    from backend.forecast import seasonal_area_rates
+    forecast_rates = seasonal_area_rates(opera) if bench else {}
     stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
     extensometers = load(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = load(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
@@ -88,20 +92,19 @@ def main() -> None:
 
     dates = opera["dates"]
     base_year = decimal_year(dates[-1])
-    tested = max((b["years_ahead"] for b in backtest), default=0.0)
-    years = list(range(int(base_year) + 1, int(base_year + tested + 0.5) + 1)) if backtest else []
+    tested = float(max((b["years_ahead"] for b in bench["bands_80"]), default=0)) if bench else 0.0
+    years = list(range(int(base_year) + 1, int(base_year + tested + 0.5) + 1)) if bench else []
 
-    # Year-by-year 80% half-widths from the held-out test, made non-decreasing
-    # (a wiggle like the one seen 2-3 years into the test could come any year).
-    # Forecast = each square's long-term (2016-2026) rate continued. Chosen
-    # because it beat the ML model in out-of-time tests (scripts/backtest_recent.py).
-    # Each year's 80% range = the 80th-percentile error seen that many years
-    # ahead in those tests, made non-decreasing.
+    # Forecast = season-aware trend averaged with its 3 km neighbourhood
+    # (backend.forecast.seasonal_area_rates), the most accurate method in the
+    # walk-forward benchmark (scripts/forecast_benchmark.py). Each year's 80%
+    # range = the 80th-percentile error seen that many years ahead in that
+    # benchmark, made non-decreasing.
     bands = []
     running = 0.0
-    for b in sorted(backtest, key=lambda b: b["years_ahead"]):
-        running = max(running, b["long_term_rate_p80_error_cm"] * 10)
-        bands.append((b["years_ahead"], running))
+    for b in sorted(bench["bands_80"] if bench else [], key=lambda b: b["years_ahead"]):
+        running = max(running, b["half_width_cm"] * 10)
+        bands.append((float(b["years_ahead"]), running))
 
     def band_at(h: float) -> float:
         if not bands:
@@ -139,7 +142,7 @@ def main() -> None:
         cover = min(active, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
         cover_km = distance_km(lon, lat, cover["longitude"], cover["latitude"])
 
-        sources, rate, se, sat_los = [], None, None, None
+        sources, rate, se, sat_los, gps_weight = [], None, None, None, 0.0
         if op:
             sat_los = op["opera_los_velocity_mm_year"]
             rate = vertical_rate(sat_los)
@@ -149,6 +152,7 @@ def main() -> None:
                 w_s, w_g = 1 / se ** 2, 1 / GPS_SIGMA_MM_YEAR ** 2
                 rate = (rate * w_s + blend["up_mm_year"] * w_g) / (w_s + w_g)
                 se = sqrt(1 / (w_s + w_g))
+                gps_weight = w_g / (w_s + w_g)
                 sources.append("gps")
         elif blend_km <= GPS_BLEND_KM:
             rate, se = float(blend["up_mm_year"]), GPS_SIGMA_MM_YEAR
@@ -178,13 +182,16 @@ def main() -> None:
         future = None
         fc = ml_cells.get(cid)
         if rate is not None and act != "insufficient_data" and years:
+            f_rate = rate
+            if op and cid in forecast_rates:
+                f_rate = forecast_rates[cid] * (1 - gps_weight) + (blend["up_mm_year"] * gps_weight if gps_weight else 0.0)
             by = {}
             for y in years:
                 h = y - base_year
                 half = band_at(h)
-                by[str(y)] = {"c": r(rate * h / 10), "lo": r((rate * h - half) / 10), "hi": r((rate * h + half) / 10)}
+                by[str(y)] = {"c": r(f_rate * h / 10), "lo": r((f_rate * h - half) / 10), "hi": r((f_rate * h + half) / 10)}
             per_year = band_at(tested) / tested
-            future = {"rate": r(rate), "low": r(rate - per_year), "high": r(rate + per_year), "recent": r(fc["recent_rate_mm_year"]) if fc else None, "by": by}
+            future = {"rate": r(f_rate), "low": r(f_rate - per_year), "high": r(f_rate + per_year), "recent": r(fc["recent_rate_mm_year"]) if fc else None, "by": by}
 
         detect = None
         if rate is not None and act != "insufficient_data" and rate < 0:
@@ -328,20 +335,21 @@ def main() -> None:
         detect_table.append({"rate": v, "passes": n, "years": r((n - 1) * 12 / 365.25, 1) if n else None})
 
     forecast_meta = None
-    if backtest:
+    if bench:
         forecast_meta = {
-            "method": "long_term_rate",
+            "method": bench["chosen"],
             "base": dates[-1],
             "years": years,
             "tested_horizon_years": tested,
             "bands_cm": [{"years_ahead": h, "half_width_cm": r(b / 10, 2)} for h, b in bands],
+            "benchmark": {k: bench[k] for k in ("table", "test_cases", "origins")},
             "backtest": backtest,
-            "ml_tested": ml is not None,
+            "ml_tested": True,
             "limitations": [
-                "The forecast continues each square's 2016-2026 average rate; it cannot foresee changes in groundwater pumping or rules.",
-                f"Tested only up to {tested:.1f} years ahead; later years are not offered.",
-                "Ranges come from real out-of-time test errors (80% of squares fell inside), not from a formula.",
-                "Year-to-year wiggles (for example dry years shrinking Houston's clay) cannot be predicted; the range covers them.",
+                "The forecast continues each square's season-aware 2016-2026 trend, averaged with its neighbours; it cannot foresee changes in groundwater pumping or rules.",
+                f"Tested up to {tested:.0f} years ahead in {bench['test_cases']} walk-forward tests; later years are not offered.",
+                "Ranges come from real walk-forward test errors (80% of squares fell inside), not from a formula.",
+                "Year-to-year shrink-swell of Houston's clay (dry vs wet years) can't be predicted; the range covers it.",
             ],
         }
 

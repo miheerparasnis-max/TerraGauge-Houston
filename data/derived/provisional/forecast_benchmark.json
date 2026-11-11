@@ -1,0 +1,166 @@
+{
+ "artifact_type": "terragauge_forecast_benchmark",
+ "method": "Walk-forward benchmark of forecasting methods (the test that picks TerraGauge's forecast).\n\nFor every past date from mid-2018 on, each method may use ONLY satellite data\nup to that date, and predicts each square's change in ground level 1, 2, 3\nand 4 years later. Predictions are compared with what actually happened\n(smoothed levels). Machine-learning models are trained only on earlier\n\"past -> what happened next\" examples whose outcome was known by that date.\n\n    python3 scripts/forecast_benchmark.py          # numpy; scikit-learn for the ML rows\n\nWrites data/derived/provisional/forecast_benchmark.json, used by export_web.py.",
+ "chosen": "seasonal_area",
+ "origins": [
+  "2018-08-13",
+  "2018-11-11",
+  "2019-02-09",
+  "2019-05-10",
+  "2019-08-08",
+  "2019-11-06",
+  "2020-02-04",
+  "2020-05-04",
+  "2020-08-02",
+  "2020-10-31",
+  "2021-02-04",
+  "2021-05-05",
+  "2021-08-03",
+  "2021-11-01",
+  "2022-03-19",
+  "2022-09-27",
+  "2023-04-07",
+  "2023-10-04",
+  "2024-04-01",
+  "2024-09-28",
+  "2025-03-27"
+ ],
+ "test_cases": 84,
+ "table": [
+  {
+   "method": "seasonal_area",
+   "label": "Season-aware + neighborhood (chosen)",
+   "overall_cm": 1.5,
+   "by_horizon_cm": {
+    "1": 0.91,
+    "2": 1.35,
+    "3": 1.67,
+    "4": 1.81,
+    "5": 2.11
+   }
+  },
+  {
+   "method": "seasonal",
+   "label": "Season-aware trend",
+   "overall_cm": 1.54,
+   "by_horizon_cm": {
+    "1": 0.92,
+    "2": 1.38,
+    "3": 1.71,
+    "4": 1.86,
+    "5": 2.21
+   }
+  },
+  {
+   "method": "area_smoothed",
+   "label": "Neighborhood-smoothed rate",
+   "overall_cm": 1.54,
+   "by_horizon_cm": {
+    "1": 0.91,
+    "2": 1.39,
+    "3": 1.73,
+    "4": 1.89,
+    "5": 2.17
+   }
+  },
+  {
+   "method": "long_term",
+   "label": "Long-term rate",
+   "overall_cm": 1.56,
+   "by_horizon_cm": {
+    "1": 0.91,
+    "2": 1.41,
+    "3": 1.74,
+    "4": 1.92,
+    "5": 2.22
+   }
+  },
+  {
+   "method": "recent_5yr",
+   "label": "Last 5 years' rate",
+   "overall_cm": 1.58,
+   "by_horizon_cm": {
+    "1": 0.94,
+    "2": 1.41,
+    "3": 1.77,
+    "4": 1.97,
+    "5": 2.22
+   }
+  },
+  {
+   "method": "robust_theil_sen",
+   "label": "Robust trend (Theil-Sen)",
+   "overall_cm": 1.59,
+   "by_horizon_cm": {
+    "1": 0.92,
+    "2": 1.4,
+    "3": 1.78,
+    "4": 1.97,
+    "5": 2.31
+   }
+  },
+  {
+   "method": "recency_weighted",
+   "label": "Recent years weighted more",
+   "overall_cm": 1.63,
+   "by_horizon_cm": {
+    "1": 0.93,
+    "2": 1.43,
+    "3": 1.8,
+    "4": 2.05,
+    "5": 2.43
+   }
+  },
+  {
+   "method": "ml_gradient_boosting",
+   "label": "Machine learning (gradient boosting)",
+   "overall_cm": 1.97,
+   "by_horizon_cm": {
+    "1": 1.07,
+    "2": 1.87,
+    "3": 2.09,
+    "4": 2.51,
+    "5": 2.85
+   }
+  },
+  {
+   "method": "no_motion",
+   "label": "No motion",
+   "overall_cm": 2.2,
+   "by_horizon_cm": {
+    "1": 0.96,
+    "2": 1.66,
+    "3": 2.43,
+    "4": 3.14,
+    "5": 3.75
+   }
+  }
+ ],
+ "bands_80": [
+  {
+   "years_ahead": 1,
+   "half_width_cm": 1.68,
+   "tests": 21
+  },
+  {
+   "years_ahead": 2,
+   "half_width_cm": 2.64,
+   "tests": 19
+  },
+  {
+   "years_ahead": 3,
+   "half_width_cm": 3.33,
+   "tests": 17
+  },
+  {
+   "years_ahead": 4,
+   "half_width_cm": 4.05,
+   "tests": 15
+  },
+  {
+   "years_ahead": 5,
+   "half_width_cm": 4.95,
+   "tests": 12
+  }
+ ]
+}

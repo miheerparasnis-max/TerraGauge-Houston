@@ -31,3 +31,18 @@ class ForecastTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(np is None, "numpy is a forecast-only dependency")
+class SeasonalAreaTests(unittest.TestCase):
+    def test_recovers_trend_despite_seasonal_swing(self):
+        from backend.forecast import seasonal_area_rates
+
+        dates = [f"{2016 + i // 4}-{1 + 3 * (i % 4):02d}-15" for i in range(36)]
+        years = np.array([2016 + i / 4 + 0.04 for i in range(36)])
+        cells = []
+        for k in range(30):
+            vertical = -12 * (years - 2016) + 15 * np.sin(2 * np.pi * years)
+            cells.append({"cell_id": f"c{k}", "longitude": -95.4 + k * 0.001, "latitude": 29.7, "opera_series_mm": (vertical * np.cos(np.radians(38))).tolist()})
+        rates = seasonal_area_rates({"dates": dates, "cells": cells})
+        self.assertAlmostEqual(rates["c0"], -12, delta=0.3)

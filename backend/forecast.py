@@ -242,3 +242,28 @@ def train_and_forecast(velocity: dict[str, Any], split_date: str, folds: int = 5
             "Ranges are calibrated so that 80% of held-out test cells fell inside them; they are not a guarantee for any single square.",
         ],
     }
+
+
+def seasonal_area_rates(velocity: dict[str, Any], radius_km: float = 3.0) -> dict[str, float]:
+    """TerraGauge's forecast rate (vertical mm/yr) for every cell.
+
+    Season-aware least-squares trend (trend + yearly sine/cosine, so the
+    clay's summer-shrink / winter-swell doesn't bias the rate), averaged 50/50
+    with the median of the same rate over squares within ``radius_km``.
+    Chosen by scripts/forecast_benchmark.py: most accurate of every method
+    tried (including gradient-boosted ML) in walk-forward tests.
+    """
+    import numpy as np
+
+    times = np.array([_decimal_year(d) for d in velocity["dates"]])
+    cells = velocity["cells"]
+    series = np.array([c["opera_series_mm"] for c in cells], dtype=float) / cos(radians(INCIDENCE_DEG))
+    lon = np.array([c["longitude"] for c in cells], dtype=float)
+    lat = np.array([c["latitude"] for c in cells], dtype=float)
+    x = times - times.mean()
+    design = np.c_[np.ones_like(x), x, np.sin(2 * np.pi * times), np.cos(2 * np.pi * times)]
+    rate = np.linalg.lstsq(design, series.T, rcond=None)[0][1]
+    area = _neighbourhood(np, lon, lat, rate, radius_km)
+    area = np.where(np.isnan(area), rate, area)
+    blended = 0.5 * (rate + area)
+    return {c["cell_id"]: float(v) for c, v in zip(cells, blended)}
