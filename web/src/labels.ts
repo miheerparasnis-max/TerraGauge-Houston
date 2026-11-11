@@ -1,11 +1,60 @@
-import type { Action, Cell, Confidence, Mode } from "./types";
+import type { Action, Cell, ColorBy, Confidence, Hazard, Level, Meta, Mode } from "./types";
 
 export const MODES: { key: Mode; name: string; question: string }[] = [
   { key: "movement", name: "Movement", question: "Where is the ground moving?" },
   { key: "confidence", name: "Confidence", question: "How sure are we?" },
   { key: "future", name: "Future", question: "How much will it sink?" },
   { key: "priority", name: "Priority", question: "What should Houston do here?" },
+  { key: "hazards", name: "Hazards", question: "If a disaster hit, what would the moving ground do?" },
 ];
+
+export const HAZARDS: { key: Hazard; name: string; question: string }[] = [
+  { key: "flood", name: "Flood", question: "If a big flood came, how much deeper would sinking make it?" },
+  { key: "drought", name: "Drought", question: "Where would the next drought crack foundations and pipes?" },
+  { key: "bending", name: "Ground bending", question: "Where is the ground bending, and maybe faulting?" },
+];
+
+export type FloodClass = "1pct" | "0.2pct" | "levee" | "minimal";
+export const FLOOD: Record<FloodClass | "deeper", { name: string; color: string; meaning: string }> = {
+  deeper: { name: "High-risk zone, getting deeper", color: "#0B3C6E", meaning: "FEMA 1-in-100-year flood zone, and sinking (plus ocean rise on the coast) makes the same flood at least 3 cm deeper by the chosen year." },
+  "1pct": { name: "High-risk flood zone", color: "#4A86C5", meaning: "FEMA 1-in-100-year flood zone: a 1% chance of a flood this big every year, about 26% over 30 years." },
+  "0.2pct": { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "FEMA 1-in-500-year zone (0.2% a year), or protected by a levee." },
+  levee: { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "Protected by a levee; floods if the levee is overtopped or fails." },
+  minimal: { name: "Low flood risk", color: "#EEF1EC", meaning: "Outside FEMA's mapped flood zones. Harvey still flooded many such areas." },
+};
+
+export const DROUGHT: Record<Level, { name: string; color: string; meaning: string }> = {
+  high: { name: "Drought hotspot", color: "#8A3B12", meaning: "Among the 10% of squares that dropped most in the 2018 and 2023 droughts." },
+  medium: { name: "Drought sensitive", color: "#D99A4E", meaning: "Dropped more than most squares in those droughts (next 20%)." },
+  low: { name: "Normal", color: "#F1ECE2", meaning: "Typical drought response." },
+};
+
+export const BEND: Record<Level, { name: string; color: string; meaning: string }> = {
+  high: { name: "Sharp bending", color: "#B3261E", meaning: "Sinking speed changes by 10 mm a year or more within 1 km." },
+  medium: { name: "Some bending", color: "#E8A33D", meaning: "Sinking speed changes by 5–10 mm a year within 1 km." },
+  low: { name: "Even", color: "#EEF1EC", meaning: "The ground sinks evenly here." },
+};
+
+export function floodClass(cell: Cell): FloodClass | null {
+  const z = cell.flood.zone, sub = cell.flood.sub ?? "";
+  if (z && ["A", "AE", "AO", "AH", "VE", "V"].includes(z)) return "1pct";
+  if (z === "X") return sub.includes("0.2 PCT") || sub.includes("1 PCT DEPTH") ? "0.2pct" : sub.includes("LEVEE") ? "levee" : "minimal";
+  return null;
+}
+
+/** How much deeper the same flood gets by `year`: forecast sinking + ocean rise on the coast (cm). */
+export function floodExtra(cell: Cell, year: number, meta: Meta) {
+  const cls = floodClass(cell);
+  const v = cell.future?.by[String(year)];
+  const sink = v ? Math.max(0, -v.c) : null;
+  const elev = cell.nasadem?.elevation_m;
+  const coastal = cell.flood.zone === "VE" || cell.flood.zone === "V" || (cls === "1pct" && elev !== undefined && elev < (meta.hazards?.flood.coastal_elevation_m ?? 3));
+  const base = meta.forecast ? Number(meta.forecast.base.slice(0, 4)) + (Number(meta.forecast.base.slice(5, 7)) - 1) / 12 : 2026.2;
+  const ocean = coastal ? ((meta.hazards?.flood.ocean_rise_mm_year ?? 10) * (year - base)) / 10 : 0;
+  return { cls, sink, ocean, coastal, total: sink === null ? null : sink + ocean };
+}
+
+export const chanceOver = (annual: number, years: number) => 1 - Math.pow(1 - annual, years);
 
 /** The plan's action labels. Order = rule order (first match wins). */
 export const ACTION: Record<Action, { name: string; color: string; meaning: string; why: string }> = {
@@ -39,8 +88,15 @@ export function movementColor(value: number | null, span = 25): string {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
-export function cellColor(cell: Cell, mode: Mode, year: number): string {
+export function cellColor(cell: Cell, mode: ColorBy, year: number, meta?: Meta): string {
+  if (mode === "flood") {
+    const f = meta ? floodExtra(cell, year, meta) : null;
+    if (!f || !f.cls) return NO_MEASUREMENT;
+    return f.cls === "1pct" && (f.total ?? 0) >= 3 ? FLOOD.deeper.color : FLOOD[f.cls].color;
+  }
   if (cell.act === "insufficient_data") return NO_MEASUREMENT;
+  if (mode === "drought") return cell.hz ? DROUGHT[cell.hz.dl].color : NO_MEASUREMENT;
+  if (mode === "bending") return cell.hz?.bl ? BEND[cell.hz.bl].color : NO_MEASUREMENT;
   if (mode === "priority") return ACTION[cell.act].color;
   if (mode === "confidence") return cell.conf ? CONFIDENCE[cell.conf].color : NO_MEASUREMENT;
   if (mode === "future") return cell.future ? movementColor(cell.future.by[String(year)]?.c ?? null, 12) : NO_MEASUREMENT;

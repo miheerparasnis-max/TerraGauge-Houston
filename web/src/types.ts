@@ -1,6 +1,9 @@
 export type Action = "investigate_first" | "add_monitoring" | "review_disagreement" | "observe" | "no_clear_motion" | "insufficient_data";
 export type Confidence = "high" | "medium" | "low";
-export type Mode = "movement" | "confidence" | "future" | "priority";
+export type Mode = "movement" | "confidence" | "future" | "priority" | "hazards";
+export type Hazard = "flood" | "drought" | "bending";
+export type ColorBy = Exclude<Mode, "hazards"> | Hazard;
+export type Level = "high" | "medium" | "low";
 
 export interface Cell {
   id: string;
@@ -30,6 +33,7 @@ export interface Cell {
   nasadem?: { elevation_m?: number };
   dswx?: { water_fraction?: number };
   dist?: { disturbed_fraction?: number };
+  hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null };
 }
 
 export interface SensorSite { rank: number; id: string; lon: number; lat: number; areaRate: number; rate: number; gpsKm: number; conf: Confidence | null; zone: string | null; weeks: number | null }
@@ -42,6 +46,12 @@ export interface Meta {
   record: { start: string; end: string; dates: string[]; products: number };
   thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number; disagree_mm_year: number; sensor_spacing_km: number; incidence_deg: number; gps_daily_sigma_mm: number };
   counts: { action: Record<string, number>; confidence: Record<string, number> };
+  hazards: null | {
+    tests: { drought: { flagged_median_drop_mm: number; others_median_drop_mm: number; flagged_share_in_worst10_pct: number; auc: number; cells: number }; bending: { r: number; hotspot_later_median: number; others_later_median: number; cells: number } };
+    drought: { epochs: string[]; high_mm: number; medium_mm: number };
+    bend: { high: number; medium: number };
+    flood: { ocean_rise_mm_year: number; coastal_elevation_m: number };
+  };
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
   forecast: null | {
     method: string; base: string; years: number[]; tested_horizon_years: number; ml_tested: boolean;

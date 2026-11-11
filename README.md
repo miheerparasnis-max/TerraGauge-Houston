@@ -363,3 +363,17 @@ python3 scripts/export_web.py
 ```
 
 MERRA-2 weather correction is not needed: the NISAR GUNW products already have wet and hydrostatic tropospheric and ionospheric corrections applied (see `source_processing_corrections` in each pair artifact).
+
+### Hazards (5th map mode)
+
+TerraGauge doesn't predict when a disaster comes; it shows what Houston's moving ground does when one does (`backend/hazards.py`, `scripts/build_hazards.py`):
+
+- **Flood:** FEMA zone gives the odds (1%/yr in 1-in-100-year zones, about 26% over 30 years); the forecast sinking for the chosen year (plus ~1 cm/yr Gulf rise on the coast, Liu et al. 2020) gives how much deeper the same flood gets. Optional reality check against USGS Hurricane Harvey high-water marks: `python3 scripts/fetch_harvey.py`.
+- **Drought:** extra drop beyond trend and season in the 2018 and 2023 droughts (clay shrink). Tested out-of-time: the 2018 response picked 2023's worst-hit squares (flagged squares dropped a median 53 mm vs 12 mm; AUC 0.81).
+- **Ground bending:** steepest change in sinking rate to a neighbouring 1 km square; strains pipes, roads and slabs and can mark Houston's slipping faults. Tested: 2016-2021 hotspots stayed hotspots in 2021-2026 (median 9.9 vs 1.8 mm/yr per km).
+
+```bash
+python3 scripts/fetch_harvey.py      # optional, needs internet
+python3 scripts/build_hazards.py     # needs numpy
+python3 scripts/export_web.py
+```

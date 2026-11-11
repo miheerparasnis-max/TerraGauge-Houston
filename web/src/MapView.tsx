@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Cell, Mode, NodeSite, SensorSite, Sites } from "./types";
+import type { Cell, ColorBy, Meta, NodeSite, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";
 import { cellColor } from "./labels";
 
@@ -12,7 +12,8 @@ interface Props {
   sites: Sites;
   sensors: SensorSite[];
   nodes: NodeSite[];
-  mode: Mode;
+  mode: ColorBy;
+  meta: Meta;
   year: number;
   layers: Layers;
   selected: string | null;
@@ -38,12 +39,12 @@ async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
   }
 }
 
-function cellsGeoJSON(cells: Cell[], mode: Mode, year: number) {
+function cellsGeoJSON(cells: Cell[], mode: ColorBy, year: number, meta: Meta) {
   return {
     type: "FeatureCollection" as const,
     features: cells.flatMap((c) => {
       const ring = cellRing(c.id);
-      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year), sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
+      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year, meta), sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
     }),
   };
 }
@@ -53,13 +54,13 @@ const points = (rows: { lon: number; lat: number }[]) => ({
   features: rows.map((r) => ({ type: "Feature" as const, properties: { ...r }, geometry: { type: "Point" as const, coordinates: [r.lon, r.lat] } })),
 });
 
-export function MapView({ cells, sites, sensors, nodes, mode, year, layers, selected, focus, onSelect }: Props) {
+export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers, selected, focus, onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const ready = useRef<Promise<void> | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
-  const latest = useRef({ cells, mode, year, onSelect });
-  latest.current = { cells, mode, year, onSelect };
+  const latest = useRef({ cells, mode, year, meta, onSelect });
+  latest.current = { cells, mode, year, meta, onSelect };
 
   useEffect(() => {
     if (!ref.current) return;
@@ -73,8 +74,8 @@ export function MapView({ cells, sites, sensors, nodes, mode, year, layers, sele
       created.on("load", () => {
         const m = created;
         const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
-        const { cells: c, mode: md, year: y } = latest.current;
-        m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y) });
+        const { cells: c, mode: md, year: y, meta: mt } = latest.current;
+        m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y, mt) });
         m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": ["get", "op"] } }, firstLabel);
         m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
         m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
@@ -115,7 +116,7 @@ export function MapView({ cells, sites, sensors, nodes, mode, year, layers, sele
 
   const whenReady = (fn: (m: MLMap) => void) => { ready.current?.then(() => map.current && fn(map.current)); };
 
-  useEffect(() => whenReady((m) => (m.getSource("cells") as GeoJSONSource).setData(cellsGeoJSON(cells, mode, year))), [cells, mode, year]);
+  useEffect(() => whenReady((m) => (m.getSource("cells") as GeoJSONSource).setData(cellsGeoJSON(cells, mode, year, meta))), [cells, mode, year, meta]);
   useEffect(() => whenReady((m) => m.setFilter("selected", ["==", ["get", "id"], selected ?? ""])), [selected]);
   useEffect(() => whenReady((m) => {
     m.setLayoutProperty("gps", "visibility", layers.gps ? "visible" : "none");

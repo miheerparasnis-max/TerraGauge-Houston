@@ -62,6 +62,21 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         </div>
       </div>
 
+      {meta.hazards && (() => { const t = meta.hazards.tests; return (
+        <>
+          <h3>Hazards: what the moving ground does in a disaster</h3>
+          <p>We can't predict when a hurricane or drought will come. Nobody can, years ahead. What we can do is show what Houston's moving ground does when one comes, and we tested each view on past years.</p>
+          <h4>Floods</h4>
+          <p>FEMA's flood maps give the odds of a big flood in each area: a 1% chance each year in high-risk zones (1-in-100-year) and 0.2% in moderate ones (1-in-500-year). Over a 30-year mortgage, 1% a year adds up to about a 26% chance. Sinking ground makes the same flood deeper by however much the ground drops, so we add our forecast sinking for the chosen year. On the coast, the Gulf is also rising about 1 cm a year (Liu et al. 2020, Galveston Pier 21), and we add that too. This is a simple, honest estimate, not a full flood simulation: real flooding also depends on drains, bayous and where the rain falls.</p>
+          <h4>Droughts</h4>
+          <p>Houston's clay shrinks when it dries out. In the 2011 and 2023 droughts the city had thousands of water main breaks and widespread foundation cracking. Our satellite record shows the shrinking directly: in late summer 2018 and in October 2023, many squares dropped well below their normal trend. We measured how much extra each square dropped.</p>
+          <p><b>Test:</b> we pretended it was early 2023 and used only the 2018 drought to pick the 10% of squares most likely to drop. In the October 2023 drought, those squares dropped a median <b>{num(t.drought.flagged_median_drop_mm, 0)} mm</b>, versus {num(t.drought.others_median_drop_mm, 0)} mm for everywhere else, and {num(t.drought.flagged_share_in_worst10_pct, 0)}% of them landed in the worst-hit 10% (chance would be 10%). AUC {num(t.drought.auc, 2)}, where 0.5 is a coin flip and 1 is perfect. Drought damage repeats in the same places.</p>
+          <h4>Ground bending and faults</h4>
+          <p>Where one square sinks much faster than the one next to it, the ground between them bends. That strains pipes, roads and foundations. Houston also has hundreds of slowly slipping faults that crack roads and buildings, and in radar they show up as exactly this kind of sharp change. We flag squares where the sinking speed changes by 10 mm a year or more within 1 km.</p>
+          <p><b>Test:</b> we split the record in half. The squares bending most in 2016–2021 were still bending a median {num(t.bending.hotspot_later_median)} mm a year per km in 2021–2026, versus {num(t.bending.others_later_median)} for the rest (correlation {num(t.bending.r, 2)} across {t.bending.cells.toLocaleString()} squares). Bending hotspots are real and lasting, not radar noise. Our squares are 1 km wide, so they mark zones to inspect, not exact fault lines.</p>
+        </>
+      ); })()}
+
       <h3>How the forecast works, and how we tested it</h3>
       {f ? (
         <>

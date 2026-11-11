@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Cell, Meta, Mode, Sites } from "./types";
+import type { Cell, ColorBy, Hazard, Meta, Mode, Sites } from "./types";
 import { MapView, type Layers } from "./MapView";
 import { Card } from "./Card";
 import { HardwarePage, HowWeKnow } from "./Pages";
-import { ACTION, CONFIDENCE, MODES, NO_MEASUREMENT, movementColor, num } from "./labels";
+import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, HAZARDS, MODES, NO_MEASUREMENT, floodExtra, movementColor, num } from "./labels";
 
 type Tab = "map" | "how" | "hardware";
 
@@ -11,6 +11,26 @@ async function getJSON<T>(name: string): Promise<T> {
   const res = await fetch(`./data/${name}`);
   if (!res.ok) throw new Error(`Couldn't load ${name}. Run python3 scripts/export_web.py, then reload.`);
   return res.json();
+}
+
+function HazardLegend({ hazard, year, meta, cells }: { hazard: Hazard; year: number; meta: Meta; cells: Cell[] }) {
+  const counts = new Map<string, number>();
+  const add = (k: string) => counts.set(k, (counts.get(k) ?? 0) + 1);
+  for (const c of cells) {
+    if (hazard === "flood") { const f = floodExtra(c, year, meta); if (f.cls) add(f.cls === "1pct" && (f.total ?? 0) >= 3 ? "deeper" : f.cls === "levee" ? "0.2pct" : f.cls); }
+    else if (c.hz && c.act !== "insufficient_data") { const v = hazard === "drought" ? c.hz.dl : c.hz.bl; if (v) add(v); }
+  }
+  const table: Record<string, { name: string; color: string; meaning: string }> = hazard === "flood" ? FLOOD : hazard === "drought" ? DROUGHT : BEND;
+  const keys = hazard === "flood" ? ["deeper", "1pct", "0.2pct", "minimal"] : ["high", "medium", "low"];
+  const ht = meta.hazards?.tests;
+  return (
+    <div>
+      <ul className="keys">{keys.map((k) => { const e = table[k]; return <li key={k} title={e.meaning}><span className="sw" style={{ background: e.color }} /><span><b>{e.name}</b><small>{e.meaning}</small></span><em>{(counts.get(k) ?? 0).toLocaleString()}</em></li>; })}</ul>
+      {hazard === "flood" && <p className="legend-note">FEMA's flood zones give the odds of a big flood; our forecast gives how much the ground sinks by {year}, which makes the same flood that much deeper. Coastal squares also get about 1 cm a year of ocean rise.</p>}
+      {hazard === "drought" && ht && <p className="legend-note">Tested: using only data from before 2023, the squares flagged from the 2018 drought dropped a median {num(ht.drought.flagged_median_drop_mm, 0)} mm in the 2023 drought, versus {num(ht.drought.others_median_drop_mm, 0)} mm for the rest.</p>}
+      {hazard === "bending" && ht && <p className="legend-note">Tested: the sharpest-bending squares in 2016–2021 were still bending about {num(ht.bending.hotspot_later_median / ht.bending.others_later_median, 0)}× more than the rest in 2021–2026.</p>}
+    </div>
+  );
 }
 
 function Legend({ mode, year, meta }: { mode: Mode; year: number; meta: Meta }) {
@@ -43,6 +63,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("map");
   const [mode, setMode] = useState<Mode>("movement");
   const [year, setYear] = useState(2035);
+  const [hazard, setHazard] = useState<Hazard>("flood");
   const [layers, setLayers] = useState<Layers>({ sensors: true, nodes: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
@@ -87,7 +108,7 @@ export default function App() {
       </header>
 
       <main className={tab === "map" ? "stage" : "stage hidden"}>
-        <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} mode={mode} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
+        <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} mode={(mode === "hazards" ? hazard : mode) as ColorBy} meta={meta} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
 
         <div className="controls">
           <div className="box">
@@ -95,15 +116,20 @@ export default function App() {
             <div className="seg" role="radiogroup" aria-label="Color the map by">
               {MODES.map((m) => <button key={m.key} role="radio" aria-checked={mode === m.key} className={mode === m.key ? "on" : ""} onClick={() => setMode(m.key)}>{m.name}</button>)}
             </div>
-            <p className="question">{q.question}</p>
-            {mode === "future" && fc && (
+            {mode === "hazards" && (
+              <div className="seg sub" role="radiogroup" aria-label="Hazard">
+                {HAZARDS.map((h) => <button key={h.key} role="radio" aria-checked={hazard === h.key} className={hazard === h.key ? "on" : ""} onClick={() => setHazard(h.key)}>{h.name}</button>)}
+              </div>
+            )}
+            <p className="question">{mode === "hazards" ? HAZARDS.find((h) => h.key === hazard)!.question : q.question}</p>
+            {(mode === "future" || (mode === "hazards" && hazard === "flood")) && fc && (
               <label className="year-select">By the year
                 <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
                   {fc.years.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
               </label>
             )}
-            <Legend mode={mode} year={year} meta={meta} />
+            {mode === "hazards" ? <HazardLegend hazard={hazard} year={year} meta={meta} cells={cells} /> : <Legend mode={mode} year={year} meta={meta} />}
           </div>
           <details className="box layers">
             <summary>Show on map</summary>
@@ -114,7 +140,7 @@ export default function App() {
         </div>
 
         <section className={cell ? "panel open" : "panel"} aria-live="polite">
-          {cell ? <Card cell={cell} meta={meta} sensor={sensorFor(cell.id)} onClose={() => setSelected(null)} /> : (
+          {cell ? <Card cell={cell} meta={meta} sensor={sensorFor(cell.id)} year={year} onClose={() => setSelected(null)} /> : (
             <div className="summary">
               <h2>Houston at a glance</h2>
               <div className="matters">
@@ -138,6 +164,10 @@ export default function App() {
               <button className="answer" onClick={() => setMode("priority")}>
                 <span className="q">What should Houston do here?</span>
                 <span className="a"><strong>{(meta.counts.action.investigate_first ?? 0).toLocaleString()}</strong> squares to investigate first, <strong>{(meta.counts.action.add_monitoring ?? 0).toLocaleString()}</strong> that need a sensor, and <strong>{(meta.counts.action.review_disagreement ?? 0).toLocaleString()}</strong> where satellite and GPS disagree. Numbered pins: permanent GPS stations. Diamonds: low-cost nodes.</span>
+              </button>
+              <button className="answer" onClick={() => { setMode("hazards"); setHazard("flood"); }}>
+                <span className="q">If a disaster hit, what would the moving ground do?</span>
+                <span className="a">Flood, drought and ground-bending views: how much deeper floods get as land sinks, where the next drought cracks foundations and pipes, and where uneven sinking bends the ground. Each one is tested against past years.</span>
               </button>
               <h3>Suggested permanent GPS stations</h3>
               <p className="fine">The measured "Add monitoring here" squares in the fastest-sinking areas, at least {meta.thresholds.sensor_spacing_km} km apart. {meta.nodes.length} more low-cost node sites (diamonds) are on the Hardware page.</p>

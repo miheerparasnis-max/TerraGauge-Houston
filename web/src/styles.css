@@ -182,3 +182,8 @@ dl { margin: 0; }
 @media (max-width: 860px) { .tier { grid-template-columns: 1fr; } .site-list { columns: 1; } }
 .link { background: none; border: 0; padding: 0; color: var(--violet); text-decoration: underline; cursor: pointer; font: inherit; }
 .table td.best { font-weight: 750; }
+.seg.sub { margin-top: 8px; }
+.seg.sub button { font-size: 0.85em; }
+.hazard { margin: 10px 0; }
+.hazard h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95em; }
+.hazard p { margin: 0; }

@@ -1,5 +1,5 @@
 import type { Cell, Meta, SensorSite } from "./types";
-import { ACTION, CONFIDENCE, duration, headline, num } from "./labels";
+import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, chanceOver, duration, floodExtra, headline, num } from "./labels";
 
 const yearOf = (d: string) => Number(d.slice(0, 4)) + (Number(d.slice(5, 7)) - 1) / 12 + (Number(d.slice(8, 10)) - 1) / 365;
 
@@ -40,7 +40,7 @@ function Row({ k, v, note }: { k: string; v: string; note?: string }) {
   return <div className="row"><dt>{k}</dt><dd>{v}{note && <span className="note">{note}</span>}</dd></div>;
 }
 
-export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; sensor?: SensorSite; onClose: () => void }) {
+export function Card({ cell, meta, sensor, year, onClose }: { cell: Cell; meta: Meta; sensor?: SensorSite; year: number; onClose: () => void }) {
   const a = ACTION[cell.act];
   const th = meta.thresholds;
   const f = meta.forecast;
@@ -89,13 +89,15 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
           <TrendChart cell={cell} meta={meta} />
           <p className="legend-line"><span className="k-past" />Measured <span className="k-mid" />Forecast <span className="k-cone" />Likely range (80%)</p>
           <dl>
-            <Row k={`Rate, ${f.base.slice(0, 4)}–${f.years[f.years.length - 1]}`} v={`${num(cell.future.rate)} mm/yr`} note={`its ${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)} average, continued${cell.future.recent !== null ? `; the last 5 years alone were ${num(cell.future.recent)} mm/yr` : ""}`} />
+            <Row k={`Rate, ${f.base.slice(0, 4)}–${f.years[f.years.length - 1]}`} v={`${num(cell.future.rate)} mm/yr`} note={`its season-aware ${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)} trend, averaged with its neighborhood${cell.future.recent !== null ? `; the last 5 years alone were ${num(cell.future.recent)} mm/yr` : ""}`} />
           </dl>
           <details className="fine"><summary>Why a straight line?</summary>We tested {f?.benchmark.table.length ?? 9} forecasting methods, including machine learning, by pretending it was an earlier date and predicting 1 to 5 years ahead, {f?.benchmark.test_cases ?? 84} tests each. The winner continues each square's season-aware trend, averaged with its neighborhood. Real ground wiggles around the line (dry years shrink Houston's clay, wet years swell it), and nobody can predict those years ahead, so the shaded range comes from the real errors in those tests.</details>
           <p className="fine">Change in ground level since {f.base.slice(0, 7)}</p>
           <dl>{f.years.map((y) => { const v = cell.future!.by[String(y)]; return <Row key={y} k={`By ${y}`} v={`${num(v.c)} cm`} note={`likely ${num(v.lo)} to ${num(v.hi)} cm`} />; })}</dl>
         </section>
       )}
+
+      <Hazards cell={cell} meta={meta} year={year} />
 
       {cell.detect && (
         <section className="block">
@@ -143,5 +145,49 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
       </details>
       <p className="fine">Square {cell.id} at {cell.lat.toFixed(4)}, {cell.lon.toFixed(4)}</p>
     </article>
+  );
+}
+
+
+/** What the measured ground does to floods, droughts and bending here. */
+function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number }) {
+  const fl = floodExtra(cell, year, meta);
+  const hz = cell.hz;
+  if (!fl.cls && !hz) return null;
+  const odds = fl.cls === "1pct" ? 0.01 : fl.cls === "0.2pct" || fl.cls === "levee" ? 0.002 : 0;
+  const pct = (p: number) => `${Math.round(p * 100)}%`;
+  return (
+    <section className="block">
+      <h3>If a disaster hit here</h3>
+      {fl.cls && (
+        <div className="hazard">
+          <h4><span className="badge" style={{ background: fl.cls === "1pct" && (fl.total ?? 0) >= 3 ? FLOOD.deeper.color : FLOOD[fl.cls].color }} />Flood: {FLOOD[fl.cls].name.toLowerCase()}</h4>
+          <p>{odds > 0
+            ? <>A flood this big has about a <b>{odds * 100}% chance each year</b> here ({pct(chanceOver(odds, 5))} over 5 years, {pct(chanceOver(odds, 30))} over a 30-year mortgage). </>
+            : <>FEMA rates this area as low flood risk, though Hurricane Harvey flooded many areas like it. </>}
+            {fl.total !== null && fl.total > 0.5
+              ? <>By {year} the same flood would be about <b>{num(fl.total)} cm deeper</b>{fl.ocean > 0 ? <> ({num(fl.sink)} cm from the ground sinking, {num(fl.ocean)} cm from ocean rise)</> : <>, because the ground here is forecast to sink that much</>}.</>
+              : fl.total !== null ? <>The ground here isn't forecast to sink much, so floods shouldn't get deeper by {year}.</> : null}
+          </p>
+        </div>
+      )}
+      {hz && (
+        <div className="hazard">
+          <h4><span className="badge" style={{ background: DROUGHT[hz.dl].color }} />Drought: {DROUGHT[hz.dl].name.toLowerCase()}</h4>
+          <p>{hz.drop > 2
+            ? <>In the 2018 and 2023 droughts this ground dropped about <b>{num(hz.drop, 0)} mm more</b> than a typical Houston square as its clay dried out. </>
+            : <>In the 2018 and 2023 droughts this ground behaved like most of Houston. </>}
+            {hz.dl === "high" ? "Places like this are where the next drought is most likely to crack foundations, driveways and water mains." : hz.dl === "medium" ? "Expect more drought damage here than in most of Houston." : ""}
+          </p>
+        </div>
+      )}
+      {hz?.bl && (
+        <div className="hazard">
+          <h4><span className="badge" style={{ background: BEND[hz.bl].color }} />Ground bending: {BEND[hz.bl].name.toLowerCase()}</h4>
+          <p>The sinking speed changes by <b>{num(hz.bend)} mm a year</b> between this square and the next one over. {hz.bl === "high" ? "Uneven sinking like this bends pipes, roads and slabs, and in Houston it often marks one of the city's slowly slipping faults." : hz.bl === "medium" ? "Some uneven sinking; worth watching for cracks in roads and pipes." : "The ground sinks evenly here, which is easier on buildings and pipes."}</p>
+        </div>
+      )}
+      <p className="fine">These don't predict when a storm or drought comes, only what the moving ground does when one does. Flood odds are FEMA's; depth changes are our forecast.</p>
+    </section>
   );
 }

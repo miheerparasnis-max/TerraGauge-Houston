@@ -353,6 +353,35 @@ def main() -> None:
             ],
         }
 
+    # Hazard views (backend/hazards.py, scripts/build_hazards.py)
+    hazards_meta = None
+    hz_path = PROV / "hazards.json"
+    if hz_path.is_file():
+        hz_all = load(hz_path)
+        hz_cells = hz_all["cells"]
+        measured = [c for c in cells if "estimated" not in c["src"] and c["act"] != "insufficient_data" and c["id"] in hz_cells]
+        drops = sorted(hz_cells[c["id"]]["drought_drop_mm"] for c in measured)
+        typical = drops[len(drops) // 2] if drops else 0.0
+        q10 = drops[int(0.10 * len(drops))] if drops else 0.0
+        q30 = drops[int(0.30 * len(drops))] if drops else 0.0
+        bend_hi, bend_mid = 10.0, 5.0
+        for c in measured:
+            h = hz_cells[c["id"]]
+            d = h["drought_drop_mm"]
+            b = h["bend_mm_year_km"]
+            c["hz"] = {
+                "drop": r(typical - d),
+                "dl": "high" if d <= q10 else "medium" if d <= q30 else "low",
+                "bend": r(b) if b is not None else None,
+                "bl": None if b is None else "high" if b >= bend_hi else "medium" if b >= bend_mid else "low",
+            }
+        hazards_meta = {
+            "tests": hz_all["tests"],
+            "drought": {"epochs": ["2018-08-13", "2023-10-04"], "high_mm": r(typical - q10), "medium_mm": r(typical - q30)},
+            "bend": {"high": bend_hi, "medium": bend_mid},
+            "flood": {"ocean_rise_mm_year": 10.0, "coastal_elevation_m": 3.0},
+        }
+
     meta = {
         "status": "provisional_unreviewed",
         "record": {"start": dates[0], "end": dates[-1], "dates": dates, "products": opera["product_count"]},
@@ -360,6 +389,7 @@ def main() -> None:
         "counts": counts,
         "validation": {"stations": comparison["stats"]["station_count"], "r": comparison["stats"].get("pearson_r"), "typical_diff_mm_year": r(vertical_rate(comparison["stats"]["median_abs_residual_mm_year"])), "points": [{"id": p["station_id"], "gps": r(p["gps_up_mm_year"]), "sat": r(vertical_rate(p["opera_los_mm_year"]))} for p in comparison["stations"]]},
         "forecast": forecast_meta,
+        "hazards": hazards_meta,
         "nisar": {"pair": nisar_check(pair, 12), "chain": nisar_check(chain, 60), "detect": detect_table, "sigma_mm": r(nisar_sigma)},
         "reference": build["reference"],
         "sensors": sensor_out,
