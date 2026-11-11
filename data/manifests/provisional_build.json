@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_provisional_build_manifest",
-  "created_utc": "2026-11-11T23:54:27Z",
-  "git_head": "3e80343d6d7d8be11395ae52db9fc02d57423a25",
-  "git_worktree_clean": false,
+  "created_utc": "2026-11-11T23:57:54Z",
+  "git_head": "c0144ba73aabe8c7c77ddd0e35291f3081dd5f25",
+  "git_worktree_clean": true,
   "command": "python3 scripts/build_provisional.py",
   "inputs": [
     {
