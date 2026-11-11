@@ -6,6 +6,23 @@ This plan sits under MASTER v3. MASTER says what to build and why. This plan say
 
 Where this plan and MASTER disagree on a fact, the audit evidence wins and the difference is logged as an erratum in `docs/decisions.md`. Owners are MASTER roles until `docs/team.md` names people.
 
+## Status (end of 2026-11-10)
+
+| Item | Status | Commit or file |
+|---|---|---|
+| T0.1 rules committed | Done | `e9c1265` |
+| T0.2 Python 3.14 and `requirements-layers.txt` (54 tests, 0 skips) | Done | `da98c41` |
+| T0.3 docs skeleton, decisions log, errata | Done | `a110c5c` |
+| T0.4 input freeze | Done | `f8ee369` |
+| T1.3 NISAR inventory: **27 pairs on 28 dates through 2026-10-16** | Done | `cb9d07b`; D-006 |
+| Phase 2 pre-registration (PR-0 to PR-9) | Committed. PR-2, PR-4, and PR-6 changed from the draft below (D-005). The B3 cell list is frozen later, after quality extraction. | `1c84d17` |
+| MASTER v3.1 (archive, wavelength, label count) | Done | `cee7f3c` |
+| Documentation parts of F-2, F-3, and F-10 (corrections wording, wavelength, stale README items) | Done; the code parts are still open | `da98c41` |
+| T1.1, T1.2, T1.5 email drafts | Drafted, **not sent** | `docs/rules/`, `docs/stakeholders/` |
+| Decisions 1 to 5 below | Taken (delegated) | D-008 to D-012 |
+
+The archive finding (audit A0) moves the critical path. The work is no longer "explain why six epochs cannot resolve anything". It is "download and ingest 22 more granules (51.2 GB) before the event, then fit 28 epochs".
+
 ## Rules carried from MASTER
 
 - Test-first, small commits.
@@ -53,7 +70,7 @@ Start all three on Nov 10.
 | T1.1 | Ask the organizers in writing about pre-event work (G1) | Product lead | `docs/rules/pre-event-work.md` | Nov 12 |
 | T1.2 | Ask the Local Lead about deck names **and** whether commit-author names in a public repo are acceptable (G3, A24). If not, the clean-repo fallback also uses neutral commit identities. | Product lead | `docs/rules/under-18.md` | Nov 12 |
 | T1.3 | NISAR inventory (MASTER 6.2 Path A). Include SHA-256 and size for the five known granules (only one is recorded; A12). Record the collection `NISAR_L2_GUNW_PROVISIONAL_V1` and `P05023` (A22). Check Earthdata alerts. | Science lead | `data/manifests/nisar_track062_inventory_20261110.json`; decision entry | Nov 11 |
-| T1.4 | Get the five raw GUNW HDF5 files onto the processing machine; they are not on the audit machine (A13). Verify SHA-256 against T1.3. If they cannot be found, re-download with an Earthdata login. Blocks B1, B2, F-2 extraction, and F-4. | Science lead | `data/raw/` (gitignored) | Nov 12 |
+| T1.4 | Get all 27 raw GUNW HDF5 files (62.7 GB) onto the processing machine; none is on the audit machine (A0, A13). The five already processed may exist on a teammate's machine. Download the 22 new ones (51.2 GB) with an Earthdata login, using the URLs and MD5 checksums in the T1.3 inventory, and verify each. Needs about 70 GB free disk. Blocks B1, B2, F-2 extraction, and F-4. Start Nov 11 so it finishes before the event. | Science lead | `data/raw/` (gitignored) | Nov 13 |
 | T1.5 | Email HGSD and Fort Bend (MASTER 6.6 and §13). Request daily ENU in Houston20, the release ID, and continuity flags. Ask whether `PA##` sites are campaign occupations (A7). Ask the two stakeholder questions. | Validation lead | `docs/stakeholders/hgsd-data-request.md` | Nov 10 |
 | T1.6 | Fetch the OPERA V2 inputs: F38238 granules with reference 2025-09-23 and secondaries 2025-11-10 to 2026-01-09 (6 granules, about 2.1 GB). Extend to 2026-03-22 (12 granules) if NISAR continues. Add a window mode to `scripts/fetch_opera_extension.py` or run a one-off command, and record SHA-256 hashes (the catalog has none). | Science lead | Pair artifacts plus manifest | Nov 13 |
 | T1.7 | Save the official challenge statement (G2) | Product lead | `docs/rules/challenge-statement-2026.md` | Nov 13 |
@@ -106,7 +123,7 @@ All of it must be committed before any per-cell NISAR rate is computed. Write on
 | B7 | PR-9 grid |
 | B8 | MASTER B8 tests plus F-1 to F-7 |
 
-Stated in advance: at N = 6 and σ between 13 and 18 mm, 2σ_v is about 185 to 260 mm/yr. No cell at Houston-scale rates is expected to resolve. A nonzero "resolved" count at this N should trigger an unwrapping and noise review before anything is labeled.
+Stated in advance, using the archive's 28 epochs and σ between 13 and 18 mm: 2σ_v is about 17 to 24 mm/yr in LOS. Only cells moving faster than that can resolve. About 5.6% of zero-motion cells (df = 26) will pass a 2σ test by chance, which is why PR-2 reports the expected chance count beside every label count. If only the first 6 epochs are processed, 2σ_v is about 185 to 260 mm/yr and no Houston-scale cell should resolve.
 
 ## Phase 5: validation (event hours 8 to 32, MASTER §9)
 
@@ -159,7 +176,7 @@ Unchanged from MASTER, with two additions:
 
 | Risk | Effect | Mitigation | Owner |
 |---|---|---|---|
-| Raw HDF5 not available on Nov 12 | B1 and B2 blocked; corrections and geometry stay unknown | T1.4 starts Nov 10; re-download path ready | Science lead |
+| Raw HDF5 (62.7 GB) not on hand by hour 0 | B1 and B2 blocked, or a shorter chain | T1.4 starts Nov 11 from the inventory URLs; the PR-0 partial-processing rule applies | Science lead |
 | Campaign stations used in validation | Biased V1/V3 agreement | PR-5 | Validation lead |
 | Chance "resolved" cells at N = 6 | Spurious labels | PR-2; report the chance count | Science lead |
 | Stale or untraceable web numbers | Breaks MASTER §0.3; judges see figures that no artifact backs | F-9, W-1 | Product lead |

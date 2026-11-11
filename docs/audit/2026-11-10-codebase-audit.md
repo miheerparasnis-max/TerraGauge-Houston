@@ -6,6 +6,8 @@ Companion plan: `docs/plan/2026-11-10-execution-plan.md`.
 
 > This file quotes claims-policy phrases as audit evidence. Exclude `docs/audit/` from the G2 claims sweep.
 
+> **Update, same day.** The NASA archive inventory (MASTER 6.2, run after this audit was first written) found 27 track-062 frame-016 pairs on 28 dates through 2026-10-16 (finding A0 below). Statements here that assume six epochs are marked where they change. Decisions taken in response are in `docs/decisions.md`; the rules are pre-registered in `docs/preregistration/2026-11-10-preregistration.md` (commit `1c84d17`).
+
 ## How the audit was run
 
 - Repository at `5c0513c` (`main`), plus the untracked `CLAUDE.md` and `MASTER.md`.
@@ -20,6 +22,7 @@ Companion plan: `docs/plan/2026-11-10-execution-plan.md`.
 
 | ID | Severity | Finding | Evidence | MASTER | Plan task |
 |---|---|---|---|---|---|
+| A0 | Critical (resolved by decision) | The archive holds **27 pairs on 28 dates** (2025-11-02 to 2026-10-16) for track 062 / frame 016 / ascending, not 6 epochs. The repo has processed only the first 5 pairs (51.2 GB not yet downloaded). The archive is still a simple chain with no loop closures. Frame 016 covers about 58% of the study box. | `data/manifests/nisar_track062_inventory_20261110.json` | G7, 4.2, 5.3 | D-006, D-007; T1.4 |
 | A1 | Critical | The repo's only evidence that corrections were "already applied" is four **geocoding** parameter flags. Nothing shows that phase screens were removed from `unwrappedPhase`. Array correction layers are never recorded. | `backend/ingestion/nisar.py:47-70`, `:174`; all five pair artifacts; `README.md:77`, `:356`; `CLAUDE.md` | 4.4, 6.3.1 | F-2, B1 |
 | A2 | Critical | The published website breaks the claims policy at scale: 4,892 strings with "sinking" and 4,919 cells carrying 2030/2035/2040 projections | `web/public/data/cells.json`; `web/src/*`; `backend/insights.py:150-158`; `scripts/export_web.py:142` | 20, G2 | W-2 to W-5 |
 | A3 | Critical | Three different detectability headlines are in circulation (1.6 yr, 2.2 yr, 2.7 yr), and none uses a measured per-epoch σ | `web/public/data/meta.json` (`nisar.detect`); MASTER 5.3; chain-vs-pair scatter | 5.3, 22 | PR-3, W-5 |
@@ -27,7 +30,7 @@ Companion plan: `docs/plan/2026-11-10-execution-plan.md`.
 | A5 | High | 207 FEMA cells with no matching polygon are coerced to `flood_exposed: false`. No cell is ever null. | `backend/ingestion/fema.py:223`; `data/derived/fema_nfhl_houston_cell_context_2026-11-07.json` | B8, CLAUDE.md | F-1 |
 | A6 | High | MASTER's "8 add-ground-monitoring cells" is actually 820, plus 158 investigate-satellite-signal, from one 12-day pair | `data/derived/provisional/build_report.json` | 4.2 | Errata E1; D |
 | A7 | High | 11 of the 37 split stations (19 reference, 18 held-out) are `PA##` sites averaging about 0.14 samples/day (campaign-style). V1 would use them. | `data/derived/houstonnet_2024_summary.json`; `build_report.json` | 6.1, 6.5 V1 | PR-5 |
-| A8 | High | A per-cell 2σ test with 6 epochs (4 degrees of freedom) fires by chance about 11.6% of the time. That is about 545 false "resolved" cells among the 4,694 quality-passing chain cells. | Student-t, df = 4; quality count below | 5.2, 6.3.4 | PR-2 |
+| A8 | High | A per-cell 2σ test with 6 epochs (4 degrees of freedom) fires by chance about 11.6% of the time: about 545 false "resolved" cells among the 4,694 quality-passing chain cells. With the archive's 28 epochs (df = 26) it is 5.6%, about 263 cells. | Student-t, df = 4; quality count below | 5.2, 6.3.4 | PR-2 |
 | A9 | High | No code reads a look vector. LOS↔vertical uses a fixed 38° incidence and ignores horizontal motion. The NISAR sign convention is not recorded or tested. | `backend/ingestion/provisional.py:238-243`; `backend/insights.py:23-35`; `nisar.py:126` | 6.5, B4 | F-4, B2 |
 | A10 | High | The website data is stale against the current build: 108 stations and r = 0.694, against 105 and r = 0.664 now | `web/public/data/meta.json` (last touched in `2d44a42`); `build_report.json` (`5c0513c`) | 0.3, G5 | W-1 |
 | A11 | High | Published web numbers trace to `data/derived/provisional/` artifacts that have no manifest. Two inputs are gitignored. | `scripts/export_web.py:56-62`; `.gitignore:11-12` | 0.3 | F-9 |
@@ -98,6 +101,8 @@ All five pair artifacts record exactly these flags, as strings:
 All rows assume white noise, 12-day spacing, no gaps, and the repo function `rate_uncertainty_mm_year`.
 
 The 60-day chain sum has almost the same cross-cell scatter as one 12-day pair: 18.7 mm against 19.4 mm. If each pair's noise were independent, a five-pair sum would scatter about √5 × 19.4 ≈ 43 mm. The near-equality points to acquisition-level noise that cancels at the intermediate dates. Under that model the per-epoch σ is closer to 13 mm than 18 mm.
+
+**Update (A0).** With the archive's 28 actual dates, 2σ_v today is about 17 mm/yr (σ = 12.73 mm) to 24 mm/yr (σ = 18 mm). The 5 mm/yr dates in the table barely move. MASTER v3's "130 mm/yr with six epochs" no longer describes the data that exist.
 
 Caveats: this is a spatial statistic, not a temporal one; the fields were ramp-removed; and real correlated noise makes any of these a lower bound. MASTER §22 already requires the headline to come from measured residuals. The point here is that the website's 1.6-year figure must be withdrawn, and the planning estimate must name its σ.
 
@@ -200,13 +205,14 @@ Method: a case-insensitive search for every G2 term, plus "forecast" and "projec
 8. **E8** §8 B1 and B4: λ = 0.241962 m (1.239 GHz) per product metadata, so λ/(4π) = 19.255 mm/rad.
 9. **E9** §5.2 and §6.4: a released, resolved rate outside a flood polygon has no label; Investigate and Add need a stated precedence; rule (c) needs a stated scope.
 10. **E10** §4.4: the repo-side evidence supports the correction. The flags behind "already applied" are geocoding flags.
+11. **E11 to E15** (from the archive inventory): see `docs/decisions.md` D-003. E11, together with E1 and E8, was corrected in MASTER v3.1 (commit `cee7f3c`).
 
 ## Not audited
 
 These need raw data, network access, or a person:
 
 - Raw GUNW layers: the correction layers, geometry layers, sign documentation, and whether P05023 fixed the January 2026 sample-data issues.
-- ASF holdings beyond the five known granules (MASTER 6.2 Path A), and Earthdata alerts.
+- ~~ASF holdings beyond the five known granules, and Earthdata alerts.~~ Done the same day: `docs/decisions.md` D-006.
 - Newer HoustonNet releases, and campaign-versus-continuous metadata from HGSD.
 - The website build (`npm run build`) and runtime UI behavior.
 - GroundTruth Node logs.
