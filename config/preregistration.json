@@ -1,6 +1,6 @@
 {
   "artifact_type": "terragauge_preregistration",
-  "version": 1,
+  "version": "1.1",
   "written": "2026-11-10",
   "document": "docs/preregistration/2026-11-10-preregistration.md",
   "epoch_set": {
@@ -16,8 +16,8 @@
     "partial_processing_rule": "longest contiguous chain starting 2025-11-02"
   },
   "quality": {
-    "coherence_min": 0.40,
-    "valid_fraction_min": 0.50,
+    "coherence_min": 0.4,
+    "valid_fraction_min": 0.5,
     "require_main_connected_component": true,
     "require_in_every_pair": true
   },
@@ -48,22 +48,38 @@
       "min_end_decimal_year": 2021.0,
       "max_abs_up_mm_year": 1.0,
       "quality_cell_within_km": 1.0,
-      "split": "sorted by station_id, reference = [0::2], held_out = [1::2]"
+      "split": "sorted by station_id, reference = [0::2], held_out = [1::2], computed before excluded stations are removed (amendment A1)",
+      "excluded_station_ids": [
+        "ADKS",
+        "LKHU",
+        "NETP",
+        "TXEX",
+        "UHKD"
+      ],
+      "excluded_reason": "deep-seated GNSS: antenna on a deep extensometer anchor (amendment A1)"
     },
-    "reference_stations": ["ADKS", "DEN2", "NETP", "TMCC"],
-    "held_out_stable_stations": ["COH2", "LKHU", "THSU"],
+    "reference_stations": [
+      "DEN2",
+      "TMCC"
+    ],
+    "held_out_stable_stations": [
+      "COH2",
+      "THSU"
+    ],
     "region_a_radius_km": 3.0,
     "region_b_radius_km": 5.0,
     "min_region_cells": 50,
-    "exclude_fema_zones": ["OPEN WATER"],
+    "exclude_fema_zones": [
+      "OPEN WATER"
+    ],
     "max_opera_water_fraction": 0.5,
     "cell_list_frozen_before_statistics": true
   },
   "validation_stations": {
     "v1_min_samples_per_day": 0.5,
     "v1_quality_cell_within_km": 1.0,
-    "v1_exclude": "reference_stations",
-    "v1_candidates_from_2024_summary": 63,
+    "v1_exclude": "reference_stations and deep-seated stations (amendment A1)",
+    "v1_candidates_from_2024_summary": 62,
     "cell_level_match_km": 1.0
   },
   "corrections": {
@@ -72,13 +88,19 @@
     "invalid_correction_layer_fails_quality": true
   },
   "labels": {
-    "order": ["TG-L1", "TG-L2", "TG-L3", "TG-L4", "TG-L5"],
+    "order": [
+      "TG-L1",
+      "TG-L2",
+      "TG-L3",
+      "TG-L4",
+      "TG-L5"
+    ],
     "gnss_nearby_km": 2.0,
     "flood_requires_true": true,
     "null_flood_is_unknown": true
   },
   "validation_metrics": {
-    "pass_fraction_within_2sigma_comb": 0.80,
+    "pass_fraction_within_2sigma_comb": 0.8,
     "min_n_v1": 10,
     "min_n_v2": 30,
     "informative_max_median_2sigma_comb_mm_year": 10.0,
@@ -87,7 +109,24 @@
     "gnss_date_window_days": 1
   },
   "sensitivity": {
-    "tier1": ["coherence 0.30/0.40/0.50", "region A vs B", "no corrections", "drop each correction", "plane removal", "2-sigma rule"],
+    "tier1": [
+      "coherence 0.30/0.40/0.50",
+      "region A vs B",
+      "no corrections",
+      "drop each correction",
+      "plane removal",
+      "2-sigma rule"
+    ],
     "tier2": "full cross-product, cut first"
-  }
+  },
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-11-11",
+      "before_any_governed_result": true,
+      "change": "Remove deep-seated GNSS stations (ADKS, LKHU, NETP, TXEX, UHKD) from reference selection, the held-out stable check, and every radar comparison. They are removed after the v1 split, so no other station changes side: reference becomes DEN2, TMCC; held-out stable becomes COH2, THSU; V1 candidates 62.",
+      "reason": "Their antennas are mounted on the inner poles of deep extensometer boreholes (anchors 549-936 m below land surface) and measure motion below the anchor, not the land surface a radar sees (Wang et al. 2022, J. Surv. Eng. 148(4): 04022008, doi:10.1061/(ASCE)SU.1943-5428.0000399).",
+      "unchanged": "Every other rule, threshold, and the v1 alternating split (each remaining station keeps its v1 side)."
+    }
+  ]
 }

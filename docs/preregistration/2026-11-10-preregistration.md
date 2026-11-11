@@ -2,7 +2,27 @@
 
 Audience: the team, the executing agent, and judges checking that rules came before results.
 Machine-readable copy: `config/preregistration.json`. The code must read thresholds from there, not from literals.
-Commit hash: recorded in `docs/decisions.md` (D-005), because a file cannot contain its own hash.
+Commit hash: recorded in `docs/decisions.md` (D-005 for v1; D-032 for amendment A1), because a file cannot contain its own hash.
+
+## Amendment A1 (2026-11-11), made before any governed result
+
+**What changed.** Deep-seated GNSS stations are removed from reference selection, from the held-out stable check, and from every radar comparison. Those stations are ADKS, LKHU, NETP, TXEX and UHKD. They are removed *after* the v1 alternating split, so no other station changes side.
+
+| Item | v1 | v1.1 |
+|---|---|---|
+| Reference stations (PR-4) | ADKS, DEN2, NETP, TMCC | DEN2, TMCC |
+| Held-out stable stations (PR-5) | COH2, LKHU, THSU | COH2, THSU |
+| Region A on 5-pair quality (3 km) | 103 cells | 52 cells |
+| Region B on 5-pair quality (5 km) | 289 cells | 146 cells |
+| V1 candidates | 63 | 62 |
+
+**Why.** HGSD's own methods paper says these five antennas "are mounted on the top of the inner poles of deep extensometer boreholes", with anchors 549–936 m below land surface. They "were installed to provide stable references for calculating site deformation at other GNSS sites" (Wang et al. 2022, *J. Surv. Eng.* 148(4): 04022008, doi:10.1061/(ASCE)SU.1943-5428.0000399).
+
+Such an antenna moves with the deep anchor, so its near-zero rate does not show that the land surface around it is stable. The radar measures the land surface. For example, the Addicks extensometer recorded 3.88 ft of compaction since 1973, while ADKS, 30 m away, shows −0.5 mm/yr.
+
+**Timing.** No NISAR displacement statistic for any reference cell and no per-cell NISAR rate existed when this amendment was made. It is therefore an amendment, not a deviation.
+
+**What did not change.** Every other rule and threshold is exactly as in v1, and every remaining station keeps its v1 side of the split. (Excluding first and then re-splitting would have swapped COH2/THSU with DEN2/TMCC; that was rejected as a larger change than the physical reason requires.) If region A has fewer than 50 cells after quality over the full epoch set, the pre-registered fallback to region B applies.
 
 ## What had been seen when this was written
 
