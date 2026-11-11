@@ -93,6 +93,56 @@ SHA-256 of the 43 tracked `data/derived/` files at `5e0da64`, saved as `data/man
 ### D-015: Corrections guidance corrected in the docs
 CLAUDE.md and the README now use the MASTER 4.4 wording (commit `da98c41`). The code part, plan task F-2, is still open. *Delegated.*
 
+### D-016: Code fixes approved
+The repository owner approved the code fixes ("Go ahead"), including regenerating committed derived artifacts. Approved.
+
+### D-017: FEMA null (F-1), commit `e29fd3d`
+A cell whose center matches no FEMA polygon is now `flood_exposed: null` (unknown), no longer `false`. This is a bug fix under MASTER B8 and CLAUDE.md, not a rule change.
+
+| Measure | Before | After |
+|---|---|---|
+| Cells changed | — | 207 (false → null) |
+| false / true / null | 6,852 / 2,259 / 0 | 6,645 / 2,259 / 207 |
+
+- The pre-fix artifact reproduced byte-identically from committed inputs, so only the fix changed it.
+- The existing test asserted `assertFalse`, which `None` also satisfies, so it now asserts `assertIsNone`. This is a stricter test, not a weaker one.
+- Downstream: the evidence artifact was regenerated; provisional labels and `build_report.json` are unchanged; the website export is unaffected, because it tests `flood_exposed is True`.
+
+### D-018: Applied-correction contract (F-2, code part), commit `670121f`
+- **Record:** `applied_corrections` with `ionosphere_applied`, `troposphere_applied`, `tide_applied`, each with a `*_source`. Values: `true` (applied), `false` (verified not applied), `null` (unverified).
+- **Why three values.** No evidence yet shows the product's phase-correction state (audit A1). Writing `false` would assert something unverified, and applying on top of an unknown state risks double application.
+- **Rules:**
+  - Applying is refused when the flag is `true` (double application) or `null` (verify first).
+  - The integrity gate requires a valid record.
+  - `chain_sum` refuses pairs with different states.
+- **Backfill.** The five committed pair artifacts were backfilled by `scripts/backfill_nisar_contract.py`: all flags unverified, no cell value changed. The integrity reports were regenerated and pass.
+- **Fixtures.** The fixtures in `tests/test_quality.py` and `tests/test_provisional.py` gained the record; their assertions are unchanged.
+- **Still open:** reading the product state and applying the layers (plan B1 and B2, which need the raw HDF5).
+
+### D-019: Wavelength from product metadata (F-3), commit `670121f`
+- The adapter uses the frequency-A center frequency (c/f). A CLI value may only confirm it: a disagreement above 0.1% raises.
+- With no metadata, the CLI value is used and marked `cli_unverified`.
+- When both exist, the metadata value is used. c / 1.239 GHz = 0.2419632 m, against the CLI value of 0.241962 m used so far: a 5 × 10⁻⁶ relative difference, negligible.
+
+### D-020: Demo-data guard (F-5), commit `da632b1`
+- `scripts/export_web.py` and `scripts/build_provisional.py` refuse any input whose `dataset_status`, `status`, or record `source_status` starts with "demo".
+- `/v1/summary` reports `dataset_status`.
+- The API's default dataset stays the demo fixture for development; it is now labeled as such in the summary.
+
+### D-021: Detectability on invalid input (F-6), commit `8d720fb`
+Invalid numbers (sigma or interval ≤ 0, fewer than 3 observations) raise `ValueError` (MASTER B8). Missing values still return `not_available`, because honest absence is a result (MASTER §0.6). The function has no production callers, so nothing downstream changes.
+
+### D-022: Planning-equation and B8 tests (F-7), commit `8d720fb`
+The tests assert: σ_v = 131.0 mm/yr at N = 6, σ = 18 mm, 12 days; N = 84 for 2σ_v ≤ 5 mm/yr; and cells below 50% valid pixels never get a positive label.
+
+### D-023: Reproducibility tolerance
+- The evidence artifact reproduces from its documented command except for last-digit floating-point differences in three distance fields (692 values, within 1 ULP), which come from a different Python and math library.
+- The tolerance for regenerated derived artifacts is therefore: identical except for floating-point differences ≤ 1 ULP. Any other difference must be explained in the commit.
+- Byte-identical after this work: the network diagnostic, the reference candidates, and the provisional `build_report.json`.
+
+### D-024: Input freeze refreshed
+`data/manifests/input_freeze_2026-11-10.json` was re-frozen at `8d720fb`. Twelve files changed against the earlier freeze (5 pair artifacts, 5 integrity reports, FEMA context, evidence), all explained by D-017 and D-018.
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.

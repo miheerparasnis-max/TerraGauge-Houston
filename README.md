@@ -41,7 +41,7 @@ The API starts at `http://127.0.0.1:8000`.
 | Method | Route | Purpose |
 |---|---|---|
 | `GET` | `/health` | Service health check |
-| `GET` | `/v1/summary` | Label counts, active thresholds, and disclaimer |
+| `GET` | `/v1/summary` | Dataset status (shows when the demo fixture is loaded), label counts, active thresholds, and disclaimer |
 | `GET` | `/v1/cells` | All analyzed 1 km cells |
 | `GET` | `/v1/cells/{cell_id}` | One evidence card payload |
 | `GET` | `/v1/data-ledger` | Versioned source-manifest records |
@@ -80,7 +80,7 @@ Each cell must provide coordinates, pairwise LOS displacement/quality values, an
 - A station-point FEMA result is context, not a cell-level flood classification.
 - A GNSS node result represents stationary receiver repeatability, not observed land motion.
 - The NISAR-derived artifacts preserve the product's correction flags. The flags recorded so far are geocoding flags; they do not show that phase corrections were applied to the unwrapped phase (audit A1). GUNW includes an ionospheric phase screen and tropospheric and tide lookup tables that are not applied by default. TerraGauge applies each correction exactly once, records which were applied in the artifact, and never applies a correction that the artifact already records as applied.
-- The demo dataset is only for development and cannot appear as a real Houston result.
+- The demo dataset is only for development and cannot appear as a real Houston result: `backend/publish_guard.py` refuses it in every build that produces a published output.
 
 ## Source-derived ingestion
 
@@ -104,7 +104,9 @@ python3 -m backend.ingestion.cli inspect-h5 /path/to/NISAR_GUNW.h5 > data/derive
 ```
 
 Then extract one quality-preserving pair artifact. Use the verified product CRS,
-x/y paths, wavelength, and acquisition dates from the product metadata:
+x/y paths, and acquisition dates from the product metadata. The wavelength is
+read from the product's frequency-A center frequency; `--wavelength-m` is optional
+and is rejected if it disagrees by more than 0.1%:
 
 ```bash
 python3 -m backend.ingestion.cli nisar-gunw /path/to/NISAR_GUNW.h5 data/derived/nisar-pair.json \
@@ -128,7 +130,9 @@ write only the Houston study area instead of the entire source frame.
 
 Every compact pair artifact must pass the reproducible structural gate before it
 can be joined to Houston context. It rejects duplicate cell IDs, invalid/outside
-coordinates, missing product correction flags, and malformed date metadata. It
+coordinates, missing product correction flags, a missing or invalid
+`applied_corrections` record (`backend/ingestion/corrections.py`), and malformed
+date metadata. It
 also accepts only cells whose dominant local connected component matches the
 scene-wide dominant component; this prevents isolated phase islands from being
 treated as reliable evidence.

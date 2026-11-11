@@ -20,6 +20,16 @@ Where this plan and MASTER disagree on a fact, the audit evidence wins and the d
 | Documentation parts of F-2, F-3, and F-10 (corrections wording, wavelength, stale README items) | Done; the code parts are still open | `da98c41` |
 | T1.1, T1.2, T1.5 email drafts | Drafted, **not sent** | `docs/rules/`, `docs/stakeholders/` |
 | Decisions 1 to 5 below | Taken (delegated) | D-008 to D-012 |
+| F-1 FEMA null: 207 cells false → null; evidence regenerated | Done | `e29fd3d`; D-017 |
+| F-2 applied-correction contract, gate, chain check, backfill | Code done. Reading and applying the product layers waits for B1/B2 (raw HDF5). | `670121f`; D-018 |
+| F-3 wavelength from product metadata | Done | `670121f`; D-019 |
+| F-4 LOS sign convention | Open; needs the GUNW specification and a raw granule | — |
+| F-5 demo-data guard; `/v1/summary` shows `dataset_status` | Done | `da632b1`; D-020 |
+| F-6 detectability raises on invalid input | Done | `8d720fb`; D-021 |
+| F-7 planning-equation test, plus the B8 valid-fraction test | Done | `8d720fb`; D-022 |
+| F-8 checksums | Partial: the archive MD5 for all 27 granules is in the inventory. Local SHA-256 for raw files needs them on hand. | `cb9d07b` |
+| F-9 provisional traceability | Open; folded into W-1 | — |
+| Test suite (Python 3.14 venv) | 89 run, 89 OK, 0 skipped | — |
 
 The archive finding (audit A0) moves the critical path. The work is no longer "explain why six epochs cannot resolve anything". It is "download and ingest 22 more granules (51.2 GB) before the event, then fit 28 epochs".
 
