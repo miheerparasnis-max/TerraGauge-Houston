@@ -1,6 +1,6 @@
-# TERRAGAUGE HOUSTON: MASTER EXECUTION PROMPT (v3)
+# TERRAGAUGE HOUSTON: MASTER EXECUTION PROMPT (v3.1)
 
-Supersedes v2. Audience: the executing agent (Claude Code) and every team member.
+Supersedes v3 (2026-11-10 corrections; see the changelog at the end and `docs/decisions.md`). v3 superseded v2. Audience: the executing agent (Claude Code) and every team member.
 Scope: NASA Space Apps 2026 only ("Dancing with the SARs", Houston Local Event). Veritas is removed from this project.
 Out of scope until the science is locked: new UI views or visual redesign. Website changes only where copy must be corrected to meet the claims policy.
 
@@ -92,7 +92,7 @@ The team builds with AI-assisted coding. Disclosure is mandatory under Space App
 
 Two facts settle the plan:
 - NISAR GUNW products are generated for nearest-neighbor 12-day pairs only. The product specification says only co-polarized nearest-neighbor (12-day) GUNW products are generated as part of the mission. Cross-pairs (24-day, 36-day) are therefore not in the archive, and the loop-closure gate in the repo cannot be satisfied from the archive. ASF staff have acknowledged this in public forum threads and said a roadmap would appear in the next NISAR data user guide update. Do not plan on it.
-- The Houston archive in the repo ends with the pair 2025-12-20 to 2026-01-01. Today is Nov 10, 2026. Whether later Houston granules exist is unverified, and it is the most important open fact in the project. Section 6 gives the check.
+- [v3.1] Resolved 2026-11-10: the archive holds 27 track-062 frame-016 ascending pairs on 28 dates, 2025-11-02 to 2026-10-16 (`data/manifests/nisar_track062_inventory_20261110.json`). All are nearest-neighbor; two 24-day pairs bridge missed acquisitions, so it is still a chain with no loop closures. The repo has processed only the first five pairs. Provisional production paused 2026-10-23 to 2026-11-06, so later passes may still appear; re-run the inventory at the hour-0 freeze.
 
 ---
 
@@ -108,8 +108,8 @@ Two facts settle the plan:
 
 ### 4.2 Key numbers (verify each against its artifact)
 
-- **NISAR track 062, frame 016, direction A (Houston):** five consecutive 12-day pairs covering 2025-11-02 to 2026-01-01. Zero redundant edges. Rate status: `withheld_insufficient_redundancy`.
-- **First NISAR pair reference statistics:** reference median −7.37 mm, reference scatter 8.16 mm, from only 7 reference cells. The label summary contains 8 "add ground monitoring" cells from a single 12-day pair. Those labels are not publishable.
+- **NISAR track 062, frame 016, direction A (Houston):** five consecutive 12-day pairs covering 2025-11-02 to 2026-01-01 have been processed. Zero redundant edges. Rate status: `withheld_insufficient_redundancy`. [v3.1] The archive holds 27 pairs on 28 dates through 2026-10-16 (see G7).
+- **First NISAR pair reference statistics:** reference median −7.37 mm, reference scatter 8.16 mm, from only 7 reference cells. [v3.1] The provisional label summary contains 820 "add ground monitoring" and 158 "investigate satellite signal" cells from a single 12-day pair (`data/derived/provisional/build_report.json`). Those labels are not publishable.
 - **Per-pair noise versus signal (CLAUDE.md):** about 18 mm noise per pair versus about 0.2 mm expected motion over 12 days (about 6 mm/yr).
 - **OPERA DISP-S1, frame F38238:** the repo processed the 2016 to 2021 stack. The full catalog manifest lists 449 granules spanning 2016-07-12 to 2026-03-22. Only the early portion has been used. Rates require re-referencing the full series to a reviewed stable patch and validation against co-temporal GNSS.
 - **HoustonNet (2024 release):** 257 station velocities in `houstonnet_2024_summary.json`. Station windows end no later than 2024.07. No daily series in the repo; the raw archive is gitignored and local-only.
@@ -126,7 +126,7 @@ Two facts settle the plan:
 5. The labeling rule is scientifically fragile (Section 5.2).
 6. No stakeholder feedback.
 7. No outsider-facing narrative yet.
-8. The NISAR Houston archive may stop at January 2026 (G7).
+8. [v3.1] Resolved: the archive continues to 2026-10-16 (G7). The gap is now processing: 22 pairs (about 51 GB of the 62.7 GB set) are not yet downloaded or ingested.
 
 ### 4.4 Corrections to CLAUDE.md and the README
 
@@ -165,7 +165,7 @@ Planning estimate (replace with measured values once computed):
 - σ_v = (σ/Δt)·√(12/(N(N²−1))), σ = 18 mm per epoch, Δt = 12 days ≈ 0.0329 years, white-noise assumption.
 - For 2σ_v ≤ 5 mm/yr, N ≈ 83 epochs, about 2.7 years.
 - Starting from the first pair on 2025-11-02 and assuming gap-free 12-day acquisitions, the planning estimate for the earliest resolvable 5 mm/yr is about mid-2028. Correlated atmospheric noise makes the real date later. State this as a lower bound.
-- With the six current epochs (N = 6), the same formula gives σ_v ≈ 130 mm/yr. The current data cannot resolve Houston-scale rates. That is a legitimate result and should be presented as one.
+- [v3.1] With six epochs (N = 6) the formula gives σ_v ≈ 130 mm/yr, but the archive now holds 28 epochs. On the actual dates, σ = 18 mm gives σ_v ≈ 11.8 mm/yr (2σ_v ≈ 24 mm/yr), and σ = 13 mm gives 2σ_v ≈ 17 mm/yr. The 5 mm/yr date stays around 2028 (early to mid). The pre-registered headline (`docs/preregistration/`, PR-3) uses the measured σ, not these planning values.
 
 Outsider wording: "At today's NASA radar noise, a slow Houston rate of 5 mm per year would need roughly 2.7 years of observations before we could be confident it is real. If the satellite keeps imaging every 12 days, that point arrives around mid-2028."
 
@@ -301,13 +301,13 @@ Acceptance: no open gate older than the Nov 12 decision deadline.
 
 Covers Sections 6.3 and 6.4 in implementation form.
 
-B1. Build the chain from all granules in the inventory. Verify every granule's HDF5 paths with `inspect-h5`; do not assume paths, CRS, or wavelength. The README lists 0.238 m; confirm against product metadata.
+B1. Build the chain from all granules in the inventory. Verify every granule's HDF5 paths with `inspect-h5`; do not assume paths, CRS, or wavelength. [v3.1] Product metadata gives 0.241962 m; the README's former 0.238 m was wrong.
 
 B2. Implement correction flags (6.3 item 1) and the double-application test.
 
 B3. Commit the reference-region rule and cell list (6.3 item 2) before per-cell results.
 
-B4. Re-reference each pair. Keep raw values in `pair_los_displacement_raw_mm`. Convert phase to displacement with dLOS = phase × λ/(4π). Test λ/(4π) ≈ 18.9 mm per radian at λ = 0.238 m. Document and test the sign convention against a synthetic ramp.
+B4. Re-reference each pair. Keep raw values in `pair_los_displacement_raw_mm`. Convert phase to displacement with dLOS = phase × λ/(4π). [v3.1] Test λ/(4π) ≈ 19.255 mm per radian at λ = 0.241962 m (center frequency 1.239 GHz, from product metadata). Document and test the sign convention against a synthetic ramp.
 
 B5. Build cumulative time series and check unwrapping continuity (6.3 item 3). Output per cell: epochs, cumulative displacement, continuity flags.
 
@@ -529,7 +529,7 @@ Never cut:
 | Risk | Effect | Mitigation | Owner |
 |---|---|---|---|
 | Pre-event work disqualifies | Global judging lost | G1 written answer; clean-repository fallback prepared | Science lead + Product lead |
-| No Houston NISAR granules after Jan 2026 | Six-epoch chain only; no resolvable rate | Present 130 mm/yr honestly and the 2028 forward path; do not invent epochs | Science lead |
+| [v3.1] 22 newer granules (about 51 GB) not downloaded and ingested by hour 0 | Shorter chain than the archive allows | Download from Nov 11; pre-registered partial-processing rule (longest contiguous chain from 2025-11-02); never invent epochs | Science lead |
 | Gate change perceived as moving goalposts | Credibility loss with experts | Logged deviation; results shown under both rules; rationale in 6.4 | Science lead |
 | Newer HoustonNet release not obtained | No time-matched GNSS validation | V2 cross-sensor; V3 labeled fallback; stated limitation | Validation lead |
 | Double-applied corrections | Biased displacement | Applied-correction flags and a rejecting test | Science lead |
@@ -598,3 +598,9 @@ Every number carries units, a date range, a source, and where needed a limitatio
 - The project page stands alone for a reader who has not seen the demo.
 - A fresh clone reproduces the headline number.
 - Every gate in Section 3 has a dated written decision.
+
+---
+
+## Changelog
+
+- **v3.1 (2026-11-10).** Corrected three facts that would otherwise steer the work: the NISAR archive extent (G7, §4.2, §4.3 item 8, §5.3, §19), the radar wavelength (B1, B4), and the provisional label count (§4.2). Edits are marked [v3.1]. Further errata, the decisions taken, and the pre-registration are in `docs/decisions.md`, `docs/audit/2026-11-10-codebase-audit.md`, and `docs/preregistration/2026-11-10-preregistration.md`.
