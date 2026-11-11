@@ -22,11 +22,16 @@ The frontend can call these endpoints without duplicating scientific logic.
 
 ## Run locally
 
-Requires Python 3.11+.
+The core API needs Python 3.11+ and no third-party packages. Ingestion and the
+full test suite need the packages in `requirements.txt`; use **Python 3.14** for
+that environment. As of 2026-11-10, `h5py` has no binary wheel for Python 3.15,
+so a 3.15 environment cannot install the requirements without building HDF5.
 
 ```bash
-python3 -m unittest discover -s tests -v
-python3 -m backend
+python3.14 -m venv .venv
+.venv/bin/pip install -r requirements-layers.txt   # requirements.txt plus rasterio and earthaccess
+.venv/bin/python -m unittest discover -s tests -v   # expect 0 errors, 0 skips
+.venv/bin/python -m backend
 ```
 
 The API starts at `http://127.0.0.1:8000`.
@@ -74,10 +79,8 @@ Each cell must provide coordinates, pairwise LOS displacement/quality values, an
 - Historic HoustonNet values are context, not time-matched validation of the NISAR pair.
 - A station-point FEMA result is context, not a cell-level flood classification.
 - A GNSS node result represents stationary receiver repeatability, not observed land motion.
-- The NISAR-derived artifacts preserve the product's ionospheric and tropospheric correction flags; TerraGauge never recommends applying an atmospheric correction twice.
+- The NISAR-derived artifacts preserve the product's correction flags. The flags recorded so far are geocoding flags; they do not show that phase corrections were applied to the unwrapped phase (audit A1). GUNW includes an ionospheric phase screen and tropospheric and tide lookup tables that are not applied by default. TerraGauge applies each correction exactly once, records which were applied in the artifact, and never applies a correction that the artifact already records as applied.
 - The demo dataset is only for development and cannot appear as a real Houston result.
-
-## Next backend work
 
 ## Source-derived ingestion
 
@@ -105,7 +108,7 @@ x/y paths, wavelength, and acquisition dates from the product metadata:
 
 ```bash
 python3 -m backend.ingestion.cli nisar-gunw /path/to/NISAR_GUNW.h5 data/derived/nisar-pair.json \
-  --wavelength-m 0.238 \
+  --wavelength-m 0.241962 \
   --crs EPSG:32615 \
   --x-path /verified/x/path --y-path /verified/y/path \
   --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
@@ -141,10 +144,15 @@ python3 -m backend.ingestion.cli validate-nisar-pair \
 Five checked track-062 Houston pairs now cover six dates from 2025-11-02 through
 2026-01-01. The reproducible diagnostic at
 `data/derived/nisar_track062_network_diagnostic_20251102_20260101.json` finds a
-connected **chain** with zero redundant edges. Accordingly, TerraGauge withholds
-a temporal rate. This is a result, not a missing feature: a defensible rate needs
-at least two independent loop-closure edges as well as a documented stable
-reference region.
+connected **chain** with zero redundant edges, so the strict (loop-closure) rule
+withholds a temporal rate.
+
+The NASA archive holds 27 track-062 frame-016 pairs on 28 dates (2025-11-02 to
+2026-10-16), all nearest-neighbor, so the archive never supplies loop closures
+(`data/manifests/nisar_track062_inventory_20261110.json`, regenerate with
+`python3 scripts/nisar_inventory.py --out ...`). Rates from the full chain are
+released only under the pre-registered validated rule in `docs/preregistration/`,
+and are always reported next to the strict result.
 
 Recreate the graph audit with:
 
@@ -287,7 +295,7 @@ A passing report proves only stationary receiver repeatability. It never proves 
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
-2. Acquire at least two valid redundant same-track pair edges, then run the existing temporal-network inversion.
+2. Process the remaining 22 track-062 frame-016 pairs and apply the pre-registered release rule (`docs/preregistration/`); the archive provides no redundant pair edges.
 3. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.
 
 ## Website (provisional build)
@@ -353,4 +361,4 @@ python3 scripts/fetch_nasa_layers.py
 python3 scripts/export_web.py
 ```
 
-MERRA-2 weather correction is not needed: the NISAR GUNW products already have wet and hydrostatic tropospheric and ionospheric corrections applied (see `source_processing_corrections` in each pair artifact).
+Do not add an external weather correction such as MERRA-2. The GUNW product supplies its own ionospheric phase screen and tropospheric and tide lookup tables, which are not applied to the unwrapped phase by default; TerraGauge applies each of those exactly once (plan task F-2). The `source_processing_corrections` flags in each pair artifact are geocoding flags, not evidence that phase corrections were applied.
