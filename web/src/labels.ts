@@ -11,7 +11,7 @@ export const PRIORITY: Record<Priority, { name: string; color: string; meaning: 
   high: { name: "High", color: "#B8862B", meaning: "Moved down at least 5 mm a year in the satellite record, clearly above noise." },
   watch: { name: "Watch", color: "#E6CF8F", meaning: "Some sign of downward motion in the satellite record, but the evidence is weaker. Worth a closer look." },
   stable: { name: "Stable", color: "#CBD6D1", meaning: "No up-or-down motion we can tell apart from noise in the satellite record." },
-  check: { name: "Check data", color: "#6B7280", meaning: "The reading is faster than anything ever measured in Houston, so it's probably a glitch." },
+  check: { name: "Check data", color: "#6B7280", meaning: "The reading is faster than any reliable GPS rate in Houston's current GPS network, so it's probably a glitch." },
   no_data: { name: "No reliable reading", color: "transparent", meaning: "Trees, fields, or water block the satellite here, and no GPS station is inside the square." },
 };
 

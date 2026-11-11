@@ -16,7 +16,7 @@ export interface Cell {
   priWhy: string;
   needsSensor: boolean;
   series: number[] | null;      // cumulative mm along the satellite line of sight
-  gps: { id: string; km: number; up: number; y0: number | null; y1: number | null };
+  gps: { id: string; km: number; up: number | null; flag: string | null; y0: number | null; y1: number | null };
   check: { id: string; km: number; diff: number } | null;
   flood: { zone: string | null; sub: string | null; sfha: boolean };
   well: { km: number; dd: number | null } | null;
@@ -40,14 +40,15 @@ export interface Meta {
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
   nisar: { pair: NisarCheck; chain: NisarCheck };
   nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number; retrieved: string; inventory: string };
-  reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };
+  reference: { method: string; radius_km: number; reference_stations: string[]; held_out_stable_stations: string[] };
   sensors: SensorSite[];
   nasaLayers: Record<string, string>;
   provenance: { manifest: string };
+  stations: { total: number; deepSeated: string[]; rateWithheld: string[] };
 }
 
 export interface Sites {
-  gps: { id: string; lon: number; lat: number; up: number; y0: number; y1: number }[];
+  gps: { id: string; lon: number; lat: number; up: number | null; flag: string | null; deepAnchorM: number | null; y0: number; y1: number }[];
   ext: { id: string; name: string; lon: number; lat: number; c: number; d0: string; d1: string }[];
   wells: { id: string; name: string; lon: number; lat: number; dd: number | null; t0: string; t1: string }[];
 }

@@ -20,7 +20,7 @@ function Legend({ mode, meta }: { mode: Mode; meta: Meta }) {
       <div>
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
         <div className="ramp-keys"><span>Down {span} mm a year</span><span>No clear motion</span><span>Up</span></div>
-        <p className="legend-note">{meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} satellite record, relative to reference GPS stations. Converted from the satellite's slanted view to up and down assuming the motion is vertical ({meta.geometry.incidence_deg}° look angle).</p>
+        <p className="legend-note">{meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} satellite record, relative to the reference region. Converted from the satellite's slanted view to up and down assuming the motion is vertical ({meta.geometry.incidence_deg}° look angle).</p>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export default function App() {
               </button>
               <button className="answer" onClick={() => setMode("confidence")}>
                 <span className="q">How sure are we?</span>
-                <span className="a">The satellite matches {meta.validation.stations} GPS stations to within about <strong>{num(meta.validation.typical_diff_mm_year)} mm a year</strong>. Each square gets its own confidence level.</span>
+                <span className="a">Compared with {meta.validation.stations} GPS stations, the typical (median) difference is <strong>{num(meta.validation.typical_diff_mm_year)} mm a year</strong>. Each square gets its own confidence level.</span>
               </button>
               <button className="answer" onClick={() => setMode("priority")}>
                 <span className="q">Where should we look first?</span>

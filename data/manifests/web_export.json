@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-11T03:37:32Z",
-  "git_head": "47a8c1063b2f1ba1a6a69e3e5d8591073c4de661",
-  "git_worktree_clean": true,
+  "created_utc": "2026-11-11T23:54:29Z",
+  "git_head": "3e80343d6d7d8be11395ae52db9fc02d57423a25",
+  "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
     {
@@ -17,28 +17,28 @@
     },
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "a50886c23a5195486f11cd710ce4a98abc9d18cc3847813d1c0d88ef51be8b2a",
+      "sha256": "e6bb01083666a166a79bdb686b5449f2f59fd4b4f734034c27609cf5a55c6cf7",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20210505.json",
-      "sha256": "29df1c2b8624a0d5a9d06e68a909f0275b1ba167d9790a6b455f835b52578301",
+      "sha256": "544e315e310d1933edd3e2ad2b73918b563cc4f143f47413e5b3917a195df24d",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "b71ee1e795b243796e7f1d39ce623db7d49e16b77338d56d2af1997a45b47206",
+      "sha256": "a053a14cc6c6842699a007e1878d14612e363141c3dd57498da24f690f89bfbd",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_chain_20251102_20260101.json",
-      "sha256": "cb62fbe4b7340b553f1acad43878d625c1d58772565a04681d47928446b2d218",
+      "sha256": "76ae6589a3d2add2697b43e3763d3b34c43e3a90fb0578644373b608082ba11f",
       "tracked": false,
       "regenerate_with": "python3 scripts/build_provisional.py"
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_pair_20251102_20251114.json",
-      "sha256": "e2a21412db4567729994db33e93da369e0a92002e52cd0238ca280f1bcd467f9",
+      "sha256": "fbae3b2254ddeb75a655414231d80c1e1a315c0f58c024c06e7ea09cd5daa806",
       "tracked": false,
       "regenerate_with": "python3 scripts/build_provisional.py"
     },
@@ -61,17 +61,17 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "7d2912bbabb97e5a1fe5d15a873919375d191b308bbbe021f8c3953e0ecabd46",
+      "sha256": "fe99eb0a85e48b50045fd9cb5a50603e4343906acac8027a64f5537ba19cdd6c",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "d879bb11aafcc83a10c09d93d7fbad5a908e996fc534ccfb74567063887a2312",
+      "sha256": "19feccb9ca217e677641b1b6f10f27318cbb52257a5cd887fbfc15868cc85de0",
       "tracked": true
     },
     {
       "path": "web/public/data/sites.json",
-      "sha256": "be6399aa9721407d6b92f9e78e0af7bc44216db93af3310abe5f68c6fdd59909",
+      "sha256": "a85e8f4d49d51ff9a44dde4e1c9defde6fe13b49fb0cce4bc6e122be6c5f1a69",
       "tracked": true
     }
   ],

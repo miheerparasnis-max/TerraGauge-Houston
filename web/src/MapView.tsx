@@ -88,7 +88,7 @@ export function MapView({ cells, sites, sensors, mode, layers, selected, focus, 
           if (site) {
             const p = site.properties as Record<string, unknown>;
             const html = site.layer.id === "gps"
-              ? `<b>GPS station ${p.id}</b><br>Moved ${Number(p.up).toFixed(1)} mm a year (up is positive)<br>${Number(p.y0).toFixed(0)} to ${Number(p.y1).toFixed(0)}, HoustonNet`
+              ? `<b>GPS station ${p.id}</b><br>${Number(p.deepAnchorM) > 0 ? `Antenna on a deep extensometer anchor (${p.deepAnchorM} m down): it tracks the anchor, not the land surface. ` : ""}${p.up === null || p.up === undefined || p.up === "null" || !Number.isFinite(Number(p.up)) ? "Rate withheld: implausible in the source release" : `Moved ${Number(p.up).toFixed(1)} mm a year (up is positive)`}<br>${Number(p.y0).toFixed(0)} to ${Number(p.y1).toFixed(0)}, HoustonNet`
               : site.layer.id === "ext"
               ? `<b>${p.name}</b><br>Extensometer: measures soil squeezing underground<br>${Number(p.c).toFixed(2)} ft since ${p.d0}`
               : `<b>${p.name}</b><br>Groundwater well, USGS<br>${p.dd === null ? "No change recorded" : `Water ${Number(p.dd) >= 0 ? `${Number(p.dd).toFixed(1)} ft deeper` : `${(-Number(p.dd)).toFixed(1)} ft shallower`}`}, ${p.t0} to ${p.t1}`;

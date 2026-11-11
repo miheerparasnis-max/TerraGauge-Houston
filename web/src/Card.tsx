@@ -50,7 +50,7 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
       <button className="close" onClick={onClose} aria-label="Close">×</button>
       <h2 id="card-title">{headline(cell)}</h2>
       {cell.rate !== null && cell.pri !== "no_data" && (
-        <p className="sub">{num(cell.rate)} ± {num(cell.se)} mm a year, {start} to {end}, relative to reference GPS stations. {sources}.</p>
+        <p className="sub">{num(cell.rate)} ± {num(cell.se)} mm a year, {start} to {end}, relative to the reference region. {sources}.</p>
       )}
       <div className="chips">
         <span className="chip" style={{ ["--c" as string]: p.color }}><i />Priority: {p.name}</span>
@@ -70,14 +70,14 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
         <section className="block">
           <h3>Ground level in the satellite record</h3>
           <TrendChart cell={cell} meta={meta} />
-          <p className="fine">Change since {start}, relative to the reference GPS stations, converted to up and down assuming the motion is vertical. Past motion does not tell us future motion.</p>
+          <p className="fine">Change since {start}, relative to the reference region, converted to up and down assuming the motion is vertical. Past motion does not tell us future motion.</p>
         </section>
       )}
 
       <section className="block">
         <h3>Sensors</h3>
         <dl>
-          <Row k="Nearest permanent GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}, ${num(cell.gps.up)} mm a year${cell.gps.y0 ? `, ${cell.gps.y0}–${cell.gps.y1}` : ""}`} />
+          <Row k="Nearest permanent GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}, ${cell.gps.up === null ? "rate withheld (implausible in the source release)" : `${num(cell.gps.up)} mm a year`}${cell.gps.y0 ? `, ${cell.gps.y0}–${cell.gps.y1}` : ""}`} />
         </dl>
         {sensor ? <p className="good">Suggested sensor site #{sensor.rank} of {meta.sensors.length}: the squares around it moved down about {num(Math.abs(sensor.areaRate))} mm a year in the {start}–{end} record, and the closest GPS station is {num(sensor.gpsKm)} km away.</p>
           : cell.needsSensor ? <p className="good">No GPS station within {meta.thresholds.gps_covered_km} km. A sensor here would check what the satellite saw.</p>
@@ -105,7 +105,7 @@ export function Card({ cell, meta, sensor, onClose }: { cell: Cell; meta: Meta; 
           <li>This is a 1 km average. It says nothing about any single building or property.</li>
           <li>It does not forecast flooding or say why the ground moved.</li>
           <li>Satellites measure motion along a slanted line of sight; we convert to up and down assuming the motion is vertical.</li>
-          <li>Rates are relative to reference GPS stations, and that reference choice is still provisional.</li>
+          <li>Rates are relative to the reference region, and that reference choice is still provisional.</li>
           <li>It describes the {start}–{end} record only. Past motion does not tell us future motion.</li>
         </ul>
       </details>

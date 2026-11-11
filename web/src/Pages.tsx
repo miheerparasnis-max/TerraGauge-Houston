@@ -42,8 +42,8 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <table className="table">
         <thead><tr><th>Data</th><th>What it tells us</th><th>How we use it</th></tr></thead>
         <tbody>
-          <tr><td>NASA OPERA satellite radar, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}</td><td>How much each square moved, every few months</td><td>Main movement measurement</td></tr>
-          <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines coverage</td></tr>
+          <tr><td>NASA JPL OPERA products from the Copernicus Sentinel-1 radar satellites, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}</td><td>How much each square moved, every few months</td><td>Main movement measurement</td></tr>
+          <tr><td>HoustonNet GPS, {meta.stations.total} stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines coverage. The {meta.stations.deepSeated.length} antennas on deep extensometer anchors ({meta.stations.deepSeated.join(", ")}) are left out: they track the anchor, not the land surface.</td></tr>
           <tr><td>NASA/ISRO NISAR, {a.first.slice(0, 7)} to {a.last.slice(0, 7)}</td><td>The newest radar satellite</td><td>Quality check so far: {a.processedPairs} of {a.pairs} available pairs processed (see below)</td></tr>
           <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's evidence</td></tr>
           <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's evidence</td></tr>
@@ -57,8 +57,8 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <Scatter meta={meta} />
         <div>
           <p className="big"><strong>{v.r.toFixed(2)}</strong> correlation with {v.stations} GPS stations we did not use to calibrate the satellite.</p>
-          <p>Typical difference: <strong>{num(v.typical_diff_mm_year)} mm a year</strong>. Points near the dashed line mean the satellite and the GPS station agree.</p>
-          <p className="small">GPS stations cover longer time spans than the satellite record, so some difference is expected.</p>
+          <p>Typical (median) difference: <strong>{num(v.typical_diff_mm_year)} mm a year</strong>. Points near the dashed line mean the satellite and the GPS station agree.</p>
+          <p className="small">GPS stations cover longer time spans than the satellite record, so some difference is expected. Stations used to set the reference, and antennas on deep extensometer anchors, are not in this comparison.</p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
 
       <h3>How each answer is decided</h3>
       <h4>Movement</h4>
-      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down, assuming the motion is vertical and a {meta.geometry.incidence_deg}° look angle) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Rates are relative to the reference GPS stations. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as no clear motion: that's twice the wobble we see at GPS stations that aren't moving.</p>
+      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down, assuming the motion is vertical and a {meta.geometry.incidence_deg}° look angle) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Rates are relative to the reference region. A square counts as moving only if its rate is more than twice its own uncertainty and more than {num(meta.thresholds.stable_mm_year)} mm a year (twice the spread of satellite rates inside the reference region). Otherwise it shows as no clear motion.</p>
       <h4>Confidence</h4>
       <ul>{(["high", "medium", "low"] as const).map((k) => <li key={k}><b>{CONFIDENCE[k].name}:</b> {CONFIDENCE[k].meaning}</li>)}</ul>
       <h4>Priority</h4>
@@ -79,13 +79,13 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <p>Squares that moved down in the satellite record and have no GPS station within {meta.thresholds.gps_covered_km} km, ranked by how fast they moved, how sure we are, how far the nearest station is, and whether they're in a high-risk flood zone. Sites are kept at least 4 km apart so the list covers different areas.</p>
 
       <h3>Still provisional</h3>
-      <p className="small">Satellite radar measures movement relative to a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move as that reference and held out {meta.reference.held_out_stable_stations.length} similar stations for checking. The team still needs to review this choice.</p>
+      <p className="small">Satellite radar measures movement relative to a reference. Ours is every square within {meta.reference.radius_km} km of GPS stations {meta.reference.reference_stations.join(" and ")}, which have run for over 10 years and moved less than 1 mm a year up or down. We wrote this rule down before looking at results, and kept every other GPS station out of it so the comparison above stays independent. It stays provisional until the full NISAR series is processed.</p>
 
       <h3>Sources</h3>
       <ul className="small">
-        <li>NASA JPL OPERA DISP-S1 surface displacement, frame F38238, via the Alaska Satellite Facility.</li>
+        <li>NASA JPL OPERA DISP-S1 surface displacement, frame F38238, via the Alaska Satellite Facility. Contains modified Copernicus Sentinel-1 data ({meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}).</li>
         <li>NASA/ISRO NISAR L2 GUNW (provisional products), track 062 frame 016: {a.pairs} pairs in NASA's archive, {a.first} to {a.last}; the first {a.processedPairs} processed. Inventory: <code>{a.inventory}</code>.</li>
-        <li>HoustonNet GPS 2024 release, University of Houston and Harris-Galveston Subsidence District.</li>
+        <li>HoustonNet GPS 2024 release, University of Houston and Harris-Galveston Subsidence District. Station types: Wang et al. (2022), J. Surv. Eng. 148(4): 04022008.</li>
         <li>USGS groundwater daily values and the 2023 Houston extensometer release.</li>
         <li>FEMA National Flood Hazard Layer. Basemap © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.</li>
         <li>Every number on this site traces to hashed source files listed in <code>{meta.provenance.manifest}</code>.</li>

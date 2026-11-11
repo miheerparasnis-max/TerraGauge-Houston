@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT))
 from backend.insights import (  # noqa: E402
     INCIDENCE_DEG, confidence, distance_km, gps_difference, neighborhood_medians, priority, sensor_plan, vertical_rate,
 )
+from backend.ingestion.station_types import DEEP_SEATED_GNSS, display_gps_rate, is_deep_seated  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
 from backend.provenance import ProvenanceLog  # noqa: E402
 from backend.publish_guard import assert_publishable  # noqa: E402
@@ -81,7 +82,10 @@ def main() -> None:
     build = get(PROV / "build_report.json")
     pair = get(pair_path)
     chain = get(chain_path)
-    stations = get(DERIVED / "houstonnet_2024_summary.json")["stations"]
+    all_stations = get(DERIVED / "houstonnet_2024_summary.json")["stations"]
+    # Deep-seated antennas (on deep extensometer anchors) do not measure the land
+    # surface: never blend, cross-check, or count them as surface coverage.
+    stations = [s for s in all_stations if not is_deep_seated(s["station_id"])]
     extensometers = get(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = get(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
     flood = {row["cell_id"]: row for row in get(DERIVED / "fema_nfhl_houston_cell_context_2026-11-07.json")["cells"]}
@@ -110,7 +114,7 @@ def main() -> None:
 
     sat_rates = [{"id": c["cell_id"], "lon": float(c["longitude"]), "lat": float(c["latitude"]), "rate": vertical_rate(c["opera_los_velocity_mm_year"])} for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= 40]
     neighbors = neighborhood_medians(sat_rates)
-    long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and s.get("up_mm_year") is not None]
+    long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and display_gps_rate(s.get("up_mm_year"))[0] is not None]
     # Coverage counts any station still reporting (data through 2022 or later).
     active = [s for s in stations if (s.get("end_decimal_year") or 0) >= 2022]
     cells, rows_for_plan = [], []
@@ -170,7 +174,7 @@ def main() -> None:
             "conf": level, "confWhy": conf_reasons,
             "pri": pri, "priWhy": pri_reason, "needsSensor": needs_sensor,
             "series": op["opera_series_mm"] if op else None,
-            "gps": {"id": cover["station_id"], "km": r(cover_km, 1), "up": cover["up_mm_year"], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
+            "gps": {"id": cover["station_id"], "km": r(cover_km, 1), "up": display_gps_rate(cover["up_mm_year"])[0], "flag": display_gps_rate(cover["up_mm_year"])[1], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
             "check": {"id": check_id, "km": r(check_km, 1), "diff": r(diff)} if check_id else None,
             "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha},
             "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(ev.get("groundwater_depth_change_ft"), 2)} if ev.get("usgs_site_id") else None,
@@ -225,9 +229,10 @@ def main() -> None:
         "sensors": sensor_sites,
         "nasaLayers": {k: v["meta"].get("source") for k, v in nasa.items()},
         "provenance": {"manifest": relative(MANIFEST)},
+        "stations": {"total": len(all_stations), "deepSeated": sorted(s["station_id"] for s in all_stations if is_deep_seated(s["station_id"])), "rateWithheld": sorted(s["station_id"] for s in all_stations if display_gps_rate(s.get("up_mm_year"))[1])},
     }
     sites = {
-        "gps": [{"id": s["station_id"], "lon": s["longitude"], "lat": s["latitude"], "up": s["up_mm_year"], "y0": s["start_decimal_year"], "y1": s["end_decimal_year"]} for s in stations],
+        "gps": [{"id": s["station_id"], "lon": s["longitude"], "lat": s["latitude"], "up": display_gps_rate(s["up_mm_year"])[0], "flag": display_gps_rate(s["up_mm_year"])[1], "deepAnchorM": DEEP_SEATED_GNSS.get(s["station_id"], {}).get("anchor_depth_m"), "y0": s["start_decimal_year"], "y1": s["end_decimal_year"]} for s in all_stations],
         "ext": [{"id": s["station_id"], "name": s.get("station_name"), "lon": s["longitude"], "lat": s["latitude"], "c": s.get("cumulative_compaction_change"), "d0": s["first_observation"]["date"], "d1": s["last_observation"]["date"]} for s in extensometers],
         "wells": [{"id": s["site_id"], "name": s.get("site_name"), "lon": s["longitude"], "lat": s["latitude"], "dd": r(s.get("depth_change_ft"), 2), "t0": s["first_observation"]["time"][:10], "t1": s["last_observation"]["time"][:10]} for s in wells],
     }

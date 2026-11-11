@@ -21,7 +21,9 @@ from typing import Any
 
 INCIDENCE_DEG = 38.0  # approximate Sentinel-1 IW incidence over Houston
 STABLE_MM_YEAR = 3.0  # below this a vertical rate is reported as "about stable"
-IMPLAUSIBLE_MM_YEAR = 40.0  # faster than any Houston rate on record: treat as a data problem
+# Faster than any reliable HoustonNet 2024 GPS rate (fastest: P111, -32.2 mm/yr): treat
+# as a data problem. Not "fastest ever": USGS reports about 0.12 m/yr at Pasadena in 1964-73.
+IMPLAUSIBLE_MM_YEAR = 40.0
 
 
 def distance_km(lon_a: float, lat_a: float, lon_b: float, lat_b: float) -> float:
@@ -79,7 +81,7 @@ def priority(*, rate_vertical: float | None, significant: bool, level: str | Non
     if rate_vertical is None or open_water:
         return "no_data", "Not enough reliable satellite data here (often trees, fields, or open water)."
     if abs(rate_vertical) > IMPLAUSIBLE_MM_YEAR:
-        return "check", f"The reading ({rate_vertical:.0f} mm a year) is faster than anything measured in Houston, so it is probably a data problem."
+        return "check", f"The reading ({rate_vertical:.0f} mm a year) is faster than any reliable GPS rate in Houston's 2024 HoustonNet release, so it is probably a data problem."
     if not significant or rate_vertical > -STABLE_MM_YEAR:
         return "stable", f"No clear up-or-down motion beyond measurement noise in {record}."
     sure = level in ("high", "medium")
