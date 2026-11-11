@@ -18,6 +18,7 @@ from backend.decision import classify_cell  # noqa: E402
 from backend.ingestion.houston import build_houston_evidence  # noqa: E402
 from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, nearest_cell_ids, opera_series, stable_gps_reference  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
+from backend.publish_guard import assert_publishable  # noqa: E402
 from backend.repository import cell_from_dict  # noqa: E402
 
 DERIVED = Path("data/derived")
@@ -32,7 +33,9 @@ MAX_ABS_UP = 1.0
 
 
 def load(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert_publishable(payload, str(path))
+    return payload
 
 
 def save(path: Path, payload: dict) -> None:

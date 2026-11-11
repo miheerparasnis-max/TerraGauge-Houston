@@ -28,6 +28,7 @@ from backend.insights import (  # noqa: E402
     backtest, confidence, decimal_year, distance_km, gps_difference, neighborhood_medians, priority, project, sensor_plan, vertical_rate,
 )
 from backend.model import Thresholds  # noqa: E402
+from backend.publish_guard import assert_publishable  # noqa: E402
 
 DERIVED = Path("data/derived")
 PROV = DERIVED / "provisional"
@@ -39,7 +40,9 @@ TARGET_YEARS = [2030, 2035, 2040]
 
 
 def load(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert_publishable(payload, str(path))
+    return payload
 
 
 def r(value, digits=1):

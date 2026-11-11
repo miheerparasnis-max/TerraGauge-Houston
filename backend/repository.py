@@ -118,6 +118,14 @@ def _bool(value: Any, name: str) -> bool:
     return value
 
 
+def dataset_status(path: str | Path) -> str | None:
+    """Top-level `dataset_status` of a cells file, so clients can see demo data."""
+    with Path(path).open(encoding="utf-8") as stream:
+        raw = json.load(stream)
+    status = raw.get("dataset_status") if isinstance(raw, dict) else None
+    return status if isinstance(status, str) else None
+
+
 def load_cells(path: str | Path) -> list[CellInput]:
     with Path(path).open(encoding="utf-8") as stream:
         raw = json.load(stream)
