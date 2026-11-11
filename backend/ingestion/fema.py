@@ -220,7 +220,8 @@ def classify_cell_centers(nisar_path: str | Path, overlay_path: str | Path, grid
         chosen = ordered[0].get("properties", {}) if ordered else {}
         cells.append({
             "cell_id": cell["cell_id"],
-            "flood_exposed": any(feature.get("properties", {}).get("SFHA_TF") == "T" for feature in matches) if matches else False,
+            # No polygon means the downloaded layer has no answer here: unknown, never "not exposed" (MASTER B8).
+            "flood_exposed": any(feature.get("properties", {}).get("SFHA_TF") == "T" for feature in matches) if matches else None,
             "flood_zone": chosen.get("FLD_ZONE"),
             "zone_subtype": chosen.get("ZONE_SUBTY"),
             "matching_polygon_count": len(matches),
@@ -232,7 +233,7 @@ def classify_cell_centers(nisar_path: str | Path, overlay_path: str | Path, grid
         "cell_context_method": "NISAR-cell center point-in-polygon classification against downloaded FEMA NFHL polygons.",
         "limitations": [
             "This is flood-zone context sampled at the aggregated radar-cell center; it is not a cell-area percentage, flood depth, parcel determination, or forecast.",
-            "A cell with no matching polygon is recorded as not mapped to an SFHA polygon by this layer, not as risk-free.",
+            "A cell with no matching polygon has flood_exposed = null (unknown): the downloaded layer has no polygon there. It is never recorded as not exposed or as risk-free.",
         ],
         "cells": cells,
     }
