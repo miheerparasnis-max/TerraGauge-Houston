@@ -33,7 +33,7 @@ npm run build                          # tsc -b && vite build (no lint/test scri
 
 Three layers; scientific logic lives only in Python, the website just renders precomputed JSON.
 
-1. **Core API (`backend/`, stdlib only).** `model.py` (dataclasses, `Label`, `Thresholds`) → `repository.py` (validates/loads the aggregated-cell JSON contract) → `decision.py` (explainable classification rules; quality gates first, then reference-scatter threshold, GPS/time-matching checks) → `service.py` (`TerraGaugeService`) → `api.py` (HTTP routes). `detection.py` holds GNSS session-noise math; `insights.py` produces the website's movement/confidence/future/priority outputs. `decision.classify_opera_velocity` is the OPERA-based equivalent used by the provisional build.
+1. **Core API (`backend/`, stdlib only).** `model.py` (dataclasses, `Label`, `Thresholds`) → `repository.py` (validates/loads the aggregated-cell JSON contract) → `decision.py` (explainable classification rules; quality gates first, then reference-scatter threshold, GPS/time-matching checks) → `service.py` (`TerraGaugeService`) → `api.py` (HTTP routes). `detection.py` holds GNSS session-noise math; `insights.py` produces the website's movement/confidence/priority outputs about the past record (no projections: claims policy). `decision.classify_opera_velocity` is the OPERA-based equivalent used by the provisional build.
 
 2. **Ingestion (`backend/ingestion/`, needs numpy/h5py/pyproj).** One adapter per source (`nisar.py`, `opera.py`, `houstonnet.py`, `usgs.py`, `compaction.py`, `fema.py`, `gnss.py`, `raster_layers.py`), driven by `cli.py`. Adapters write intermediate JSON artifacts carrying provenance, parameters, and limitations. Gates: `quality.py` (structural integrity of NISAR pairs), `temporal.py` (NISAR network diagnostic: withholds rate without ≥2 independent loop-closure edges), `opera_temporal.py` (withholds OPERA rate until re-referenced and GNSS-checked), `reference.py` (stable-reference handling). `houston.py` joins everything into the evidence dataset; `provisional.py` supports the website build.
 
@@ -52,5 +52,6 @@ Three layers; scientific logic lives only in Python, the website just renders pr
 - Use a Python 3.14 venv with `requirements-layers.txt` for ingestion and the full test suite; `h5py` has no Python 3.15 wheel.
 - `flood_exposed` may be `null`; never infer it from a station-point FEMA result. A cell with no matching FEMA polygon is `null` (unknown), never `false`.
 - Every loader that feeds a published output (website, page, deck) must call `backend.publish_guard.assert_publishable`, which refuses demonstration data.
+- Both website builds write provenance manifests (`data/manifests/provisional_build.json`, `data/manifests/web_export.json`) via `backend/provenance.py`. `tests/test_claims_policy.py` fails if a MASTER G2 phrase or a projection reaches `web/src`, `web/public/data`, or the README.
 - Large regenerable intermediates under `data/derived/provisional/` are gitignored.
 - Network-dependent scripts (`fetch_opera_extension.py`, `fetch_nasa_layers.py`) need an Earthdata login and download multi-GB data.
