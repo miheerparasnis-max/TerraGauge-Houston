@@ -1,14 +1,12 @@
 export type Priority = "urgent" | "high" | "watch" | "stable" | "check" | "no_data";
 export type Confidence = "high" | "medium" | "low";
-export type Mode = "movement" | "confidence" | "future" | "priority";
-
-export interface Projection { center_mm: number; low_mm: number; high_mm: number } // values are in cm (exported /10)
+export type Mode = "movement" | "confidence" | "priority";
 
 export interface Cell {
   id: string;
   lon: number;
   lat: number;
-  rate: number | null;          // mm/yr, negative = sinking
+  rate: number | null;          // mm/yr, up/down equivalent, negative = moved down, relative to the reference GPS stations
   se: number | null;            // mm/yr
   src: ("satellite" | "gps")[];
   sig: boolean;
@@ -17,7 +15,6 @@ export interface Cell {
   pri: Priority;
   priWhy: string;
   needsSensor: boolean;
-  future: Record<string, Projection> | null;
   series: number[] | null;      // cumulative mm along the satellite line of sight
   gps: { id: string; km: number; up: number; y0: number | null; y1: number | null };
   check: { id: string; km: number; diff: number } | null;
@@ -30,22 +27,23 @@ export interface Cell {
   dist?: { disturbed_fraction?: number };
 }
 
-export interface SensorSite { rank: number; id: string; lon: number; lat: number; rate: number; areaRate: number; conf: Confidence; gpsKm: number; sfha: boolean; zone: string | null; future2035: Projection | null }
+export interface SensorSite { rank: number; id: string; lon: number; lat: number; rate: number; areaRate: number; conf: Confidence; gpsKm: number; sfha: boolean; zone: string | null }
+
+interface NisarCheck { cells: number; days: number; noise_mm: number; signal_mm: number; r: number }
 
 export interface Meta {
   status: string;
-  record: { start: string; end: string; dates: string[]; products: number; extendedThroughOpera2026: boolean };
+  record: { start: string; end: string; dates: string[]; products: number };
+  geometry: { incidence_deg: number; assumption: string };
   thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number };
   counts: { priority: Record<string, number>; confidence: Record<string, number> };
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
-  forecast: {
-    mode: "tested" | "scenario"; damping: number; model_error_mm_year: number; base: string; years: number[];
-    backtest: { train: string[]; test: string[]; cells: number; correlation: number; mae_persistence_mm_year: number; mae_no_motion_mm_year: number; best_damping: number; fast_cells: number; fast_median_before_mm_year: number | null; fast_median_after_mm_year: number | null; beats_no_motion: boolean };
-  };
-  nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
+  nisar: { pair: NisarCheck; chain: NisarCheck };
+  nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number; retrieved: string; inventory: string };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };
   sensors: SensorSite[];
   nasaLayers: Record<string, string>;
+  provenance: { manifest: string };
 }
 
 export interface Sites {

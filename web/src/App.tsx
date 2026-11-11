@@ -13,15 +13,14 @@ async function getJSON<T>(name: string): Promise<T> {
   return res.json();
 }
 
-function Legend({ mode, year, meta }: { mode: Mode; year: number; meta: Meta }) {
-  if (mode === "movement" || mode === "future") {
-    const span = mode === "movement" ? 25 : 30;
-    const unit = mode === "movement" ? "mm a year" : `cm by ${year}`;
+function Legend({ mode, meta }: { mode: Mode; meta: Meta }) {
+  if (mode === "movement") {
+    const span = 25;
     return (
       <div>
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
-        <div className="ramp-keys"><span>Sinking {span} {unit}</span><span>Stable</span><span>Rising</span></div>
-        {mode === "future" && meta.forecast.mode === "scenario" && <p className="legend-note">If the {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} trend continues. Likely an overestimate: sinking has been slowing.</p>}
+        <div className="ramp-keys"><span>Down {span} mm a year</span><span>No clear motion</span><span>Up</span></div>
+        <p className="legend-note">{meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} satellite record, relative to reference GPS stations. Converted from the satellite's slanted view to up and down assuming the motion is vertical ({meta.geometry.incidence_deg}° look angle).</p>
       </div>
     );
   }
@@ -40,14 +39,13 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
   const [mode, setMode] = useState<Mode>("movement");
-  const [year, setYear] = useState(2035);
   const [layers, setLayers] = useState<Layers>({ sensors: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
 
   useEffect(() => {
     Promise.all([getJSON<Cell[]>("cells.json"), getJSON<Meta>("meta.json"), getJSON<Sites>("sites.json")])
-      .then(([c, m, s]) => { setCells(c); setMeta(m); setSites(s); setYear(m.forecast.years[1] ?? m.forecast.years[0]); })
+      .then(([c, m, s]) => { setCells(c); setMeta(m); setSites(s); })
       .catch((e: Error) => setError(e.message));
   }, []);
   useEffect(() => { if (tab === "map") window.dispatchEvent(new Event("resize")); }, [tab]);
@@ -68,13 +66,14 @@ export default function App() {
   const pick = (id: string) => { const c = byId.get(id); if (!c) return; setSelected(id); setFocus({ lon: c.lon, lat: c.lat, key: Date.now() }); };
   const toggle = (k: keyof Layers) => setLayers((l) => ({ ...l, [k]: !l[k] }));
   const q = MODES.find((m) => m.key === mode)!;
+  const years = `${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}`;
 
   return (
     <div className="app">
       <header className="top">
         <div className="brand">
           <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B8862B" /><path d="M6 19c4-5 7 2 10-3s7 1 10-3" fill="none" stroke="#14201F" strokeWidth="2.6" strokeLinecap="round" /></svg>
-          <div><h1>TerraGauge</h1><p>Where is Houston's ground sinking?</p></div>
+          <div><h1>TerraGauge</h1><p>Where did Houston's ground move, and how sure are we?</p></div>
         </div>
         <nav aria-label="Pages">
           {([["map", "Map"], ["how", "How we know"], ["sensor", "Our $74 sensor"]] as const).map(([k, name]) => (
@@ -84,7 +83,7 @@ export default function App() {
       </header>
 
       <main className={tab === "map" ? "stage" : "stage hidden"}>
-        <MapView cells={cells} sites={sites} sensors={meta.sensors} mode={mode} year={year} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
+        <MapView cells={cells} sites={sites} sensors={meta.sensors} mode={mode} layers={layers} selected={selected} focus={focus} onSelect={setSelected} />
 
         <div className="controls">
           <div className="box">
@@ -93,12 +92,7 @@ export default function App() {
               {MODES.map((m) => <button key={m.key} role="radio" aria-checked={mode === m.key} className={mode === m.key ? "on" : ""} onClick={() => setMode(m.key)}>{m.name}</button>)}
             </div>
             <p className="question">{q.question}</p>
-            {mode === "future" && (
-              <div className="years" role="radiogroup" aria-label="Year">
-                {meta.forecast.years.map((y) => <button key={y} role="radio" aria-checked={year === y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}</button>)}
-              </div>
-            )}
-            <Legend mode={mode} year={year} meta={meta} />
+            <Legend mode={mode} meta={meta} />
           </div>
           <details className="box layers">
             <summary>Show on map</summary>
@@ -112,21 +106,17 @@ export default function App() {
           {cell ? <Card cell={cell} meta={meta} sensor={sensorFor(cell.id)} onClose={() => setSelected(null)} /> : (
             <div className="summary">
               <h2>Houston at a glance</h2>
-              <p className="fine">{meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} satellite record combined with GPS, wells, compaction gauges, and flood zones. Click any square for its full story.</p>
+              <p className="fine">{years} satellite record combined with GPS, wells, compaction gauges, and flood zones. Click any square for its full story.</p>
               <button className="answer" onClick={() => setMode("movement")}>
-                <span className="q">Where is the ground moving?</span>
-                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares sank 1 cm a year or more. The darkest purple areas are sinking fastest.</span>
+                <span className="q">Where did the ground move?</span>
+                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares moved down 1 cm a year or more in the {years} record. The darkest purple areas moved down fastest.</span>
               </button>
               <button className="answer" onClick={() => setMode("confidence")}>
                 <span className="q">How sure are we?</span>
                 <span className="a">The satellite matches {meta.validation.stations} GPS stations to within about <strong>{num(meta.validation.typical_diff_mm_year)} mm a year</strong>. Each square gets its own confidence level.</span>
               </button>
-              <button className="answer" onClick={() => setMode("future")}>
-                <span className="q">Where is it heading?</span>
-                <span className="a">{meta.forecast.mode === "tested" ? "A tested forecast to " : "A what-if projection to "}{meta.forecast.years[meta.forecast.years.length - 1]} with a likely range. {meta.forecast.mode === "scenario" && "Sinking has been slowing, so treat it as an upper estimate."}</span>
-              </button>
               <button className="answer" onClick={() => setMode("priority")}>
-                <span className="q">Where should we act first?</span>
+                <span className="q">Where should we look first?</span>
                 <span className="a"><strong>{(meta.counts.priority.urgent ?? 0).toLocaleString()}</strong> urgent squares. Below are the top {meta.sensors.length} places to add a GPS sensor.</span>
               </button>
               <h3>Suggested sensor sites</h3>
@@ -134,7 +124,7 @@ export default function App() {
                 {meta.sensors.map((s) => (
                   <li key={s.id}><button onClick={() => pick(s.id)}>
                     <span className="rank">{s.rank}</span>
-                    <span><b>Area sinking about {num(Math.abs(s.areaRate / 10))} cm a year</b><small>{num(s.gpsKm)} km from the nearest GPS{s.sfha ? ", high-risk flood zone" : ""}, {CONFIDENCE[s.conf].name.toLowerCase()} confidence</small></span>
+                    <span><b>Area moved down about {num(Math.abs(s.areaRate / 10))} cm a year ({years})</b><small>{num(s.gpsKm)} km from the nearest GPS{s.sfha ? ", high-risk flood zone" : ""}, {CONFIDENCE[s.conf].name.toLowerCase()} confidence</small></span>
                   </button></li>
                 ))}
               </ol>
@@ -144,7 +134,7 @@ export default function App() {
       </main>
       {tab === "how" && <HowWeKnow meta={meta} />}
       {tab === "sensor" && <SensorPage />}
-      {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). Not a flood forecast or a property assessment.</footer>}
+      {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). It describes past satellite records only. It does not forecast flooding or assess any property.</footer>}
     </div>
   );
 }

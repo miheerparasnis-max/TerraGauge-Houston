@@ -12,17 +12,20 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from backend.decision import classify_cell  # noqa: E402
 from backend.ingestion.houston import build_houston_evidence  # noqa: E402
 from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, nearest_cell_ids, opera_series, stable_gps_reference  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
+from backend.provenance import ProvenanceLog  # noqa: E402
 from backend.publish_guard import assert_publishable  # noqa: E402
 from backend.repository import cell_from_dict  # noqa: E402
 
-DERIVED = Path("data/derived")
+DERIVED = ROOT / "data" / "derived"
 OUT = DERIVED / "provisional"
+MANIFEST = ROOT / "data" / "manifests" / "provisional_build.json"
 PAIRS = ["20251102_20251114", "20251114_20251126", "20251126_20251208", "20251208_20251220", "20251220_20260101"]
 # Provisional reference: cells at half of the long-history HoustonNet stations
 # whose published vertical rate is within +/-1 mm/yr. The other half are held
@@ -32,15 +35,22 @@ PAIRS = ["20251102_20251114", "20251114_20251126", "20251126_20251208", "2025120
 MAX_ABS_UP = 1.0
 
 
+LOG: ProvenanceLog | None = None  # set by main(); records every input and output with SHA-256
+
+
 def load(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert_publishable(payload, str(path))
+    if LOG is not None:
+        LOG.read(path)
     return payload
 
 
 def save(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+    if LOG is not None:
+        LOG.wrote(path)
 
 
 def summarize(evidence: dict) -> dict:
@@ -55,6 +65,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference-status", default="provisional_unreviewed", choices=["provisional_unreviewed", "reviewed"])
     args = parser.parse_args()
+    global LOG
+    LOG = ProvenanceLog(ROOT)
     stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
     reference_stations, held_out = stable_gps_reference(stations, MAX_ABS_UP)
     deramped = []
@@ -89,6 +101,9 @@ def main() -> None:
     save(OUT / "opera_vs_houstonnet_comparison.json", comparison)
     report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "gps_comparison": comparison["stats"]}
     save(OUT / "build_report.json", report)
+    for path in (value for value in common.values() if isinstance(value, Path)):
+        LOG.read(path)  # read directly by build_houston_evidence
+    LOG.write(MANIFEST, artifact_type="terragauge_provisional_build_manifest", command="python3 scripts/build_provisional.py", extra={"note": "Outputs marked tracked: false are gitignored regenerable intermediates; scripts/export_web.py reads two of them and records the same hashes."})
     print(json.dumps(report, indent=2))
 
 

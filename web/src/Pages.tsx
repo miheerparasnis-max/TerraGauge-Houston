@@ -26,17 +26,17 @@ function Gauge({ signal, noise, label }: { signal: number; noise: number; label:
     <figure className="gauge">
       <figcaption>{label}</figcaption>
       <div className="gauge-track" aria-hidden="true"><div className="gauge-noise" style={{ width: pct(noise) }} /><div className="gauge-signal" style={{ width: pct(signal) }} /></div>
-      <div className="gauge-keys"><span><i className="k-signal" />Real ground movement in that time: {num(signal)} mm</span><span><i className="k-noise" />Measurement noise: {num(noise, 0)} mm</span></div>
+      <div className="gauge-keys"><span><i className="k-signal" />Motion expected in that time (from the OPERA record): {num(signal)} mm</span><span><i className="k-noise" />Measurement noise: {num(noise, 0)} mm</span></div>
     </figure>
   );
 }
 
 export function HowWeKnow({ meta }: { meta: Meta }) {
-  const v = meta.validation, b = meta.forecast.backtest, n = meta.nisar;
+  const v = meta.validation, n = meta.nisar, a = meta.nisarArchive;
   return (
     <div className="page">
       <h2 className="page-title">How we know</h2>
-      <p className="lede">TerraGauge puts every dataset onto one map of 1 km squares, then answers four questions for each square. Here is how each answer is made, and how far to trust it.</p>
+      <p className="lede">TerraGauge puts every dataset onto one map of 1 km squares, then answers three questions about the past satellite record for each square. Here is how each answer is made, and how far to trust it.</p>
 
       <h3>One map, every dataset</h3>
       <table className="table">
@@ -44,10 +44,10 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <tbody>
           <tr><td>NASA OPERA satellite radar, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}</td><td>How much each square moved, every few months</td><td>Main movement measurement</td></tr>
           <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines coverage</td></tr>
-          <tr><td>NASA/ISRO NISAR, Nov 2025–Jan 2026</td><td>The newest radar satellite</td><td>Quality check; too new to measure slow sinking (see below)</td></tr>
+          <tr><td>NASA/ISRO NISAR, {a.first.slice(0, 7)} to {a.last.slice(0, 7)}</td><td>The newest radar satellite</td><td>Quality check so far: {a.processedPairs} of {a.pairs} available pairs processed (see below)</td></tr>
           <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's evidence</td></tr>
           <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's evidence</td></tr>
-          <tr><td>FEMA flood zones</td><td>Official high-risk flood areas</td><td>Raises priority for sinking squares</td></tr>
+          <tr><td>FEMA flood zones</td><td>Official high-risk flood areas</td><td>Raises priority for squares that moved down</td></tr>
           {Object.entries(meta.nasaLayers).map(([k, s]) => <tr key={k}><td>{s}</td><td>{k === "nasadem" ? "Ground elevation" : k === "dswx" ? "Standing water" : "Construction and clearing"}</td><td>{k === "dswx" ? "Removes water squares from rankings" : "Context in each square's evidence"}</td></tr>)}
         </tbody>
       </table>
@@ -62,32 +62,21 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         </div>
       </div>
 
-      <h3>Can we predict where it will go?</h3>
-      <p>We tested it. Using only {b.train[0].slice(0, 4)}–{b.train[1].slice(0, 4)} data, we predicted each square's rate for {b.test[0].slice(0, 4)}–{b.test[1].slice(0, 4)}, then checked against what actually happened.</p>
-      <div className="facts">
-        <div><strong>{num(b.fast_median_before_mm_year)} → {num(b.fast_median_after_mm_year)}</strong><span>mm a year: the fastest-sinking areas before and after {b.test[0].slice(0, 4)}. Sinking slowed down.</span></div>
-        <div><strong>{b.correlation.toFixed(2)}</strong><span>correlation between earlier and later rates. Two years of satellite data per side is too short and noisy to predict reliably.</span></div>
-      </div>
-      <p>{meta.forecast.mode === "tested"
-        ? `So the map's Future view uses a tested forecast: earlier rates scaled by ${meta.forecast.damping}.`
-        : "So the Future view is a clearly labeled \"if the trend continues\" scenario with a wide range, not a tested forecast. Because sinking has been slowing, it is most likely an overestimate."}</p>
-      {!meta.record.extendedThroughOpera2026 && <p className="note-block">With OPERA data through 2026 (11 more files, about 3.7 GB), we can test five years against the next five years, which is long enough for a real forecast. Run <code>scripts/fetch_opera_extension.py</code> and the site updates itself.</p>}
-
       <h3>Why doesn't NASA's newest satellite (NISAR) change the map yet?</h3>
-      <p>NISAR started imaging Houston in late 2025. Houston sinks a few millimetres over a few weeks, and the atmosphere alone shifts a single radar reading by centimetres.</p>
-      <Gauge signal={n.pair.signal_mm} noise={n.pair.noise_mm} label="One 12-day NISAR pair" />
-      <Gauge signal={n.chain.signal_mm} noise={n.chain.noise_mm} label="Five pairs combined, 60 days" />
-      <p>At one pass every 12 days, NISAR needs about {n.detect.find((d) => d.rate === 10)?.years ?? "—"} years of passes to detect 10 mm a year, and about {n.detect.find((d) => d.rate === 5)?.years ?? "—"} years for 5 mm a year (best case). Until then, TerraGauge uses it as a quality check.</p>
+      <p>NISAR started imaging Houston on {a.first}. NASA's archive now holds {a.passes} passes, through {a.last} (checked {a.retrieved} UTC). We have processed the first {a.processedPairs} pairs so far. In one 12-day pair, the radar's noise is far larger than the ground motion expected in 12 days, because the atmosphere alone shifts a single reading by centimetres:</p>
+      <Gauge signal={n.pair.signal_mm} noise={n.pair.noise_mm} label={`One ${n.pair.days}-day NISAR pair`} />
+      <Gauge signal={n.chain.signal_mm} noise={n.chain.noise_mm} label={`${a.processedPairs} pairs combined, ${n.chain.days} days`} />
+      <p>One pair cannot show a rate. A rate needs the whole series of passes, checked against GPS. How long NISAR needs to confirm a slow 5 mm-a-year rate will be calculated from the measured noise of the full series, using rules we wrote down before looking at the results. Until then, TerraGauge uses NISAR as a quality check.</p>
 
       <h3>How each answer is decided</h3>
       <h4>Movement</h4>
-      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as stable: that's twice the wobble we see at GPS stations that aren't moving.</p>
+      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down, assuming the motion is vertical and a {meta.geometry.incidence_deg}° look angle) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Rates are relative to the reference GPS stations. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as no clear motion: that's twice the wobble we see at GPS stations that aren't moving.</p>
       <h4>Confidence</h4>
       <ul>{(["high", "medium", "low"] as const).map((k) => <li key={k}><b>{CONFIDENCE[k].name}:</b> {CONFIDENCE[k].meaning}</li>)}</ul>
       <h4>Priority</h4>
       <ul>{(["urgent", "high", "watch", "stable", "check", "no_data"] as const).map((k) => <li key={k}><b>{PRIORITY[k].name}:</b> {PRIORITY[k].meaning}</li>)}</ul>
       <h4>Suggested sensor sites</h4>
-      <p>Squares that are sinking and have no GPS station within {meta.thresholds.gps_covered_km} km, ranked by how fast they sink, how sure we are, how far the nearest station is, and whether they're in a high-risk flood zone. Sites are kept at least 4 km apart so the list covers different areas.</p>
+      <p>Squares that moved down in the satellite record and have no GPS station within {meta.thresholds.gps_covered_km} km, ranked by how fast they moved, how sure we are, how far the nearest station is, and whether they're in a high-risk flood zone. Sites are kept at least 4 km apart so the list covers different areas.</p>
 
       <h3>Still provisional</h3>
       <p className="small">Satellite radar measures movement relative to a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move as that reference and held out {meta.reference.held_out_stable_stations.length} similar stations for checking. The team still needs to review this choice.</p>
@@ -95,10 +84,11 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <h3>Sources</h3>
       <ul className="small">
         <li>NASA JPL OPERA DISP-S1 surface displacement, frame F38238, via the Alaska Satellite Facility.</li>
-        <li>NASA/ISRO NISAR L2 GUNW, track 062 frame 016, five pairs, 2 Nov 2025 to 1 Jan 2026.</li>
+        <li>NASA/ISRO NISAR L2 GUNW (provisional products), track 062 frame 016: {a.pairs} pairs in NASA's archive, {a.first} to {a.last}; the first {a.processedPairs} processed. Inventory: <code>{a.inventory}</code>.</li>
         <li>HoustonNet GPS 2024 release, University of Houston and Harris-Galveston Subsidence District.</li>
         <li>USGS groundwater daily values and the 2023 Houston extensometer release.</li>
         <li>FEMA National Flood Hazard Layer. Basemap © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.</li>
+        <li>Every number on this site traces to hashed source files listed in <code>{meta.provenance.manifest}</code>.</li>
       </ul>
     </div>
   );
@@ -126,19 +116,19 @@ export function SensorPage() {
       <h2 className="page-title">Our $74 sensor</h2>
       <p className="lede">Professional GPS stations cost thousands of dollars. We're testing whether a $74 GPS board (Waveshare LC29H) could fill the gaps on the map.</p>
       <h3>The test</h3>
-      <p>We bolt the antenna to a metal sheet in a backyard and never move it. Because it isn't moving, any change in its readings is pure measurement noise. Knowing the noise tells us how long a cheap sensor would need to spot real sinking.</p>
+      <p>We bolt the antenna to a metal sheet in a backyard and never move it. Because it isn't moving, any change in its readings is pure measurement noise. Knowing the noise tells us how long a cheap sensor would need to spot a real change in ground level.</p>
       <div className="status-box"><p><strong>Status: no recordings yet.</strong> Recording starts in the first hour of the hackathon. We'll report a result only if we get three good sessions compared against NOAA's NETP reference station.</p></div>
       <h3>Try it</h3>
       <p className="small">Enter the height from each recording session. The numbers below are just an example until real data comes in.</p>
       <label className="field">Heights from each session, in mm<input value={heights} onChange={(e) => setHeights(e.target.value)} placeholder="for example 11.2, 8.9, 10.4" inputMode="decimal" /></label>
       <div className="field-row">
-        <label className="field">Sinking to detect, mm a year<input type="number" min={1} value={rate} onChange={(e) => setRate(Number(e.target.value))} /></label>
+        <label className="field">Rate to detect, mm a year<input type="number" min={1} value={rate} onChange={(e) => setRate(Number(e.target.value))} /></label>
         <label className="field">Days between sessions<input type="number" min={1} value={gap} onChange={(e) => setGap(Number(e.target.value))} /></label>
       </div>
       {sigma !== null
         ? <p className="result">Noise between sessions: <strong>{sigma.toFixed(1)} mm</strong>. To spot {rate} mm a year you'd need about <strong>{needed ?? "20,000+"}</strong> sessions{needed ? `, roughly ${Math.round(((needed - 1) * gap) / 7)} weeks` : ""}.</p>
         : <p className="muted">Enter at least three heights to see an estimate.</p>}
-      <p className="small">Best-case estimate. Weather, nearby buildings, and the site itself can make the real wait longer. The sensor measures its own noise, not Houston's sinking.</p>
+      <p className="small">Best-case estimate. Weather, nearby buildings, and the site itself can make the real wait longer. The sensor measures its own noise, not Houston's ground motion.</p>
     </div>
   );
 }

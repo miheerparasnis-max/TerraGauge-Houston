@@ -2,7 +2,7 @@
 
 TerraGauge is an evidence-first monitoring-priority backend for Houston ground-motion analysis. It combines NASA NISAR pairwise line-of-sight observations, historic local GPS context, USGS groundwater context, FEMA station-point context, and a stationary GNSS repeatability experiment to explain **what evidence exists at a location and what is still missing**.
 
-It does **not** forecast flooding, diagnose the cause of motion, or claim that a weekend GNSS receiver measured subsidence.
+It does **not** forecast flooding, project future motion, diagnose the cause of motion, or present a weekend GNSS receiver's readings as land motion.
 
 ## Backend scope
 
@@ -294,7 +294,7 @@ When the LC29H(BS) arrives, keep the outdoor antenna fixed and complete three st
 python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_manifest.json data/derived/groundtruth_report.json
 ```
 
-A passing report proves only stationary receiver repeatability. It never proves Houston land motion.
+A passing report shows only stationary receiver repeatability. It never shows Houston land motion.
 
 ## Remaining source work
 
@@ -312,21 +312,22 @@ npm install
 npm run dev        # opens http://localhost:5173
 ```
 
-One combined map of 1 km squares answers four questions (color the map by each):
+One combined map of 1 km squares answers three questions about the **past** satellite record (color the map by each). It makes no projections (claims policy, MASTER section 20).
 
-- **Movement:** OPERA satellite rate converted to vertical, blended with a GPS station's rate where one is within 1 km (inverse-variance weighting).
+- **Movement:** the OPERA satellite line-of-sight rate converted to an up/down equivalent (assuming the motion is vertical, with one 38° look angle), blended with a GPS station's rate where one is within 1 km (inverse-variance weighting). Rates are relative to the reference GPS stations.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check within 3 km, record jumpiness, and agreement with the squares around it (`backend/insights.py`).
-- **Future:** projection to 2030/2035/2040 with an ~80% range. A backtest decides whether it's shown as a tested forecast or as a labeled "if the trend continues" scenario.
-- **Priority:** Urgent / High / Watch / Stable / Check data, plus the top 15 suggested GPS sensor sites (sinking areas with no active station within 2 km, kept 4 km apart).
+- **Priority:** Urgent / High / Watch / Stable / Check data, plus the top 15 suggested GPS sensor sites (squares that moved down in the record with no active station within 2 km, kept 4 km apart). These classes come from the historic OPERA record; the NISAR-based labels in `docs/preregistration/` replace them once NISAR rates exist (plan task W-4).
 
-Clicking a square opens a plain-language card with the evidence, the trend chart, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, prediction test, why NISAR can't measure this yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
+Clicking a square opens a plain-language card with the evidence, the measured record chart, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, why NISAR does not change the map yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
 
 To regenerate the data the site shows:
 
 ```bash
-python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
-python3 scripts/export_web.py          # writes web/public/data/
+python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/ and data/manifests/provisional_build.json
+python3 scripts/export_web.py          # writes web/public/data/ and data/manifests/web_export.json
 ```
+
+Both builds refuse demonstration data (`backend/publish_guard.py`) and hash every input and output (`backend/provenance.py`). The website export records the two gitignored intermediates it reads, with the command that regenerates them; their hashes must match `data/manifests/provisional_build.json`. `tests/test_claims_policy.py` fails if a forbidden phrase or a projection reaches the site.
 
 ### What the provisional build does
 
@@ -348,7 +349,7 @@ To switch to a team-reviewed reference, change the reference selection in `scrip
 
 ### Extending the record to 2026
 
-The OPERA record in the repo ends in May 2021. `scripts/fetch_opera_extension.py` downloads the 11 OPERA products (about 3.7 GB) that continue the chain to March 2026, ingests them, and rebuilds the site data. With ~10 years of data the backtest compares five years against the next five, which is long enough for a real forecast test.
+The OPERA record in the repo ends in May 2021. `scripts/fetch_opera_extension.py` downloads the 11 OPERA products (about 3.7 GB) that continue the chain to March 2026, ingests them, and rebuilds the site data. The cross-sensor check against NISAR (validation test V2) needs a different set: the products dated inside the NISAR window (plan task T1.6).
 
 ```bash
 python3 -m pip install earthaccess numpy h5py pyproj

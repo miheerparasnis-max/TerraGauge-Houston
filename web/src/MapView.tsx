@@ -12,7 +12,6 @@ interface Props {
   sites: Sites;
   sensors: SensorSite[];
   mode: Mode;
-  year: number;
   layers: Layers;
   selected: string | null;
   focus: { lon: number; lat: number; key: number } | null;
@@ -37,12 +36,12 @@ async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
   }
 }
 
-function cellsGeoJSON(cells: Cell[], mode: Mode, year: number) {
+function cellsGeoJSON(cells: Cell[], mode: Mode) {
   return {
     type: "FeatureCollection" as const,
     features: cells.flatMap((c) => {
       const ring = cellRing(c.id);
-      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year), sfha: c.flood.sfha }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
+      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode), sfha: c.flood.sfha }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
     }),
   };
 }
@@ -52,13 +51,13 @@ const points = (rows: { lon: number; lat: number }[]) => ({
   features: rows.map((r) => ({ type: "Feature" as const, properties: { ...r }, geometry: { type: "Point" as const, coordinates: [r.lon, r.lat] } })),
 });
 
-export function MapView({ cells, sites, sensors, mode, year, layers, selected, focus, onSelect }: Props) {
+export function MapView({ cells, sites, sensors, mode, layers, selected, focus, onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const ready = useRef<Promise<void> | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
-  const latest = useRef({ cells, mode, year, onSelect });
-  latest.current = { cells, mode, year, onSelect };
+  const latest = useRef({ cells, mode, onSelect });
+  latest.current = { cells, mode, onSelect };
 
   useEffect(() => {
     if (!ref.current) return;
@@ -72,8 +71,8 @@ export function MapView({ cells, sites, sensors, mode, year, layers, selected, f
       created.on("load", () => {
         const m = created;
         const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
-        const { cells: c, mode: md, year: y } = latest.current;
-        m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y) });
+        const { cells: c, mode: md } = latest.current;
+        m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md) });
         m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": 0.8 } }, firstLabel);
         m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
         m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
@@ -114,7 +113,7 @@ export function MapView({ cells, sites, sensors, mode, year, layers, selected, f
 
   const whenReady = (fn: (m: MLMap) => void) => { ready.current?.then(() => map.current && fn(map.current)); };
 
-  useEffect(() => whenReady((m) => (m.getSource("cells") as GeoJSONSource).setData(cellsGeoJSON(cells, mode, year))), [cells, mode, year]);
+  useEffect(() => whenReady((m) => (m.getSource("cells") as GeoJSONSource).setData(cellsGeoJSON(cells, mode))), [cells, mode]);
   useEffect(() => whenReady((m) => m.setFilter("selected", ["==", ["get", "id"], selected ?? ""])), [selected]);
   useEffect(() => whenReady((m) => {
     m.setLayoutProperty("gps", "visibility", layers.gps ? "visible" : "none");

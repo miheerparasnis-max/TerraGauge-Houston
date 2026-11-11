@@ -1,0 +1,78 @@
+{
+  "artifact_type": "terragauge_web_export_manifest",
+  "created_utc": "2026-11-11T03:23:47Z",
+  "git_head": "93966b5196af9353df06b1a065e12f586d00e0d4",
+  "command": "python3 scripts/export_web.py",
+  "inputs": [
+    {
+      "path": "data/derived/fema_nfhl_houston_cell_context_2026-11-07.json",
+      "sha256": "afd6bbf660d06de6c78bf855461bd439f4f9a269cd86c74a0230a61a97d77304",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/houstonnet_2024_summary.json",
+      "sha256": "d84b2a11b1032edc1adcb85d5a00590552a42f1f1fd60714f517ea7da54da55f",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/build_report.json",
+      "sha256": "a50886c23a5195486f11cd710ce4a98abc9d18cc3847813d1c0d88ef51be8b2a",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20210505.json",
+      "sha256": "29df1c2b8624a0d5a9d06e68a909f0275b1ba167d9790a6b455f835b52578301",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
+      "sha256": "b71ee1e795b243796e7f1d39ce623db7d49e16b77338d56d2af1997a45b47206",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/terragauge_houston_evidence_chain_20251102_20260101.json",
+      "sha256": "cb62fbe4b7340b553f1acad43878d625c1d58772565a04681d47928446b2d218",
+      "tracked": false,
+      "regenerate_with": "python3 scripts/build_provisional.py"
+    },
+    {
+      "path": "data/derived/provisional/terragauge_houston_evidence_pair_20251102_20251114.json",
+      "sha256": "e2a21412db4567729994db33e93da369e0a92002e52cd0238ca280f1bcd467f9",
+      "tracked": false,
+      "regenerate_with": "python3 scripts/build_provisional.py"
+    },
+    {
+      "path": "data/derived/usgs_houston_extensometer_compaction_2023.json",
+      "sha256": "aa8005eeff2d43118d6c2dd86cf28566650a3d551e7fd3c60680dd349ef58817",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
+      "sha256": "ff49efa8fe5277e4fb56dbdefcdf6bb1cb7999f171bad3fffc6bd83f5f407cc5",
+      "tracked": true
+    },
+    {
+      "path": "data/manifests/nisar_track062_inventory_20261110.json",
+      "sha256": "ad95cf30160fcc203713476866cf1047dd9d196c098ab983877e0bd215807abc",
+      "tracked": true
+    }
+  ],
+  "outputs": [
+    {
+      "path": "web/public/data/cells.json",
+      "sha256": "7d2912bbabb97e5a1fe5d15a873919375d191b308bbbe021f8c3953e0ecabd46",
+      "tracked": true
+    },
+    {
+      "path": "web/public/data/meta.json",
+      "sha256": "d879bb11aafcc83a10c09d93d7fbad5a908e996fc534ccfb74567063887a2312",
+      "tracked": true
+    },
+    {
+      "path": "web/public/data/sites.json",
+      "sha256": "be6399aa9721407d6b92f9e78e0af7bc44216db93af3310abe5f68c6fdd59909",
+      "tracked": true
+    }
+  ],
+  "note": "Inputs marked tracked: false are regenerable intermediates; their hashes must match data/manifests/provisional_build.json."
+}
