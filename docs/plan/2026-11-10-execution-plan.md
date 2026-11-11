@@ -28,8 +28,14 @@ Where this plan and MASTER disagree on a fact, the audit evidence wins and the d
 | F-6 detectability raises on invalid input | Done | `8d720fb`; D-021 |
 | F-7 planning-equation test, plus the B8 valid-fraction test | Done | `8d720fb`; D-022 |
 | F-8 checksums | Partial: the archive MD5 for all 27 granules is in the inventory. Local SHA-256 for raw files needs them on hand. | `cb9d07b` |
-| F-9 provisional traceability | Open; folded into W-1 | — |
-| Test suite (Python 3.14 venv) | 89 run, 89 OK, 0 skipped | — |
+| F-9 provisional traceability | Done: both builds write hashed manifests | `558978f`, `47a8c10`, `08d15df`; D-029 |
+| W-1 site data rebuilt from traceable artifacts (105 stations, r = 0.664) | Done | `558978f`; D-029 |
+| W-2 projections and forecast test deleted | Done | `558978f`; D-026 |
+| W-3 motion wording; vertical-equivalent assumption labeled | Done | `558978f`; D-027 |
+| W-4 replace Urgent/High/Watch with the PR-7 labels | Open; needs released NISAR rates (B6, D-1) | — |
+| W-5 1.6-year NISAR figure removed; archive facts shown | Done. The headline number waits for PR-3. | `558978f`; D-028 |
+| W-6 claims sweep as a regression test | Done | `558978f`; D-030 |
+| Test suite (Python 3.14 venv) | 94 run, 94 OK, 0 skipped | — |
 
 The archive finding (audit A0) moves the critical path. The work is no longer "explain why six epochs cannot resolve anything". It is "download and ingest 22 more granules (51.2 GB) before the event, then fit 28 epochs".
 

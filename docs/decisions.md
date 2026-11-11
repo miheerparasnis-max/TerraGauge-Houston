@@ -143,6 +143,66 @@ The tests assert: σ_v = 131.0 mm/yr at N = 6, σ = 18 mm, 12 days; N = 84 for 2
 ### D-024: Input freeze refreshed
 `data/manifests/input_freeze_2026-11-10.json` was re-frozen at `8d720fb`. Twelve files changed against the earlier freeze (5 pair artifacts, 5 integrity reports, FEMA context, evidence), all explained by D-017 and D-018.
 
+### D-025: Website claims fixes approved
+The repository owner approved the website claims fixes ("Yes, please go ahead"). Approved.
+
+### D-026: Projections and the forecast test deleted (W-2), commit `558978f`
+**Removed:**
+- the 2030/2035/2040 projections (4,919 cells) and the `forecast` block;
+- the Future map mode and its year selector;
+- the projected cone on the card chart, and the "Can we predict" section;
+- `backend.insights.project` and `backtest`, plus their helpers `decimal_year` and `_slope`.
+
+**Reason:** claims policy §20 ("TerraGauge predicts future subsidence") and MASTER §0.7 (prefer deleting an overclaim to softening it).
+
+**Tests:** the two tests of the deleted functions (`test_projection_band_widens_with_time`, `test_backtest_detects_persistent_rates`) were removed together with the code they tested. No remaining behavior lost a test. The new `test_site_data_carries_no_projections` guards the deletion. *Approved (D-025).*
+
+### D-027: Motion wording (W-3), commit `558978f`
+- "Sinking about X a year" becomes "Moved down about X a year in the 2016–2021 satellite record".
+- Legend, card, and methods page state that rates are relative to the reference GPS stations, and that the up/down conversion assumes vertical-only motion at a 38° look angle.
+- The class names (Urgent, High, Watch, Stable, Check data) stay until NISAR-based labels exist (W-4).
+
+*Approved (D-025).*
+
+### D-028: NISAR detectability figure removed (W-5), commit `558978f`
+- The website's "5 mm/yr in about 1.6 years" (σ = 8.2 mm from a 7-cell provisional reference; audit A3) is gone.
+- The site now gives traceable archive facts instead: 28 passes from 2025-11-02 to 2026-10-16, and 5 pairs processed (from the inventory manifest).
+- It says the time-to-confirm number will come from the measured noise of the full series under PR-3.
+- No new detectability number is published.
+
+*Approved (D-025).*
+
+### D-029: Traceable site data (W-1, F-9), commits `558978f`, `47a8c10`, `08d15df`
+- **Manifests.** `backend/provenance.py` writes `data/manifests/provisional_build.json` (32 inputs, 11 outputs) and `data/manifests/web_export.json` (10 inputs, 3 outputs). Each carries SHA-256 hashes, `git_head`, and `git_worktree_clean`.
+- **Untracked inputs.** The export's two gitignored inputs carry `regenerate_with` and match the build manifest's hashes.
+- **Clean commits.** Both manifests were regenerated from clean commits; the site data outputs were byte-identical on re-export.
+- **Site data rebuilt** from the current build. It had been stale since before `5c0513c`:
+
+| Measure | Before | After |
+|---|---|---|
+| Validation stations | 108 | 105 |
+| Correlation r | 0.694 | 0.664 |
+| Typical difference | 2.1 mm/yr | 2.2 mm/yr (up/down equivalent) |
+| no_data | 4,202 | 4,635 |
+| stable | 3,050 | 2,682 |
+| watch | 1,351 | 1,322 |
+| urgent | 365 | 358 |
+| high | 126 | 112 |
+| check | 17 | 2 |
+
+The sensor list changed as well. All of these changes come from the already-committed gate hardening in `5c0513c`, which had never been exported.
+
+*Approved (D-025).*
+
+### D-030: Claims regression test (W-6), commit `558978f`
+`tests/test_claims_policy.py` checks `web/src`, `web/public/data`, and `README.md` against the MASTER G2 list plus the spelling "NISAR can't". It also requires the site data to carry no projections and to point at its manifest. Negations that use words outside the G2 list ("does not forecast flooding") are allowed. `docs/audit/` quotes forbidden phrases as evidence and is out of scope. *Approved (D-025).*
+
+### D-031: Verification of the website change
+- **Tests:** 94 tests pass.
+- **Build:** `tsc -b` and `vite build` succeed.
+- **Render:** a headless Chromium pass over all three pages showed no application errors and no forbidden phrases in the rendered text. The map layer itself cannot draw without WebGL in headless mode, so it was not checked visually.
+- **Freeze:** `data/derived/` is unchanged.
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.
