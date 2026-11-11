@@ -28,6 +28,8 @@ from math import cos, radians, sqrt
 from statistics import median
 from typing import Any
 
+from .corrections import require_same_corrections
+
 PROVISIONAL_NOTE = "Provisional: reference region and processing choices have not yet been reviewed by the team."
 
 
@@ -92,6 +94,7 @@ def chain_sum(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
     for previous, current in zip(ordered, ordered[1:]):
         if previous["parameters"]["acquisition_dates"][1] != current["parameters"]["acquisition_dates"][0]:
             raise ValueError("pairs must form a consecutive chain (each secondary date equals the next reference date)")
+    applied_corrections = require_same_corrections([artifact.get("applied_corrections") for artifact in ordered])
     by_id = [{cell["cell_id"]: cell for cell in artifact["cells"]} for artifact in ordered]
     cells = []
     for cell in ordered[0]["cells"]:
@@ -112,6 +115,7 @@ def chain_sum(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
         "chain_of": [artifact["parameters"]["acquisition_dates"] for artifact in ordered],
         "parameters": {**ordered[0]["parameters"], "acquisition_dates": [first, last]},
         "source_processing_corrections": ordered[0].get("source_processing_corrections"),
+        "applied_corrections": applied_corrections,
         "limitations": [
             f"Sum of {len(ordered)} consecutive pairs = cumulative LOS displacement {first} to {last}; behaves like one longer pair, not a rate.",
             "Coherence and valid fraction are the minimum across member pairs; a cell must pass quality in every pair.",

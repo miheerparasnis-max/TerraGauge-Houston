@@ -28,7 +28,7 @@ def main() -> None:
     nisar = commands.add_parser("nisar-gunw", help="extract quality-masked GUNW pair cells")
     nisar.add_argument("input")
     nisar.add_argument("output")
-    nisar.add_argument("--wavelength-m", type=float, required=True)
+    nisar.add_argument("--wavelength-m", type=float, default=None, help="optional; the product's center frequency is used, and a value that disagrees with it is rejected")
     nisar.add_argument("--crs", required=True, help="e.g. EPSG:32615, verified from product metadata")
     nisar.add_argument("--x-path", required=True)
     nisar.add_argument("--y-path", required=True)

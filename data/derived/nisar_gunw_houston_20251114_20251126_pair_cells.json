@@ -100265,5 +100265,22 @@
       "in_main_connected_component": false,
       "source_status": "source_derived"
     }
-  ]
+  ],
+  "applied_corrections": {
+    "contract": "terragauge-applied-corrections-v1",
+    "ionosphere_applied": null,
+    "ionosphere_source": null,
+    "troposphere_applied": null,
+    "troposphere_source": null,
+    "tide_applied": null,
+    "tide_source": null
+  },
+  "wavelength": {
+    "value_m": 0.241962,
+    "source": "cli_unverified",
+    "center_frequency_hz": null,
+    "metadata_paths": [],
+    "cli_value_m": 0.241962,
+    "note": "Backfilled 2026-11-10: extracted before the adapter read the wavelength from product metadata. data/manifests/nisar_gunw_20251102_20251114.json records center_frequency_hz 1.239e9 for pair 1; re-extraction at plan step B2 verifies every pair."
+  }
 }

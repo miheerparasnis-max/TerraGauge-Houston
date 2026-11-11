@@ -119,6 +119,7 @@ def build_houston_evidence(nisar_path: str | Path, houstonnet_path: str | Path, 
     return {
         "dataset_status": ("source_derived_pairwise_evidence_provisional_reference_unreviewed" if reference_status != "reviewed" else "source_derived_pairwise_evidence_reviewed_reference") if scatter is not None and flood_context else "source_derived_pairwise_evidence_without_validated_reference_region" if scatter is None and flood_context else "source_derived_context_only_without_validated_reference_region_or_cell_flood_overlay" if scatter is None else "source_derived_context_only_without_cell_flood_overlay",
         "artifact_type": "terragauge_houston_pairwise_evidence_cells",
+        "applied_corrections": nisar.get("applied_corrections"),
         "reference_scatter_mm": scatter,
         "reference_median_mm": reference_median,
         "reference_status": reference_status if scatter is not None else None,

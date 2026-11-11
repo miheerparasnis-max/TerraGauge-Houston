@@ -1,5 +1,6 @@
 import unittest
 
+from backend.ingestion.corrections import empty_correction_record
 from backend.ingestion.quality import validate_pair_artifact
 from backend.ingestion.nisar import _raster_window
 
@@ -10,6 +11,7 @@ class PairIntegrityTests(unittest.TestCase):
             "artifact_type": "nisar_gunw_pair_cells",
             "parameters": {"acquisition_dates": ["2026-01-01", "2026-01-13"], "bounding_box": [-96, 29, -95, 30]},
             "source_processing_corrections": {"/flag": True},
+            "applied_corrections": empty_correction_record(),
             "cells": [{"cell_id": "one", "longitude": -95.5, "latitude": 29.5, "in_main_connected_component": True}],
         }
         import json

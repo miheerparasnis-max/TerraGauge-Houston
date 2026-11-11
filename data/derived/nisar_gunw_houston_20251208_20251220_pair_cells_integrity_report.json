@@ -7,5 +7,14 @@
   "cell_count": 9111,
   "main_connected_component_cell_count": 5133,
   "correction_flag_count": 4,
+  "applied_corrections": {
+    "contract": "terragauge-applied-corrections-v1",
+    "ionosphere_applied": null,
+    "ionosphere_source": null,
+    "troposphere_applied": null,
+    "troposphere_source": null,
+    "tide_applied": null,
+    "tide_source": null
+  },
   "claim": "Structural validation only; passing does not establish ground motion, a stable reference region, or a temporal rate."
 }
