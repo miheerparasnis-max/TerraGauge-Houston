@@ -2,6 +2,8 @@
 
 Audience: the team, the executing agent, and anyone checking when and why a rule was set.
 
+> Some entries quote phrases that were removed from published copy, as evidence. A manual G2 claims sweep should treat those quotes like the ones in `docs/audit/`; `tests/test_claims_policy.py` covers the published files.
+
 Each entry gives the date, the decision, the reason, the evidence, and who approved it. On 2026-11-10 the repository owner delegated the open decisions to the audit's recommendations ("whatever seems best and recommended"). Entries approved that way are marked *delegated*. A team member may reopen any of them, but a change after a governed result exists is a deviation (MASTER §0.4).
 
 ## 2026-11-10
