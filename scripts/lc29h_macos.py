@@ -201,6 +201,48 @@ def capture(args: argparse.Namespace) -> int:
         os.close(fd)
 
 
+def bench_run(args: argparse.Namespace) -> int:
+    """Keep one USB session open while configuring and capturing RTCM output.
+
+    This rules out a host-side USB re-open resetting a temporary receiver
+    configuration. The receiver configuration is deliberately not saved.
+    """
+    output = Path(args.output).expanduser().resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fd = open_port(args.port, args.baud)
+    try:
+        commands = (
+            f"PQTMCFGSVIN,W,1,{args.survey_seconds},0,0,0,0",
+            "PAIR432,1",  # MSM7 raw observations
+            "PAIR434,1",  # RTCM 1005 station reference point
+            "PAIR436,1",  # satellite ephemeris
+        )
+        for body in commands:
+            command = nmea_sentence(body)
+            print(f"Sending {command.decode().strip()}")
+            os.write(fd, command)
+            print_bytes("Immediate response", read_for(fd, args.command_wait))
+
+        print(f"Capturing for {args.capture_seconds} seconds without closing the USB port.")
+        total = 0
+        started = time.monotonic()
+        with output.open("wb") as handle:
+            while time.monotonic() - started < args.capture_seconds:
+                remaining = args.capture_seconds - (time.monotonic() - started)
+                ready, _, _ = select.select([fd], [], [], min(0.5, max(0, remaining)))
+                if ready:
+                    try:
+                        chunk = os.read(fd, 4096)
+                    except BlockingIOError:
+                        continue
+                    handle.write(chunk)
+                    total += len(chunk)
+        print(f"Saved {total} byte(s) to {output}")
+        return 0 if total else 2
+    finally:
+        os.close(fd)
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--port", default=DEFAULT_PORT, help=f"macOS serial device (default: {DEFAULT_PORT})")
@@ -232,6 +274,15 @@ def parser() -> argparse.ArgumentParser:
     capture_parser.add_argument("--seconds", type=int, default=240, help="capture duration in seconds")
     capture_parser.add_argument("--output", required=True, help="destination .bin file")
     capture_parser.set_defaults(handler=capture)
+
+    bench_parser = subparsers.add_parser(
+        "bench-run", help="configure and capture in one unsaved USB session"
+    )
+    bench_parser.add_argument("--survey-seconds", type=int, default=60, help="temporary Survey-in duration")
+    bench_parser.add_argument("--capture-seconds", type=int, default=120, help="same-session capture duration")
+    bench_parser.add_argument("--command-wait", type=float, default=1.0, help="seconds to await command responses")
+    bench_parser.add_argument("--output", required=True, help="destination .bin file")
+    bench_parser.set_defaults(handler=bench_run)
     return result
 
 

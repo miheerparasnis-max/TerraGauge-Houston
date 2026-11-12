@@ -298,12 +298,19 @@ python3 scripts/lc29h_macos.py audit --port /dev/cu.usbserial-110
 python3 scripts/lc29h_macos.py configure-test --port /dev/cu.usbserial-110
 python3 scripts/lc29h_macos.py capture --port /dev/cu.usbserial-110 \
   --seconds 240 --output ~/Desktop/terragauge_rtcm_test.bin
+python3 scripts/lc29h_macos.py bench-run --port /dev/cu.usbserial-110 \
+  --survey-seconds 60 --capture-seconds 120 \
+  --output ~/Desktop/terragauge_same_session.bin
 ```
 
 `audit` sends only documented read-only LC29H(BS) status queries across the
 standard UART speeds. A real receiver response includes additional fields;
 an exact copy of the command alone is only an echo and does not verify a
 USB-to-module connection.
+
+`bench-run` keeps the port open while it starts a reversible Survey-in and
+enables RTCM, eliminating a host-side port re-open as a possible cause of an
+empty test capture. It does not save receiver configuration to flash.
 
 The bench configuration is intentionally not saved to the receiver. A nonzero
 log only proves that bytes were captured; keep the antenna fixed and use the
