@@ -284,6 +284,27 @@ python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_man
 
 A passing report proves only stationary receiver repeatability. It never proves Houston land motion.
 
+### macOS LC29H(BS) bring-up
+
+The LC29H(BS) is a base-station model: its meaningful output is binary RTCM
+raw-observation/correction data, not a consumer-GPS display. Before a real
+session, use an open-sky, stationary antenna and the USB jumper position **A**.
+The standard-library-only helper below can query the receiver, configure a
+reversible 120-second bench Survey-in, and capture a raw log on macOS:
+
+```bash
+python3 scripts/lc29h_macos.py probe --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py configure-test --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py capture --port /dev/cu.usbserial-110 \
+  --seconds 240 --output ~/Desktop/terragauge_rtcm_test.bin
+```
+
+The bench configuration is intentionally not saved to the receiver. A nonzero
+log only proves that bytes were captured; keep the antenna fixed and use the
+three-session GroundTruth manifest plus RTKLIB/RINEX conversion before making
+any repeatability claim. An empty log is a diagnostic result, not evidence of
+ground movement.
+
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
