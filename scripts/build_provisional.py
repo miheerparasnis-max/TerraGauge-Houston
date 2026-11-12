@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.decision import classify_cell  # noqa: E402
 from backend.ingestion.houston import build_houston_evidence  # noqa: E402
-from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, nearest_cell_ids, opera_series, stable_gps_reference  # noqa: E402
+from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, merge_frames, nearest_cell_ids, opera_series, stable_gps_reference  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
 from backend.repository import cell_from_dict  # noqa: E402
 
@@ -79,6 +79,22 @@ def main() -> None:
         report[key] = {"reference_median_mm": evidence["reference_median_mm"], "reference_scatter_mm": evidence["reference_scatter_mm"], "reference_cells": evidence["reference_cell_count"], "labels": summarize(evidence)}
 
     operas = [load(path) for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json"))]
+    # South Houston: add the neighbouring frame F38239 where it exists
+    # (scripts/fetch_opera_south.py), lined up on the overlap band.
+    south = {}
+    for path in sorted((DERIVED / "opera_f38239").glob("opera_disp_f38239_*_pair_cells.json")):
+        a = load(path)
+        south[(a["parameters"]["reference_date"], a["parameters"]["secondary_date"])] = a
+    merges = []
+    for k, artifact in enumerate(operas):
+        key = (artifact["parameters"]["reference_date"], artifact["parameters"]["secondary_date"])
+        if key in south:
+            operas[k], stats = merge_frames(artifact, south[key])
+            merges.append({"dates": list(key), **stats})
+    if merges:
+        report_frames = {"frame": "F38239", "products_merged": sum(1 for m in merges if m["added"]), "products_found": len(merges), "per_product": merges}
+    else:
+        report_frames = None
     velocity = opera_series(operas, reference_cell_ids=nearest_cell_ids(reference_stations, operas[0]["cells"]))
     velocity["reference_method"] = report["reference"]["method"]
     for stale in OUT.glob("opera_houston_los_velocity_*.json"):
@@ -86,7 +102,7 @@ def main() -> None:
     save(OUT / "opera_houston_los_velocity.json", velocity)
     comparison = compare_opera_gps(velocity, stations, exclude_station_ids={s["station_id"] for s in reference_stations})
     save(OUT / "opera_vs_houstonnet_comparison.json", comparison)
-    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "gps_comparison": comparison["stats"]}
+    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "gps_comparison": comparison["stats"], "south_frame": report_frames}
     save(OUT / "build_report.json", report)
     print(json.dumps(report, indent=2))
 

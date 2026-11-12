@@ -65,3 +65,20 @@ class OperaClassificationTests(unittest.TestCase):
         self.assertEqual(classify_opera_velocity(velocity_mm_year=-2, gps_distance_km=1, **common)[0], Label.CONTEXT_ONLY)
         # A large velocity with a huge fit error is not a candidate.
         self.assertEqual(classify_opera_velocity(velocity_mm_year=-10, gps_distance_km=1, velocity_se_mm_year=8, noise_floor_mm_year=1.5, flood_exposed=None, thresholds=t)[0], Label.CONTEXT_ONLY)
+
+
+class MergeFramesTests(unittest.TestCase):
+    def test_secondary_frame_is_shifted_and_only_fills_gaps(self):
+        from backend.ingestion.provisional import merge_frames
+
+        params = {"reference_date": "2020-01-01", "secondary_date": "2020-04-01"}
+        cell = lambda i, v, f=1.0: {"cell_id": f"c{i}", "longitude": 0, "latitude": 0, "opera_pair_displacement_mm": v, "opera_valid_fraction": f}  # noqa: E731
+        primary = {"parameters": params, "cells": [cell(i, 10.0) for i in range(30)] + [{"cell_id": "c99", "opera_pair_displacement_mm": None, "opera_valid_fraction": 0.0}]}
+        secondary = {"parameters": params, "cells": [cell(i, 7.0) for i in range(30)] + [cell(99, 1.0), cell(100, 2.0)]}
+        merged, stats = merge_frames(primary, secondary)
+        by = {c["cell_id"]: c for c in merged["cells"]}
+        self.assertEqual(stats["offset_mm"], 3.0)
+        self.assertEqual(stats["added"], 2)
+        self.assertEqual(by["c99"]["opera_pair_displacement_mm"], 4.0)
+        self.assertEqual(by["c100"]["opera_pair_displacement_mm"], 5.0)
+        self.assertEqual(by["c5"]["opera_pair_displacement_mm"], 10.0)
