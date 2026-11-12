@@ -1,7 +1,7 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-12T23:17:22Z",
-  "git_head": "69641d55c12421ad0e465d0657918397006c8152",
+  "created_utc": "2026-11-12T23:47:29Z",
+  "git_head": "10ddd3ca8aee9f9c1406c7a60cbd1ff2b4eef310",
   "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
@@ -47,7 +47,7 @@
     },
     {
       "path": "data/derived/provisional/harvey_check.json",
-      "sha256": "3889adea8e8df3541f4eb34d11c024b754de57cf94dc35873413c9d649c80343",
+      "sha256": "9ed86da30d403a4291ad74c79bdc54a978ab7c5cea79d4cf6771eda67a19d714",
       "tracked": true
     },
     {
@@ -62,7 +62,7 @@
     },
     {
       "path": "data/derived/provisional/opera_houston_los_velocity.json",
-      "sha256": "fb82b67938b9c25fb0334d60b50c1cd268d311f91febeca487799a56e893c66b",
+      "sha256": "cc5196014f0fbeb52fd58831a595d94f134d42d987a3ce6f0d66e225e64b5c7f",
       "tracked": true
     },
     {
@@ -101,12 +101,12 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "e99ea20171db719e0f8134bfdcd641e5886460f2c19e747fa475e39a55b963ae",
+      "sha256": "c02f600e564b05a979b59d44988e7dad4114800b33106eebab24628ced8cf003",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "88147d889938e58ce9aba14f7a45522f5f20a076619dd968ce95df6c4d04598e",
+      "sha256": "0fc772a8eabf791cbf29bb47023d0f9a9955d17ec02aa59ca7d3be9cc88e1351",
       "tracked": true
     },
     {

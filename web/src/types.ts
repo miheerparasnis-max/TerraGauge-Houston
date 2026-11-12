@@ -16,6 +16,7 @@ export interface Cell {
   src: ("satellite" | "gps" | "estimated")[];
   est?: number;                 // number of neighbours (or GPS stations) used when estimated
   estFrom?: "satellite" | "gps";
+  adj?: number;                 // filled from this many measured squares touching it (grid stripes)
   raw?: number | null;          // the square's own satellite rate when the map shows a noise-weighted one
   gapRank?: number;
   sig: boolean;

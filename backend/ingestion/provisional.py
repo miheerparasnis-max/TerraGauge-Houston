@@ -192,11 +192,35 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             se = residual_sd / sqrt(sxx)
             filled: list[int] = []
         else:
-            span = sum(durations[i] for i in valid)
-            slope = sum(links[i] for i in valid) / span  # type: ignore[misc]
-            misfit = [links[i] - slope * durations[i] for i in valid]  # type: ignore[operator]
-            residual_sd = sqrt(sum(x * x for x in misfit) / (len(valid) - 1))
-            se = residual_sd / sqrt(sum(durations[i] ** 2 for i in valid))
+            # Each unbroken run of observed links is a segment of the
+            # cumulative series with an unknown starting level (no gap is
+            # filled for the fit).
+            segments: list[list[tuple[float, float]]] = []
+            current: list[tuple[float, float]] = [(years[0], 0.0)]
+            for i, d in enumerate(links):
+                if d is None:
+                    if len(current) > 1:
+                        segments.append(current)
+                    current = [(years[i + 1], 0.0)]
+                else:
+                    current.append((years[i + 1], current[-1][1] + d))
+            if len(current) > 1:
+                segments.append(current)
+            sxx = 0.0
+            for seg in segments:
+                mt = sum(t for t, _ in seg) / len(seg)
+                sxx += sum((t - mt) ** 2 for t, _ in seg)
+            # Rate: total observed displacement over total observed time (stable
+            # over the full baseline). Uncertainty: scatter about that rate
+            # within the segments, comparable with complete records.
+            slope = sum(links[i] for i in valid) / sum(durations[i] for i in valid)  # type: ignore[misc]
+            rss, n_points = 0.0, 0
+            for seg in segments:
+                mt = sum(t for t, _ in seg) / len(seg); md = sum(v for _, v in seg) / len(seg)
+                rss += sum((v - md - slope * (t - mt)) ** 2 for t, v in seg)
+                n_points += len(seg)
+            residual_sd = sqrt(rss / max(n_points - len(segments) - 1, 1))
+            se = residual_sd / sqrt(sxx) if sxx > 0 else residual_sd
             series = [0.0]
             filled = [i for i, d in enumerate(links) if d is None]
             for i, d in enumerate(links):

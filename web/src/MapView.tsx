@@ -48,7 +48,7 @@ function cellsGeoJSON(cells: Cell[], mode: ColorBy, year: number, meta: Meta) {
     type: "FeatureCollection" as const,
     features: cells.flatMap((c) => {
       const ring = ringOf(c.id);
-      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year, meta), sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
+      return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year, meta), sfha: c.flood.sfha, op: c.src.includes("estimated") && !c.adj ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
     }),
   };
 }
@@ -61,7 +61,7 @@ function historyGeoJSON(cells: Cell[]) {
     features: cells.flatMap((c) => {
       const ring = ringOf(c.id);
       if (!ring) return [];
-      const props: Record<string, number | string | boolean> = { id: c.id, sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82, fill: NO_MEASUREMENT };
+      const props: Record<string, number | string | boolean> = { id: c.id, sfha: c.flood.sfha, op: c.src.includes("estimated") && !c.adj ? 0.45 : 0.82, fill: NO_MEASUREMENT };
       c.tl?.forEach((v, i) => { props[`f${i}`] = v / 10; });
       return [{ type: "Feature" as const, properties: props, geometry: { type: "Polygon" as const, coordinates: [ring] } }];
     }),

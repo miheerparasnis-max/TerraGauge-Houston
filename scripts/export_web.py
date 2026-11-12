@@ -236,6 +236,9 @@ def main() -> None:
         significant = rate is not None and abs(rate) >= stable_vertical and abs(rate) >= 2 * (se or 0)
         sat_vertical = sat_rate if sat_rate is not None else rate
         act, act_why = action_label(rate_vertical=sat_vertical if sat_vertical is not None else None, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=display_gps_rate(cover["up_mm_year"])[0], covered_km=t.gps_nearby_km, open_water=open_water)
+        if "gps" in sources and act != "review_disagreement" and rate is not None:
+            # A GPS station inside the square is blended in: label the rate the map shows.
+            act, act_why = action_label(rate_vertical=rate, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=None, covered_km=t.gps_nearby_km, open_water=open_water)
         if act == "insufficient_data":
             level, conf_why = None, []
             if open_water:
@@ -289,6 +292,7 @@ def main() -> None:
         cells.append(cell)
         if act == "add_monitoring":
             candidates.append({"id": cid, "lon": lon, "lat": lat, "area": area.get(cid, sat_vertical), "rate": rate, "gpsKm": cover_km, "conf": level, "zone": f.get("flood_zone")})
+
 
     # Fill gaps: squares without a reliable reading (but not water) get an
     # estimate from measured squares within 3 km (inverse-distance weighting).
@@ -394,9 +398,70 @@ def main() -> None:
                        " (Estimated from nearby GPS stations; outside satellite coverage.)")
         gps_estimated += 1
 
-    # Sensor sites: the "Add monitoring here" squares in the fastest-sinking
-    # areas (median of squares within 3 km), kept at least 4 km apart.
-    candidates.sort(key=lambda c: c["area"])
+    # Stripe squares: the satellite's ~990 m blocks don't tile our 1 km grid
+    # exactly, so about every 7th row and column of squares gets no block of
+    # its own. When at least two of the four squares touching it are measured,
+    # it is filled from them. Tested by filling 5,735 measured squares from
+    # their touching neighbours: median error 0.65 mm/yr, 80% within 1.9,
+    # better than a typical single measurement (median se 2.6). So these get
+    # the lowest confidence among the squares they are filled from, and are
+    # drawn like measured squares. Where two stripes cross, diagonal
+    # neighbours are used (at least 3).
+    import re as _re2
+    rank_of = {"low": 0, "medium": 1, "high": 2}
+    level_of = {0: "low", 1: "medium", 2: "high"}
+    grid_index = {}
+    for c in cells:
+        mm = _re2.search(r"(-?\d+)-(-?\d+)$", c["id"])
+        grid_index[(int(mm.group(1)), int(mm.group(2)))] = c
+    direct = lambda o: o is not None and o["act"] != "insufficient_data" and "estimated" not in o["src"] and o["rate"] is not None and o.get("conf")  # noqa: E731
+    stripe_filled = 0
+    for (i, j), c in grid_index.items():
+        if c.get("estFrom") != "satellite":
+            continue
+        touching = [grid_index.get((i + a, j + b)) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+        touching = [o for o in touching if direct(o)]
+        if len(touching) < 2:
+            # where two stripes cross, use the diagonal neighbours too
+            touching = [grid_index.get((i + a, j + b)) for a in (-1, 0, 1) for b in (-1, 0, 1) if (a, b) != (0, 0)]
+            touching = [o for o in touching if direct(o)]
+            if len(touching) < 3:
+                continue
+        fill = sum(o["rate"] for o in touching) / len(touching)
+        level = level_of[min(rank_of[o["conf"]] for o in touching)]
+        counts["confidence"]["low"] -= 1
+        counts["confidence"][level] = counts["confidence"].get(level, 0) + 1
+        # the label, forecast and confirm-time follow the filled rate
+        sig = abs(fill) >= stable_vertical and abs(fill) >= 2 * (c["se"] or 0)
+        counts["action"][c["act"]] -= 1
+        act, act_why = action_label(rate_vertical=fill, significant=sig, flood_zone_sfha=c["flood"]["sfha"], gps_km=c["gps"]["km"], gps_rate=c["gps"]["up"], covered_km=t.gps_nearby_km)
+        counts["action"][act] = counts["action"].get(act, 0) + 1
+        if c.get("future"):
+            for y, v in c["future"]["by"].items():
+                h = int(y) - base_year
+                half = (v["hi"] - v["lo"]) / 2
+                v.update({"c": r(fill * h / 10), "lo": r(fill * h / 10 - half), "hi": r(fill * h / 10 + half)})
+            c["future"]["rate"] = r(fill)
+        n_gps = passes_to_detect(fill, GPS_DAILY_SIGMA_MM, 1) if fill < 0 else None
+        n_node = passes_to_detect(fill, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) if fill < 0 else None
+        n_nisar = passes_to_detect(fill * COS, nisar_sigma, 12) if fill < 0 else None
+        c["detect"] = {"nisarMonths": r((n_nisar - 1) * 12 / 30.44, 0) if n_nisar else None, "gpsWeeks": r((n_gps - 1) / 7, 0) if n_gps else None, "nodeWeeks": r((n_node - 1) / 7, 0) if n_node else None} if fill < 0 else None
+        c.update({"sig": sig, "act": act, "actWhy": act_why + " (Filled from the measured squares touching it.)"})
+        c.update({"rate": r(fill), "conf": level, "adj": len(touching), "estFrom": "satellite",
+                  "confWhy": [f"Between measured squares: the satellite's grid blocks don't line up exactly with our 1 km squares, so this one is filled from the {len(touching)} measured squares touching it.",
+                              "In testing, fills like this were within 1.9 mm/yr of the real value 80% of the time, better than a typical single satellite measurement.",
+                              f"Confidence is the lowest of the squares it is filled from ({', '.join(sorted({o['conf'] for o in touching}))})."]})
+        stripe_filled += 1
+
+    # Sensor sites: "Add monitoring here" squares, never where we are already
+    # highly confident. Ranked by the sinking of the surrounding area
+    # (median within 3 km), with less certain squares first among similar
+    # rates (Low counts fully, Medium 80%), kept at least 4 km apart.
+    uncertainty = {"low": 1.0, "medium": 0.8}
+    conf_now = {c["id"]: c.get("conf") for c in cells}
+    by_conf = lambda cand: conf_now.get(cand["id"], cand["conf"])  # noqa: E731
+    candidates = [c for c in candidates if by_conf(c) in uncertainty]
+    candidates.sort(key=lambda c: c["area"] * uncertainty[by_conf(c)])
     sensors: list[dict] = []
     for c in candidates:
         if all(distance_km(c["lon"], c["lat"], s["lon"], s["lat"]) >= SENSOR_SPACING_KM for s in sensors):
@@ -415,7 +480,7 @@ def main() -> None:
     node_candidates = []
     for c in cells:
         weeks = (c.get("detect") or {}).get("nodeWeeks")
-        if c["act"] in ("add_monitoring", "observe") and c["gps"]["km"] > t.gps_nearby_km and c["rate"] is not None and c["rate"] < 0 and weeks is not None and weeks <= NODE_MAX_YEARS * 52:
+        if c["act"] in ("add_monitoring", "observe") and c.get("conf") != "high" and c["gps"]["km"] > t.gps_nearby_km and c["rate"] is not None and c["rate"] < 0 and weeks is not None and weeks <= NODE_MAX_YEARS * 52:
             node_candidates.append({"id": c["id"], "lon": c["lon"], "lat": c["lat"], "area": area.get(c["id"], c["rate"]), "rate": c["rate"], "weeks": weeks, "act": c["act"], "zone": c["flood"]["zone"], "est": "estimated" in c["src"]})
     node_candidates.sort(key=lambda c: c["area"])
     nodes: list[dict] = []
@@ -550,7 +615,7 @@ def main() -> None:
         "nodes": node_out,
         "gaps": gap_out,
         "gpsEstimates": {"count": gps_estimated, "radius_km": GPS_EST_RADIUS_KM, "min_stations": GPS_EST_MIN_STATIONS, "median_error_mm_year": r(gps_error["median"]) if gps_error else None, "p80_error_mm_year": r(gps_error["p80"]) if gps_error else None, "tested": gps_error["tested"] if gps_error else 0},
-        "estimates": {"count": estimated - gps_estimated, "radius_km": ESTIMATE_RADIUS_KM, "min_neighbors": ESTIMATE_MIN_NEIGHBORS, "median_error_mm_year": r(estimate_error["median"]), "p80_error_mm_year": r(estimate_error["p80"]), "tested": estimate_error["tested"]},
+        "estimates": {"stripeFilled": stripe_filled, "count": estimated - gps_estimated, "radius_km": ESTIMATE_RADIUS_KM, "min_neighbors": ESTIMATE_MIN_NEIGHBORS, "median_error_mm_year": r(estimate_error["median"]), "p80_error_mm_year": r(estimate_error["p80"]), "tested": estimate_error["tested"]},
         "hardware": {"node_daily_sigma_mm": NODE_DAILY_SIGMA_MM, "node_max_years": NODE_MAX_YEARS, "node_spacing_km": NODE_SPACING_KM, "gps_daily_sigma_mm": GPS_DAILY_SIGMA_MM,
                      "node_weeks_10": r((passes_to_detect(-10, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_10": r((passes_to_detect(-10, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0),
                      "node_weeks_5": r((passes_to_detect(-5, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_5": r((passes_to_detect(-5, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0)},
@@ -586,7 +651,7 @@ def main() -> None:
             return [round(x - sm[0]) for x in sm]
         return [round(c["rate"] * (t - t0)) for t in tl_times]
 
-    slim_keys = ("id", "lon", "lat", "rate", "se", "src", "sig", "conf", "act", "est", "estFrom", "sensorRank", "nodeRank", "gapRank", "hz", "harvey")
+    slim_keys = ("id", "lon", "lat", "rate", "se", "src", "sig", "conf", "act", "est", "estFrom", "adj", "sensorRank", "nodeRank", "gapRank", "hz", "harvey")
     slim = []
     tiles: dict[str, dict] = {}
     for c in cells:

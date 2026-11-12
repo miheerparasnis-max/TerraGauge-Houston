@@ -91,3 +91,18 @@ class MergeFramesTests(unittest.TestCase):
         self.assertEqual(by["c99"]["opera_pair_displacement_mm"], 4.0)
         self.assertEqual(by["c100"]["opera_pair_displacement_mm"], 5.0)
         self.assertEqual(by["c5"]["opera_pair_displacement_mm"], 10.0)
+
+
+class GappedSeriesTests(unittest.TestCase):
+    def test_gap_does_not_inflate_uncertainty_or_bias_rate(self):
+        products = []
+        dates = [f"{2016 + k // 4}-{1 + 3 * (k % 4):02d}-01" for k in range(25)]
+        for k in range(24):
+            refs = [{"cell_id": f"ref{i}", "longitude": -95.0, "latitude": 29.0 + i / 1000, "opera_pair_displacement_mm": 0.0, "opera_valid_fraction": 1, "opera_water_fraction": 0} for i in range(3)]
+            cells = [*refs, {"cell_id": "full", "longitude": -95.5, "latitude": 29.5, "opera_pair_displacement_mm": -2.5, "opera_valid_fraction": 1, "opera_water_fraction": 0},
+                     {"cell_id": "gap", "longitude": -95.6, "latitude": 29.5, "opera_pair_displacement_mm": None if k == 11 else -2.5, "opera_valid_fraction": 1, "opera_water_fraction": 0}]
+            products.append({"parameters": {"reference_date": dates[k], "secondary_date": dates[k + 1]}, "cells": cells})
+        result = {c["cell_id"]: c for c in opera_series(products, (-95.01, 28.99, -94.99, 29.01))["cells"]}
+        self.assertAlmostEqual(result["gap"]["opera_los_velocity_mm_year"], -10.0, delta=0.05)
+        self.assertLess(result["gap"]["opera_velocity_se_mm_year"], 0.05)
+        self.assertEqual(result["gap"]["opera_links_filled"], [11])
