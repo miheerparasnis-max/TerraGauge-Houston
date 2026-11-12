@@ -3,7 +3,7 @@ import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Cell, ColorBy, Meta, NodeSite, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";
-import { cellColor } from "./labels";
+import { cellColor, cellSummary } from "./labels";
 
 export interface Layers { sensors: boolean; nodes: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
 
@@ -69,7 +69,7 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
     ready.current = loadStyle().then((style) => new Promise<void>((resolve) => {
       if (cancelled || !ref.current) return;
       const created = new maplibregl.Map({ container: ref.current, style, center: [-95.4, 29.8], zoom: 9.2, minZoom: 7, maxZoom: 15, attributionControl: { compact: true } });
-      created.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+      created.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
       map.current = m = created;
       created.on("load", () => {
         const m = created;
@@ -77,6 +77,7 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
         const { cells: c, mode: md, year: y, meta: mt } = latest.current;
         m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y, mt) });
         m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": ["get", "op"] } }, firstLabel);
+        m.addLayer({ id: "grid", type: "line", source: "cells", minzoom: 10.5, paint: { "line-color": "#14201F", "line-opacity": ["interpolate", ["linear"], ["zoom"], 10.5, 0, 12, 0.14], "line-width": 0.6 } }, firstLabel);
         m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
         m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
         m.addSource("gps", { type: "geojson", data: points(sites.gps) });
@@ -101,12 +102,37 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
           const cell = m.queryRenderedFeatures(e.point, { layers: ["cells"] })[0];
           latest.current.onSelect(cell ? String(cell.properties.id) : null);
         });
+        const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "hover-tip", offset: 10 });
+        const byId = () => new Map(latest.current.cells.map((x) => [x.id, x]));
+        let index = byId(), indexed = latest.current.cells;
+        m.on("mousemove", "cells", (e) => {
+          if (matchMedia("(hover: none)").matches) return;
+          const f = e.features?.[0];
+          if (!f) return;
+          if (indexed !== latest.current.cells) { index = byId(); indexed = latest.current.cells; }
+          const c = index.get(String(f.properties.id));
+          if (!c) return;
+          const { mode: md, year: y, meta: mt } = latest.current;
+          tip.setLngLat(e.lngLat).setText(cellSummary(c, md, y, mt)).addTo(m);
+        });
+        m.on("mouseleave", "cells", () => tip.remove());
         for (const layer of ["cells", "gps", "ext", "wells"]) {
           m.on("mouseenter", layer, () => (m.getCanvas().style.cursor = "pointer"));
           m.on("mouseleave", layer, () => (m.getCanvas().style.cursor = ""));
         }
-        const narrow = window.innerWidth < 860;
-        m.fitBounds([[-95.95, 29.4], [-94.8, 30.2]], { padding: narrow ? { top: 150, bottom: window.innerHeight * 0.48, left: 10, right: 10 } : { top: 20, bottom: 20, left: 350, right: 440 }, duration: 0 });
+        const zoomClass = () => ref.current?.classList.toggle("zoomed-out", m.getZoom() < 10);
+        m.on("zoomend", zoomClass);
+        const fit = () => {
+          const narrow = window.innerWidth < 860;
+          m.fitBounds([[-95.95, 29.4], [-94.8, 30.2]], { padding: narrow ? { top: 200, bottom: 90, left: 10, right: 10 } : { top: 20, bottom: 20, left: 370, right: 440 }, duration: 0 });
+        };
+        if (m.getContainer().clientWidth > 0) fit();
+        else {
+          // Created while its tab was hidden: fit once it has a real size.
+          const once = () => { if (m.getContainer().clientWidth > 0) { m.off("resize", once); fit(); } };
+          m.on("resize", once);
+        }
+        zoomClass();
         resolve();
       });
     }));
@@ -148,7 +174,7 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
     }
   }), [sensors, nodes, layers.sensors, layers.nodes]);
 
-  useEffect(() => { if (focus) whenReady((m) => m.flyTo({ center: [focus.lon, focus.lat], zoom: Math.max(m.getZoom(), 11.5), duration: 900 })); }, [focus]);
+  useEffect(() => { if (focus) whenReady((m) => { m.resize(); m.flyTo({ center: [focus.lon, focus.lat], zoom: Math.min(13, Math.max(m.getZoom(), 11.5)), duration: 900 }); }); }, [focus]);
 
   return <div ref={ref} className="map" role="region" aria-label="Map of Houston ground movement" />;
 }

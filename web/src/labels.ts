@@ -63,7 +63,7 @@ export const ACTION: Record<Action, { name: string; color: string; meaning: stri
   review_disagreement: { name: "Review disagreement", color: "#2F6FB0", meaning: "The satellite and a GPS station within 2 km disagree by more than 5 mm a year.", why: "When two measurements disagree, one of them is missing something: a GPS station that has shifted, local construction, or a radar glitch. Checking these keeps bad numbers out of flood and planning decisions." },
   observe: { name: "Observe", color: "#D9C7E8", meaning: "Clearly sinking, but outside FEMA's high-risk flood zone.", why: "Sinking outside today's flood zones still strains pipes, roads, and foundations, and flood maps are drawn on today's ground level. Keep watching so these areas aren't a surprise later." },
   no_clear_motion: { name: "No clear motion", color: "#EEF1EC", meaning: "No sinking beyond what our measurements can tell apart from noise.", why: "Knowing where the ground is stable is useful too: it tells the city where it doesn't need to spend limited monitoring money." },
-  insufficient_data: { name: "No measurement", color: "rgba(110,120,116,0.32)", meaning: "Water, or too few measured squares nearby to estimate from, so there's no reliable reading.", why: "We'd rather show a gap than guess. A sensor or more satellite passes would fill it." },
+  insufficient_data: { name: "No measurement", color: "rgba(120,130,126,0.16)", meaning: "Open water, outside the satellite's coverage, or too far from measured squares to estimate.", why: "We'd rather show a gap than guess. A sensor or more satellite passes would fill it." },
 };
 
 export const CONFIDENCE: Record<Confidence, { name: string; color: string; meaning: string }> = {
@@ -73,6 +73,8 @@ export const CONFIDENCE: Record<Confidence, { name: string; color: string; meani
 };
 
 export const NO_MEASUREMENT = ACTION.insufficient_data.color;
+/** Estimated squares in views that need a direct satellite record (drought, bending). */
+export const NOT_DIRECT = "rgba(150,160,156,0.30)";
 
 const NEUTRAL = [236, 239, 233];
 const SINK = [74, 25, 120];
@@ -95,8 +97,8 @@ export function cellColor(cell: Cell, mode: ColorBy, year: number, meta?: Meta):
     return f.cls === "1pct" && (f.total ?? 0) >= 3 ? FLOOD.deeper.color : FLOOD[f.cls].color;
   }
   if (cell.act === "insufficient_data") return NO_MEASUREMENT;
-  if (mode === "drought") return cell.hz ? DROUGHT[cell.hz.dl].color : NO_MEASUREMENT;
-  if (mode === "bending") return cell.hz?.bl ? BEND[cell.hz.bl].color : NO_MEASUREMENT;
+  if (mode === "drought") return cell.hz ? DROUGHT[cell.hz.dl].color : NOT_DIRECT;
+  if (mode === "bending") return cell.hz?.bl ? BEND[cell.hz.bl].color : NOT_DIRECT;
   if (mode === "priority") return ACTION[cell.act].color;
   if (mode === "confidence") return cell.conf ? CONFIDENCE[cell.conf].color : NO_MEASUREMENT;
   if (mode === "future") return cell.future ? movementColor(cell.future.by[String(year)]?.c ?? null, 12) : NO_MEASUREMENT;
@@ -117,4 +119,23 @@ export function duration(months: number | null): string {
   if (months === null) return "more than 80 years";
   if (months < 12) return `about ${Math.max(1, Math.round(months))} months`;
   return `about ${(months / 12).toFixed(1)} years`;
+}
+
+
+/** One-line hover text for a square in the current view. */
+export function cellSummary(cell: Cell, mode: ColorBy, year: number, meta: Meta): string {
+  if (mode === "flood") {
+    const f = floodExtra(cell, year, meta);
+    if (!f.cls) return "No flood zone data";
+    const base = FLOOD[f.cls === "1pct" && (f.total ?? 0) >= 3 ? "deeper" : f.cls].name;
+    return f.total !== null && f.total > 0.5 ? `${base}: floods ${num(f.total)} cm deeper by ${year}` : base;
+  }
+  if (cell.act === "insufficient_data" || cell.rate === null) return "No measurement";
+  const est = cell.src.includes("estimated") ? " (estimated)" : "";
+  if (mode === "drought") return cell.hz ? `${DROUGHT[cell.hz.dl].name}: ${num(cell.hz.drop, 0)} mm extra drop in droughts` : "Needs a direct satellite record";
+  if (mode === "bending") return cell.hz?.bl ? `${BEND[cell.hz.bl].name}: ${num(cell.hz.bend)} mm/yr change within 1 km` : "Needs a direct satellite record";
+  if (mode === "confidence") return cell.conf ? `${CONFIDENCE[cell.conf].name} confidence${est}` : "No confidence level";
+  if (mode === "priority") return ACTION[cell.act].name + est;
+  if (mode === "future") { const v = cell.future?.by[String(year)]; return v ? `${num(v.c)} cm by ${year}${est}` : "No forecast"; }
+  return `${num(cell.rate)} mm a year${est}`;
 }

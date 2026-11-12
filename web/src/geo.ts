@@ -10,3 +10,10 @@ export function cellRing(id: string): [number, number][] | null {
   const pts: [number, number][] = [[x0, y0], [x0 + 1000, y0], [x0 + 1000, y0 + 1000], [x0, y0 + 1000], [x0, y0]];
   return pts.map(([x, y]) => [toLon(x), toLat(y)]);
 }
+
+/** Id of the 1 km cell containing a point. */
+export function cellIdAt(lon: number, lat: number): string {
+  const x = (lon * Math.PI / 180) * R;
+  const y = Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2)) * R;
+  return `epsg3857-1km-${Math.floor(x / 1000)}-${Math.floor(y / 1000)}`;
+}

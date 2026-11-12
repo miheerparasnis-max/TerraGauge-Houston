@@ -300,12 +300,14 @@ npm install
 npm run dev        # opens http://localhost:5173
 ```
 
-One combined map of 1 km squares answers four questions (color the map by each):
+One combined map answers five questions (color the map by each). It has a square for every 1 km of the study box (-95.95 to -94.8, 29.4 to 30.2): 13,299 squares, about 7,000 measured directly, 3,400 estimated from neighbors, and the rest open water or outside the OPERA frame (each says why).
 
 - **Movement:** OPERA satellite rate 2016–2026 converted to vertical, blended with a GPS station's rate where one is within 1 km.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check, record jumpiness, and agreement with neighboring squares.
 - **Future:** each square's season-aware trend (trend + yearly sine/cosine for clay shrink-swell), averaged 50/50 with the median rate within 3 km, continued to 2031 (`backend.forecast.seasonal_area_rates`). Chosen by `scripts/forecast_benchmark.py`, a walk-forward test of 9 methods from 21 start dates (2018–2025) at 1–5 years ahead, 84 tests each. Typical error per square: chosen 1.50 cm; long-term rate 1.56; Theil-Sen 1.59; recency-weighted 1.63; gradient-boosted ML 1.97; no motion 2.20. Year-by-year 80% ranges come from the same tests (±1.7, 2.6, 3.3, 4.1, 5.0 cm for 1–5 years). The ML model (`backend/forecast.py` train_and_forecast) is kept as a documented experiment: it scored well on spatial cross-validation but not on later years. Pooled ML (HistGradientBoosting, ExtraTrees, Ridge) and mean-reversion of the shared shrink-swell signal were also tried and did not help overall.
 - **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
+
+- **Hazards:** flood, drought and ground-bending views (see below).
 
 Each square's card also shows why the label matters (flooding, drainage, infrastructure) and how long NISAR, a permanent GPS station, or a low-cost node would need to confirm its rate.
 
@@ -315,14 +317,20 @@ The forecast also uses NASADEM elevation, OPERA DSWx surface water, OPERA DIST l
 
 The Hardware page compares a low-cost GPS node (~$74–500) with a permanent station (~$20–30k) and lists where each would go: 15 permanent-station sites (numbered pins) and 30 low-cost node sites (diamonds).
 
+Website features: address/ZIP search and "use my location", hover read-outs, links that reopen the same view (`#map?mode=future&year=2030&cell=...`), per-square Copy link / Download / Print, "faster than X% of Houston" comparison, CSV and JSON downloads on the How we know page, phone layout with a bottom sheet, Esc closes a square.
+
 To regenerate the data the site shows:
 
 ```bash
+python3 scripts/build_grid.py          # full 1 km grid + FEMA zone per square (25-point sample)
+python3 scripts/build_grid.py --layers # re-sample NASADEM, DSWx, DIST on every square (rasterio, pyproj)
 python3 scripts/build_provisional.py   # needs numpy; writes data/derived/provisional/
 python3 scripts/build_forecast.py      # needs scikit-learn; ML experiment + static features
 python3 scripts/backtest_recent.py     # earlier out-of-time test (to March 2026)
 python3 scripts/forecast_benchmark.py  # walk-forward benchmark that picks the forecast method
+python3 scripts/build_hazards.py       # drought, bending, tests
 python3 scripts/export_web.py          # writes web/public/data/
+python3 -m unittest discover -s tests  # 66 tests, incl. checks on the exported site data
 ```
 
 ### What the provisional build does

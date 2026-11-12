@@ -27,7 +27,7 @@ export interface Cell {
   quality: { periods: number | null; periodsTotal: number; fitSe: number | null; nisarCoh: number | null; nisarValid: number | null; nisarOk: boolean };
   gps: { id: string; km: number; up: number; y0: number | null; y1: number | null };
   check: { id: string; km: number; diff: number } | null;
-  flood: { zone: string | null; sub: string | null; sfha: boolean };
+  flood: { zone: string | null; sub: string | null; sfha: boolean; share?: number | null };
   well: { km: number; dd: number | null } | null;
   ext: { km: number; c: number | null } | null;
   nasadem?: { elevation_m?: number };

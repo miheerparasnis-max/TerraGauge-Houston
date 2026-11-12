@@ -80,7 +80,15 @@ def main() -> None:
     stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
     extensometers = load(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = load(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
-    flood = {row["cell_id"]: row for row in load(DERIVED / "fema_nfhl_houston_cell_context_2026-11-07.json")["cells"]}
+    grid_path = PROV / "grid_cells.json"
+    if grid_path.is_file():
+        # Full 1 km grid (scripts/build_grid.py): every square in the study box,
+        # with its FEMA zone sampled at 25 points.
+        grid = load(grid_path)["cells"]
+        flood = {row["cell_id"]: row for row in grid}
+    else:
+        grid = None
+        flood = {row["cell_id"]: row for row in load(DERIVED / "fema_nfhl_houston_cell_context_2026-11-07.json")["cells"]}
     opera_cells = {row["cell_id"]: row for row in opera["cells"]}
     ml_cells = {row["cell_id"]: row for row in ml["cell_forecasts"]} if ml else {}
     nasa = {}
@@ -129,9 +137,17 @@ def main() -> None:
 
     cells, candidates = [], []
     counts = {"action": {}, "confidence": {}}
-    for row in pair["cells"]:
+    pair_rows = {row["cell_id"]: row for row in pair["cells"]}
+    universe = [pair_rows.get(g["cell_id"]) or {"cell_id": g["cell_id"], "longitude": g["longitude"], "latitude": g["latitude"], "evidence": {}} for g in grid] if grid else pair["cells"]
+    for row in universe:
         cid, lon, lat = row["cell_id"], float(row["longitude"]), float(row["latitude"])
-        ev = row["evidence"]
+        ev = dict(row["evidence"])
+        if not ev.get("usgs_site_id") and wells:
+            w = min(wells, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
+            ev.update(usgs_site_id=w["site_id"], usgs_distance_km=distance_km(lon, lat, w["longitude"], w["latitude"]), groundwater_depth_change_ft=w.get("depth_change_ft"))
+        if not ev.get("nearest_extensometer_station") and extensometers:
+            x = min(extensometers, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
+            ev.update(nearest_extensometer_station=x["station_id"], extensometer_distance_km=distance_km(lon, lat, x["longitude"], x["latitude"]), cumulative_compaction_change_ft=x.get("cumulative_compaction_change"))
         op = opera_cells.get(cid)
         f = flood.get(cid, {})
         sfha = f.get("flood_exposed") is True
@@ -175,6 +191,10 @@ def main() -> None:
         act, act_why = action_label(rate_vertical=sat_vertical if sat_vertical is not None else None, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=cover["up_mm_year"], covered_km=t.gps_nearby_km, open_water=open_water)
         if act == "insufficient_data":
             level, conf_why = None, []
+            if open_water:
+                act_why = "Open water: radar can't measure the ground under water."
+            elif not op and rate is None:
+                act_why = "Outside the area the NASA OPERA satellite product covers, so there's no direct reading."
         counts["action"][act] = counts["action"].get(act, 0) + 1
         if level:
             counts["confidence"][level] = counts["confidence"].get(level, 0) + 1
@@ -208,10 +228,10 @@ def main() -> None:
             "future": future, "detect": detect,
             "series": op["opera_series_mm"] if op and act != "insufficient_data" else None,
             "quality": {"periods": op.get("opera_links_used") if op else None, "periodsTotal": opera["product_count"], "fitSe": r(vertical_rate(op["opera_velocity_se_mm_year"])) if op else None,
-                        "nisarCoh": r(row.get("coherence_median"), 2), "nisarValid": r(row.get("valid_fraction"), 2), "nisarOk": bool(row["in_main_connected_component"] and (row.get("coherence_median") or 0) >= t.coherence_min and (row.get("valid_fraction") or 0) >= t.valid_fraction_min)},
+                        "nisarCoh": r(row.get("coherence_median"), 2), "nisarValid": r(row.get("valid_fraction"), 2), "nisarOk": bool(row.get("in_main_connected_component") and (row.get("coherence_median") or 0) >= t.coherence_min and (row.get("valid_fraction") or 0) >= t.valid_fraction_min)},
             "gps": {"id": cover["station_id"], "km": r(cover_km), "up": cover["up_mm_year"], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
             "check": check,
-            "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha},
+            "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha, "share": f.get("sfha_share")},
             "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(ev.get("groundwater_depth_change_ft"), 2)} if ev.get("usgs_site_id") else None,
             "ext": {"km": r(ev.get("extensometer_distance_km")), "c": r(ev.get("cumulative_compaction_change_ft"), 2)} if ev.get("nearest_extensometer_station") else None,
         }

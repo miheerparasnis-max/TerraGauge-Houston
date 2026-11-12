@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
-import type { Meta } from "./types";
+import type { Cell, Meta } from "./types";
 import { ACTION, CONFIDENCE, num } from "./labels";
 
 function Scatter({ meta }: { meta: Meta }) {
@@ -31,14 +31,39 @@ function Gauge({ signal, noise, label }: { signal: number; noise: number; label:
   );
 }
 
-export function HowWeKnow({ meta }: { meta: Meta }) {
+function toCSV(cells: Cell[], meta: Meta): string {
+  const years = meta.forecast?.years ?? [];
+  const head = ["square_id", "longitude", "latitude", "rate_mm_per_year", "uncertainty_mm_per_year", "source", "confidence", "priority", "flood_zone", "high_risk_flood", ...years.map((y) => `forecast_${y}_cm`), "drought_level", "bending_level", "elevation_m"];
+  const esc = (v: unknown) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  const rows = cells.map((c) => [c.id, c.lon, c.lat, c.rate, c.se, c.src.join("+") || "none", c.conf, c.act, c.flood.zone, c.flood.sfha, ...years.map((y) => c.future?.by[String(y)]?.c), c.hz?.dl, c.hz?.bl, c.nasadem?.elevation_m].map(esc).join(","));
+  return [head.join(","), ...rows].join("\n");
+}
+
+function save(name: string, text: string, type: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
   const v = meta.validation, n = meta.nisar, f = meta.forecast, th = meta.thresholds;
+  const direct = cells.filter((c) => c.act !== "insufficient_data" && !c.src.includes("estimated")).length;
+  const est = cells.filter((c) => c.src.includes("estimated")).length;
   return (
     <div className="page">
       <h2 className="page-title">How we know</h2>
-      <p className="lede">TerraGauge puts every dataset onto one map of 1 km squares, then answers four questions for each square. Here is how each answer is made, and how far to trust it.</p>
+      <p className="lede">TerraGauge puts every dataset onto one map of 1 km squares, then answers five questions for each square: is the ground moving, how sure are we, how much will it sink, what should Houston do, and what would a disaster do here. Here is how each answer is made, and how far to trust it.</p>
+      <div className="facts">
+        <div><strong>{cells.length.toLocaleString()}</strong><span>squares of 1 km cover the whole study area, from Katy to Baytown and Spring to Pearland</span></div>
+        <div><strong>{direct.toLocaleString()}</strong><span>measured directly; {est.toLocaleString()} more estimated from measured neighbors; the rest are water or outside satellite coverage</span></div>
+      </div>
+      <nav className="toc" aria-label="On this page">
+        {[["data", "Datasets"], ["match", "Satellite vs GPS"], ["hazards", "Hazards"], ["forecast", "Forecast"], ["nisar", "NISAR"], ["rules", "Rules"], ["downloads", "Downloads"]].map(([id, name]) => <a key={id} href={`#how`} onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }}>{name}</a>)}
+      </nav>
 
-      <h3>One map, every dataset</h3>
+      <h3 id="data">One map, every dataset</h3>
       <table className="table">
         <thead><tr><th>Data</th><th>What it tells us</th><th>How we use it</th></tr></thead>
         <tbody>
@@ -47,12 +72,12 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
           <tr><td>NASA/ISRO NISAR, Nov 2025–Jan 2026</td><td>The newest radar satellite</td><td>Quality check and "how long to confirm" in every square</td></tr>
           <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's card</td></tr>
           <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's card</td></tr>
-          <tr><td>FEMA flood zones</td><td>Official high-risk flood areas</td><td>Part of the priority rules</td></tr>
-          {Object.entries(meta.nasaLayers).map(([k, src]) => <tr key={k}><td>{src}</td><td>{k === "nasadem" ? "Ground elevation" : k === "dswx" ? "Standing water" : "Construction and clearing"}</td><td>{k === "dswx" ? "Marks water squares as no measurement" : "Context in each square's card"}</td></tr>)}
+          <tr><td>FEMA flood zones</td><td>Official flood odds (1-in-100 and 1-in-500-year zones)</td><td>Priority rules and the flood hazard view; sampled at 25 points per square</td></tr>
+          {Object.entries(meta.nasaLayers).map(([k, src]) => <tr key={k}><td>{src}</td><td>{k === "nasadem" ? "Ground elevation" : k === "dswx" ? "Standing water" : "Construction and clearing"}</td><td>{k === "dswx" ? "Marks water squares as no measurement" : k === "nasadem" ? "Finds low coastal squares for the flood view; context in each card" : "Lowers confidence where construction may fake movement"}</td></tr>)}
         </tbody>
       </table>
 
-      <h3>Does the satellite match the ground?</h3>
+      <h3 id="match">Does the satellite match the ground?</h3>
       <div className="split">
         <Scatter meta={meta} />
         <div>
@@ -64,7 +89,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
 
       {meta.hazards && (() => { const t = meta.hazards.tests; return (
         <>
-          <h3>Hazards: what the moving ground does in a disaster</h3>
+          <h3 id="hazards">Hazards: what the moving ground does in a disaster</h3>
           <p>We can't predict when a hurricane or drought will come. Nobody can, years ahead. What we can do is show what Houston's moving ground does when one comes, and we tested each view on past years.</p>
           <h4>Floods</h4>
           <p>FEMA's flood maps give the odds of a big flood in each area: a 1% chance each year in high-risk zones (1-in-100-year) and 0.2% in moderate ones (1-in-500-year). Over a 30-year mortgage, 1% a year adds up to about a 26% chance. Sinking ground makes the same flood deeper by however much the ground drops, so we add our forecast sinking for the chosen year. On the coast, the Gulf is also rising about 1 cm a year (Liu et al. 2020, Galveston Pier 21), and we add that too. This is a simple, honest estimate, not a full flood simulation: real flooding also depends on drains, bayous and where the rain falls.</p>
@@ -77,7 +102,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         </>
       ); })()}
 
-      <h3>How the forecast works, and how we tested it</h3>
+      <h3 id="forecast">How the forecast works, and how we tested it</h3>
       {f ? (
         <>
           <p>To test a forecast honestly, we pretended it was an earlier date. Each method could only use satellite data up to that date, then had to predict how much every square would sink 1, 2, 3, 4 and 5 years later. We compared each prediction with what really happened. We repeated this from {f.benchmark.origins.length} different starting dates between {f.benchmark.origins[0].slice(0, 4)} and {f.benchmark.origins[f.benchmark.origins.length - 1].slice(0, 4)}: {f.benchmark.test_cases} tests per method.</p>
@@ -96,7 +121,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         </>
       ) : <p>No forecast test has been run yet. Run scripts/forecast_benchmark.py.</p>}
 
-      <h3>NASA's newest satellite: NISAR</h3>
+      <h3 id="nisar">NASA's newest satellite: NISAR</h3>
       <p>NISAR started imaging Houston in late 2025. Houston sinks a few millimetres over a few weeks, but the atmosphere shifts a single radar reading by centimetres, so one pass can't measure Houston's slow sinking yet.</p>
       <Gauge signal={n.pair.signal_mm} noise={n.pair.noise_mm} label="One 12-day NISAR pair" />
       <Gauge signal={n.chain.signal_mm} noise={n.chain.noise_mm} label="Five pairs combined, 60 days" />
@@ -107,7 +132,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       </table>
       <p className="small">Best case. Real atmospheric noise is correlated from pass to pass, so the true wait is longer.</p>
 
-      <h3>How each answer is decided</h3>
+      <h3 id="rules">How each answer is decided</h3>
       <h4>Movement</h4>
       <p>The satellite rate (converted from its slanted view to up and down, assuming vertical motion at a {th.incidence_deg}° viewing angle) is blended with a GPS station's rate when one sits within {th.gps_blend_km} km. Changes smaller than {num(th.stable_mm_year)} mm a year count as no clear motion: that's twice the wobble at GPS stations that aren't moving.</p>
       <h4>Confidence</h4>
@@ -117,8 +142,20 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
       <h4>Sensor sites</h4>
       <p>The numbered pins are the "Add monitoring here" squares in the fastest-sinking areas, ranked by the median rate of squares within 3 km (so one noisy square can't top the list) and kept at least {th.sensor_spacing_km} km apart.</p>
 
+      <h4>Squares without a measurement</h4>
+      <p>Where the satellite has no reliable reading but at least {meta.estimates.min_neighbors} measured squares lie within {meta.estimates.radius_km} km, we estimate the rate from them (closer squares count more). We tested this by hiding {meta.estimates.tested.toLocaleString()} measured squares and estimating them: typical error {num(meta.estimates.median_error_mm_year)} mm a year, 80% within {num(meta.estimates.p80_error_mm_year)}. Estimated squares are drawn lighter and always get low confidence.</p>
+
       <h3>Still provisional</h3>
       <p className="small">Satellite radar measures movement relative to a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move as that reference and held out {meta.reference.held_out_stable_stations.length} similar stations for checking. The team still needs to review this choice.</p>
+
+      <h3 id="downloads">Downloads</h3>
+      <p>Everything on the map, free to reuse. The CSV has one row per square; the JSON files are exactly what this site loads.</p>
+      <div className="downloads">
+        <button onClick={() => save("terragauge-houston-squares.csv", toCSV(cells, meta), "text/csv")}>All squares (CSV)</button>
+        <a href="./data/cells.json" download>Squares (JSON)</a>
+        <a href="./data/meta.json" download>Tests and settings (JSON)</a>
+        <a href="./data/sites.json" download>GPS, wells, gauges (JSON)</a>
+      </div>
 
       <h3>Sources</h3>
       <ul className="small">
@@ -126,6 +163,9 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <li>NASA/ISRO NISAR L2 GUNW, track 062 frame 016, five pairs, 2 Nov 2025 to 1 Jan 2026.</li>
         <li>HoustonNet GPS 2024 release, University of Houston and Harris-Galveston Subsidence District.</li>
         <li>USGS groundwater daily values and the 2023 Houston extensometer release.</li>
+        <li>Liu et al. (2020), Land subsidence contributions to relative sea level rise at tide gauge Galveston Pier 21, Texas. Scientific Reports. Used for the Gulf rise rate.</li>
+        <li>USGS Flood Event Viewer high-water marks, Hurricane Harvey (2017), when downloaded.</li>
+        <li>Address search by OpenStreetMap Nominatim.</li>
         <li>FEMA National Flood Hazard Layer. Basemap © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.</li>
       </ul>
     </div>
