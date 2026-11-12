@@ -47,6 +47,14 @@ class ProvisionalTests(unittest.TestCase):
         self.assertAlmostEqual(sink["opera_los_velocity_mm_year"], -10, delta=0.1)
         self.assertNotIn("lake", [c["cell_id"] for c in result["cells"]])
 
+    def test_opera_series_withholds_incomplete_time_series(self):
+        products = []
+        for ref, sec, sink_value in [("2017-01-01", "2018-01-01", -5.0), ("2018-01-01", "2019-01-01", None), ("2019-01-01", "2020-01-01", -5.0)]:
+            refs = [{"cell_id": f"ref{i}", "longitude": -95.0, "latitude": 29.0 + i / 1000, "opera_pair_displacement_mm": 0.0, "opera_valid_fraction": 1, "opera_water_fraction": 0} for i in range(3)]
+            products.append({"parameters": {"reference_date": ref, "secondary_date": sec}, "cells": [*refs, {"cell_id": "sink", "longitude": -95.5, "latitude": 29.5, "opera_pair_displacement_mm": sink_value, "opera_valid_fraction": 1, "opera_water_fraction": 0}]})
+        result = opera_series(products, (-95.01, 28.99, -94.99, 29.01))
+        self.assertNotIn("sink", [c["cell_id"] for c in result["cells"]])
+
 
 if __name__ == "__main__":
     unittest.main()

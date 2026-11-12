@@ -284,6 +284,40 @@ python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_man
 
 A passing report proves only stationary receiver repeatability. It never proves Houston land motion.
 
+### macOS LC29H(BS) bring-up
+
+The LC29H(BS) is a base-station model: its meaningful output is binary RTCM
+raw-observation/correction data, not a consumer-GPS display. Before a real
+session, use an open-sky, stationary antenna and the USB jumper position **A**.
+The standard-library-only helper below can query the receiver, configure a
+reversible 120-second bench Survey-in, and capture a raw log on macOS:
+
+```bash
+python3 scripts/lc29h_macos.py probe --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py audit --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py configure-test --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py capture --port /dev/cu.usbserial-110 \
+  --seconds 240 --output ~/Desktop/terragauge_rtcm_test.bin
+python3 scripts/lc29h_macos.py bench-run --port /dev/cu.usbserial-110 \
+  --survey-seconds 60 --capture-seconds 120 \
+  --output ~/Desktop/terragauge_same_session.bin
+```
+
+`audit` sends only documented read-only LC29H(BS) status queries across the
+standard UART speeds. A real receiver response includes additional fields;
+an exact copy of the command alone is only an echo and does not verify a
+USB-to-module connection.
+
+`bench-run` keeps the port open while it starts a reversible Survey-in and
+enables RTCM, eliminating a host-side port re-open as a possible cause of an
+empty test capture. It does not save receiver configuration to flash.
+
+The bench configuration is intentionally not saved to the receiver. A nonzero
+log only proves that bytes were captured; keep the antenna fixed and use the
+three-session GroundTruth manifest plus RTKLIB/RINEX conversion before making
+any repeatability claim. An empty log is a diagnostic result, not evidence of
+ground movement.
+
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
@@ -343,7 +377,7 @@ Everything is flagged `provisional_unreviewed` until the team approves the refer
 2. **Re-referencing.** Cells are referenced to the median at half of the long-history HoustonNet stations with |vertical rate| ≤ 1 mm/yr; the other half are held out. (The single-patch candidate in `terragauge_reference_review_candidates_2026-11-07.json` is farmland where OPERA has too few coherent pixels.)
 3. **60-day NISAR chain.** The five consecutive pairs are summed (intermediate-date noise cancels). Still not a rate.
 4. **OPERA velocity.** The 19 chained OPERA DISP-S1 products (2016-07-12 to 2021-05-05) are re-referenced and fit with a least-squares LOS velocity per cell.
-5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 103 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows).
+5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 105 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows). Cells with an incomplete OPERA series are withheld rather than imputed.
 6. **NISAR signal check.** NISAR 12-day noise is ~18 mm vs. ~0.2 mm of expected real motion, and NISAR shows no correlation with OPERA (r ≈ 0). The map therefore defaults to OPERA-based priorities (`backend.decision.classify_opera_velocity`, same action order). NISAR views remain as a quality preview.
 
 To switch to a team-reviewed reference, change the reference selection in `scripts/build_provisional.py` and run it with `--reference-status reviewed`.

@@ -128,7 +128,7 @@ def _decimal_year(value: str) -> float:
     return day.year + (day - start).days / ((date(day.year + 1, 1, 1) - start).days)
 
 
-def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None, cell_valid_min: float = 0.25, min_link_fraction: float = 0.75) -> dict[str, Any]:
+def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None, cell_valid_min: float = 0.25, min_link_fraction: float = 0.9) -> dict[str, Any]:
     """Chain OPERA products, re-reference each, and fit LOS velocity per cell."""
     by_reference: dict[str, list[dict[str, Any]]] = {}
     for artifact in artifacts:
@@ -148,7 +148,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
     lookups, offsets = [], []
     for product in chain:
         lookup = {cell["cell_id"]: cell for cell in product["cells"]}
-        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox))]
+        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and (c.get("opera_water_fraction") or 0) <= water_max and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox))]
         if len(reference) < 3:
             raise ValueError(f"reference patch has fewer than three valid OPERA cells in product starting {product['parameters']['reference_date']}")
         lookups.append(lookup); offsets.append(median(reference))
@@ -167,12 +167,17 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             good = m is not None and m.get("opera_pair_displacement_mm") is not None and (m.get("opera_valid_fraction") or 0) >= cell_valid_min and (m.get("opera_water_fraction") or 0) <= water_max
             links.append(float(m["opera_pair_displacement_mm"]) - offset if good else None)
         valid = [i for i, d in enumerate(links) if d is not None]
+        # A rate must come from observed intervals. Squares missing more than
+        # 10% of the chain are withheld; for the rest the rate uses only the
+        # intervals that were observed (total observed displacement over
+        # total observed time), and any gap in the displayed series is
+        # bridged and flagged in opera_links_filled.
         if len(valid) < max(3, min_link_fraction * len(links)):
             continue
         if len(valid) == len(links):
             series = [0.0]
             for d in links:
-                series.append(series[-1] + d)
+                series.append(series[-1] + d)  # type: ignore[operator]
             mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
             sxx = sum((t - mean_t) ** 2 for t in years)
             slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
@@ -182,8 +187,6 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             se = residual_sd / sqrt(sxx)
             filled: list[int] = []
         else:
-            # Missing links: rate = total displacement / total time over the
-            # links that passed, uncertainty from the spread of link rates.
             span = sum(durations[i] for i in valid)
             slope = sum(links[i] for i in valid) / span  # type: ignore[misc]
             misfit = [links[i] - slope * durations[i] for i in valid]  # type: ignore[operator]
@@ -216,7 +219,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "LOS velocity, not vertical subsidence. Positive = toward the satellite.",
             "Standard error assumes independent residuals; real uncertainty is larger (temporal correlation, seasonal clay motion).",
             "The reference patch is provisional and unreviewed; a moving reference biases every velocity.",
-            "A cell is included if it passes the valid-pixel (>= 25%) and water checks in at least 75% of products; missing periods are filled with the cell's own average rate and flagged.",
+            "A cell is included only if it passes the valid-pixel (>= 25%) and water checks in at least 90% of the products in the chain; its rate uses only observed intervals, and any bridged gap is flagged in opera_links_filled.",
             PROVISIONAL_NOTE,
         ],
         "cells": cells,
