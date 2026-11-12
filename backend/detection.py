@@ -51,7 +51,8 @@ def detectability(
     if missing:
         return DetectionResult(None, None, None, True, "not_available", [f"Missing: {', '.join(missing)}."])
     if observation_count < 3 or epoch_sigma_mm <= 0 or interval_days <= 0:
-        return DetectionResult(None, None, None, True, "not_available", ["Invalid observation inputs."])
+        # Missing values are honest absence (reported above); invalid values are an error (MASTER B8).
+        raise ValueError("epoch_sigma_mm and interval_days must be positive and observation_count at least 3")
     if rate_mm_year == 0:
         return DetectionResult(None, None, None, True, "not_detectable", ["A zero assumed rate cannot meet a rate-detection threshold."])
 

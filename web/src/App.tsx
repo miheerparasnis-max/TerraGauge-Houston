@@ -52,7 +52,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
         <div className="ramp-keys"><span>Sinking {span}+ {unit}</span><span>None</span><span>Rising</span></div>
         <KeyList items={[noData]} note={mode === "future"
-          ? <>Each square's season-aware 2016–2026 trend, averaged with its neighborhood, continued. It was the most accurate of {meta.forecast?.benchmark.table.length ?? 9} methods tested on past years, including machine learning. Lighter squares are estimated from their neighbors.</>
+          ? <>Each square's season-aware 2016–2026 trend, averaged with its neighborhood, continued. It was tied for most accurate of {meta.forecast?.benchmark.table.length ?? 9} methods tested on past years, including machine learning. Lighter squares are estimated from their neighbors.</>
           : <>Measured by NASA's OPERA satellite product, 2016–2026, converted to up-and-down movement and blended with GPS where a station is inside the square. Lighter squares are estimated from their neighbors.</>} />
       </div>
     );

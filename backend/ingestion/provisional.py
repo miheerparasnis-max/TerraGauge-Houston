@@ -28,6 +28,9 @@ from math import cos, radians, sqrt
 from statistics import median
 from typing import Any
 
+from .corrections import require_same_corrections
+from .station_types import is_deep_seated
+
 PROVISIONAL_NOTE = "Provisional: reference region and processing choices have not yet been reviewed by the team."
 
 
@@ -92,6 +95,7 @@ def chain_sum(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
     for previous, current in zip(ordered, ordered[1:]):
         if previous["parameters"]["acquisition_dates"][1] != current["parameters"]["acquisition_dates"][0]:
             raise ValueError("pairs must form a consecutive chain (each secondary date equals the next reference date)")
+    applied_corrections = require_same_corrections([artifact.get("applied_corrections") for artifact in ordered])
     by_id = [{cell["cell_id"]: cell for cell in artifact["cells"]} for artifact in ordered]
     cells = []
     for cell in ordered[0]["cells"]:
@@ -112,6 +116,7 @@ def chain_sum(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
         "chain_of": [artifact["parameters"]["acquisition_dates"] for artifact in ordered],
         "parameters": {**ordered[0]["parameters"], "acquisition_dates": [first, last]},
         "source_processing_corrections": ordered[0].get("source_processing_corrections"),
+        "applied_corrections": applied_corrections,
         "limitations": [
             f"Sum of {len(ordered)} consecutive pairs = cumulative LOS displacement {first} to {last}; behaves like one longer pair, not a rate.",
             "Coherence and valid fraction are the minimum across member pairs; a cell must pass quality in every pair.",
@@ -231,10 +236,27 @@ def stable_gps_reference(stations: list[dict[str, Any]], max_abs_up_mm_year: flo
 
     Alternating by sorted station id keeps the split deterministic and spatially mixed.
     Held-out stable stations are never used to define the reference, so the
-    later comparison is not circular for them.
+    later comparison is not circular for them. Deep-seated stations (antenna on a
+    deep extensometer anchor) do not measure the land surface, so they are
+    removed *after* the split: excluding them never moves another station to the
+    other half.
     """
     stable = sorted((s for s in stations if s.get("up_mm_year") is not None and abs(float(s["up_mm_year"])) <= max_abs_up_mm_year and (s.get("history_years") or 0) >= min_history_years and (s.get("end_decimal_year") or 0) >= min_end_year), key=lambda s: s["station_id"])
-    return stable[0::2], stable[1::2]
+    surface = lambda group: [s for s in group if not is_deep_seated(s["station_id"])]  # noqa: E731
+    return surface(stable[0::2]), surface(stable[1::2])
+
+
+def region_cell_ids(stations_by_id: dict[str, dict[str, Any]], reference_station_ids: list[str], cells: list[dict[str, Any]], radius_km: float) -> set[str]:
+    """Cells within ``radius_km`` of any pre-registered reference station (PR-4 region rule)."""
+    from .houston import _distance_km
+
+    missing = [sid for sid in reference_station_ids if sid not in stations_by_id]
+    if missing:
+        raise ValueError(f"reference stations not in the station list: {missing}")
+    if any(is_deep_seated(sid) for sid in reference_station_ids):
+        raise ValueError("a deep-seated station cannot define a surface reference region")
+    anchors = [(float(stations_by_id[sid]["longitude"]), float(stations_by_id[sid]["latitude"])) for sid in reference_station_ids]
+    return {cell["cell_id"] for cell in cells if any(_distance_km(float(cell["longitude"]), float(cell["latitude"]), lon, lat) <= radius_km for lon, lat in anchors)}
 
 
 def nearest_cell_ids(stations: list[dict[str, Any]], cells: list[dict[str, Any]], max_distance_km: float = 1.0) -> set[str]:
@@ -256,7 +278,7 @@ def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], in
     rows = []
     projection = cos(radians(incidence_deg))
     for station in stations:
-        if exclude_station_ids and station["station_id"] in exclude_station_ids:
+        if (exclude_station_ids and station["station_id"] in exclude_station_ids) or is_deep_seated(station["station_id"]):
             continue
         if station.get("up_mm_year") is None or (station.get("start_decimal_year") or 9999) > min_overlap_start or (station.get("end_decimal_year") or 0) < min_history_end:
             continue
@@ -286,6 +308,7 @@ def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], in
             "Approximate only: ignores horizontal GPS motion, uses one assumed incidence angle, and GPS windows are longer than the OPERA 2016-2021 window.",
             "This is a sanity check of the provisional reference, not a formal validation.",
             "Stations used to define the reference are excluded from this comparison.",
+            "Deep-seated stations (antennas on deep extensometer anchors: ADKS, LKHU, NETP, TXEX, UHKD) are excluded; they do not measure the land surface (Wang et al. 2022).",
         ],
         "stats": stats,
         "stations": rows,

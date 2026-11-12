@@ -5,7 +5,7 @@
   "cell_context_method": "NISAR-cell center point-in-polygon classification against downloaded FEMA NFHL polygons.",
   "limitations": [
     "This is flood-zone context sampled at the aggregated radar-cell center; it is not a cell-area percentage, flood depth, parcel determination, or forecast.",
-    "A cell with no matching polygon is recorded as not mapped to an SFHA polygon by this layer, not as risk-free."
+    "A cell with no matching polygon has flood_exposed = null (unknown): the downloaded layer has no polygon there. It is never recorded as not exposed or as risk-free."
   ],
   "cells": [
     {
@@ -241,7 +241,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10667-3527",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -430,7 +430,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10635-3528",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -731,7 +731,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10666-3526",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -1151,7 +1151,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10594-3528",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -1249,7 +1249,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10577-3528",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -2432,7 +2432,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10629-3525",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -3041,7 +3041,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10652-3523",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -3209,7 +3209,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10623-3523",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -3230,7 +3230,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10619-3524",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -3363,7 +3363,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10596-3524",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -5547,7 +5547,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10604-3520",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -6107,7 +6107,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10635-3518",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -7353,7 +7353,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10678-3515",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -7633,7 +7633,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10630-3516",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -8333,7 +8333,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10638-3515",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -8459,7 +8459,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10617-3515",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -8809,7 +8809,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10557-3516",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -9292,7 +9292,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3514",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -9334,7 +9334,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10595-3514",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -9789,14 +9789,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10645-3512",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10644-3512",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -10034,14 +10034,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10603-3513",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10602-3513",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -10139,7 +10139,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10585-3513",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -10300,7 +10300,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10558-3514",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -10608,7 +10608,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10633-3511",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -10622,7 +10622,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10631-3511",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -11231,7 +11231,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10655-3509",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -11455,7 +11455,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10617-3510",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -12666,7 +12666,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10666-3507",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -12694,7 +12694,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10661-3507",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -13737,7 +13737,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10611-3507",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -14234,7 +14234,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10654-3505",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -14283,7 +14283,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10645-3505",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -15893,7 +15893,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10626-3503",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -16516,7 +16516,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10648-3501",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -16649,7 +16649,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10625-3502",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -16922,7 +16922,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10578-3503",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -17909,7 +17909,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10666-3498",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -18595,7 +18595,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10676-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -18616,7 +18616,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10673-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -18742,7 +18742,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10651-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -19029,7 +19029,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3499",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -19155,7 +19155,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10580-3499",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -19582,14 +19582,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10636-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10634-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -19659,7 +19659,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10622-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -19771,7 +19771,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10603-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -20128,7 +20128,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10670-3495",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -20219,7 +20219,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10655-3495",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -20534,7 +20534,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10601-3496",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -20751,7 +20751,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10564-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -20800,7 +20800,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10555-3497",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -21598,7 +21598,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10675-3492",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -22130,7 +22130,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10584-3494",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -22662,7 +22662,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10621-3492",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -23124,7 +23124,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10670-3490",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -23642,7 +23642,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10581-3492",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -24370,7 +24370,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10585-3490",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -24615,7 +24615,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10671-3487",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -24993,7 +24993,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10607-3489",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -25007,7 +25007,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10604-3489",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -25497,7 +25497,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10648-3487",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -26519,7 +26519,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3486",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -26673,7 +26673,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10575-3487",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -26918,14 +26918,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10662-3484",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10660-3484",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -26953,7 +26953,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10656-3484",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -27254,7 +27254,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10604-3485",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -27618,7 +27618,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10670-3483",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -27975,7 +27975,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10609-3484",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -28066,7 +28066,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10593-3484",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -28290,7 +28290,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10555-3485",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -28367,7 +28367,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10670-3481",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -28500,7 +28500,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10647-3482",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -28619,7 +28619,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10627-3482",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -29739,7 +29739,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10563-3482",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -29872,7 +29872,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10669-3479",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -30488,7 +30488,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10563-3481",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -30789,7 +30789,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10640-3478",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -30866,7 +30866,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10627-3479",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -30957,7 +30957,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10611-3479",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -31013,7 +31013,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3479",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -31146,14 +31146,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10579-3480",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10578-3480",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -31790,7 +31790,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10597-3478",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -31972,7 +31972,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10566-3479",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -32112,7 +32112,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10670-3475",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -32651,7 +32651,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10578-3477",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -32833,7 +32833,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10675-3474",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -32868,7 +32868,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10669-3474",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -33141,7 +33141,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10622-3475",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -33526,7 +33526,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10556-3476",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -33988,7 +33988,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10605-3474",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34093,7 +34093,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10587-3475",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34128,7 +34128,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10581-3475",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34177,7 +34177,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10573-3475",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34646,7 +34646,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10621-3473",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34821,7 +34821,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10591-3473",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34919,7 +34919,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10574-3474",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -34968,7 +34968,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10566-3474",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -36074,7 +36074,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10634-3470",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -36662,7 +36662,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10661-3468",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -38699,7 +38699,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10569-3468",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -39196,7 +39196,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10612-3466",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -39427,21 +39427,21 @@
     },
     {
       "cell_id": "epsg3857-1km--10573-3467",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10571-3467",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10570-3467",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -39791,7 +39791,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10638-3464",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -39833,7 +39833,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10631-3464",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -40176,7 +40176,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10573-3465",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -40512,7 +40512,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10643-3463",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -40995,7 +40995,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10561-3464",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -41282,7 +41282,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10640-3462",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -41303,7 +41303,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10636-3462",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -41583,7 +41583,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10588-3463",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -41821,7 +41821,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10675-3460",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -42045,7 +42045,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10637-3460",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -42248,7 +42248,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3461",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -42822,7 +42822,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10632-3459",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -43053,7 +43053,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10593-3460",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -43431,7 +43431,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10656-3458",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -43753,7 +43753,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10601-3459",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -44138,7 +44138,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10663-3456",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -44306,7 +44306,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10635-3457",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -44495,7 +44495,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10602-3458",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -44964,7 +44964,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10650-3455",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -44985,7 +44985,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10647-3455",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -45153,7 +45153,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10618-3456",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -45699,7 +45699,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10653-3454",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -46392,14 +46392,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10662-3453",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10661-3453",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -46602,7 +46602,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10626-3454",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -47183,7 +47183,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10655-3452",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -47337,7 +47337,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10629-3452",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -47582,7 +47582,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10587-3453",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -47645,7 +47645,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10576-3453",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -48016,7 +48016,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10640-3451",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -48359,7 +48359,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10582-3452",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -48926,35 +48926,35 @@
     },
     {
       "cell_id": "epsg3857-1km--10613-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10612-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10611-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10609-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10608-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49157,28 +49157,28 @@
     },
     {
       "cell_id": "epsg3857-1km--10574-3451",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10572-3451",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10571-3451",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10570-3451",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49514,7 +49514,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10640-3448",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49689,7 +49689,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10611-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49703,7 +49703,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10608-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49717,7 +49717,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10606-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49815,7 +49815,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10589-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -49899,35 +49899,35 @@
     },
     {
       "cell_id": "epsg3857-1km--10575-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10574-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10572-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10571-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10570-3450",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50249,14 +50249,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10643-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10642-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50431,7 +50431,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10612-3448",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50445,7 +50445,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10609-3448",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50466,7 +50466,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10606-3448",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50641,42 +50641,42 @@
     },
     {
       "cell_id": "epsg3857-1km--10576-3448",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10575-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10574-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10572-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10571-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10570-3449",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50865,7 +50865,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10665-3445",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50949,7 +50949,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10651-3446",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -50963,7 +50963,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10649-3446",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51348,7 +51348,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10583-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51383,49 +51383,49 @@
     },
     {
       "cell_id": "epsg3857-1km--10577-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10576-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10575-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10574-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10572-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10571-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10570-3447",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51768,7 +51768,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10639-3445",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51789,7 +51789,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10636-3445",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51936,7 +51936,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10611-3445",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -51950,7 +51950,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10608-3445",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -52097,7 +52097,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10583-3446",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -52132,14 +52132,14 @@
     },
     {
       "cell_id": "epsg3857-1km--10577-3446",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10576-3446",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -52671,7 +52671,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10613-3444",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -52685,21 +52685,21 @@
     },
     {
       "cell_id": "epsg3857-1km--10610-3444",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10609-3444",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
     },
     {
       "cell_id": "epsg3857-1km--10608-3444",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -52727,7 +52727,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10603-3444",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -53077,7 +53077,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10671-3442",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -53294,7 +53294,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10634-3443",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -53798,7 +53798,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10676-3440",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -54190,7 +54190,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10609-3442",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -54204,7 +54204,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10607-3442",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -54225,7 +54225,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10603-3442",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -55835,7 +55835,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10584-3440",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -56129,7 +56129,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10662-3437",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -57914,7 +57914,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10613-3436",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -58684,7 +58684,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10609-3435",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -58908,7 +58908,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10571-3435",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -59230,7 +59230,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10644-3433",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -59664,7 +59664,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10570-3434",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -62289,7 +62289,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10633-3428",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0
@@ -62520,7 +62520,7 @@
     },
     {
       "cell_id": "epsg3857-1km--10593-3429",
-      "flood_exposed": false,
+      "flood_exposed": null,
       "flood_zone": null,
       "zone_subtype": null,
       "matching_polygon_count": 0

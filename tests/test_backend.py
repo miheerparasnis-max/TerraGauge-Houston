@@ -34,6 +34,29 @@ class DetectionTests(unittest.TestCase):
         self.assertEqual(result.status, "scenario_lower_bound")
         self.assertTrue(result.lower_bound)
 
+    def test_planning_equation_reproduces_master_values(self):
+        # MASTER 5.3 and B8: sigma = 18 mm per epoch, 12-day spacing, white noise.
+        self.assertAlmostEqual(rate_uncertainty_mm_year(18.0, 12, 6), 131.0, delta=0.5)
+        first = next(n for n in range(3, 1000) if 2 * rate_uncertainty_mm_year(18.0, 12, n) <= 5.0)
+        self.assertEqual(first, 84)
+
+    def test_rate_uncertainty_rejects_invalid_inputs(self):
+        for args in ((0, 12, 6), (-1, 12, 6), (18, 0, 6), (18, 12, 2)):
+            with self.assertRaises(ValueError):
+                rate_uncertainty_mm_year(*args)
+
+    def test_detectability_fails_loudly_on_invalid_inputs(self):
+        # MASTER B8: invalid numbers are an error, not a quiet "not available".
+        for sigma, interval, count in ((-1.0, 12, 6), (0.0, 12, 6), (18.0, 0, 6), (18.0, 12, 2)):
+            with self.assertRaises(ValueError):
+                detectability(rate_mm_year=5, epoch_sigma_mm=sigma, interval_days=interval, observation_count=count, thresholds=Thresholds(), empirical_temporal_network=False)
+
+    def test_detectability_reports_missing_inputs_as_withheld(self):
+        # Missing data is honest absence (MASTER 0.6), so it is reported, not raised.
+        result = detectability(rate_mm_year=5, epoch_sigma_mm=None, interval_days=12, observation_count=6, thresholds=Thresholds(), empirical_temporal_network=False)
+        self.assertEqual(result.status, "not_available")
+        self.assertIn("epoch_sigma_mm", result.warnings[0])
+
     def test_gnss_noise_floor_requires_three_sessions(self):
         with self.assertRaises(ValueError):
             gnss_session_noise_floor([1.0, 2.0])
@@ -64,6 +87,13 @@ class DecisionTests(unittest.TestCase):
 
     def test_low_quality_is_insufficient_data(self):
         self.assertEqual(classify_cell(cell(coherence_median=0.2), Thresholds()).label, Label.INSUFFICIENT_DATA)
+
+    def test_cells_below_half_valid_pixels_never_get_a_positive_label(self):
+        # MASTER B8. The cell would otherwise be a candidate (|-12| >= 2 x 4 mm).
+        for gps_km in (1.0, 5.0):
+            result = classify_cell(cell(valid_fraction=0.49, evidence=Evidence(gps_distance_km=gps_km)), Thresholds())
+            self.assertEqual(result.label, Label.INSUFFICIENT_DATA)
+            self.assertNotIn(result.label, (Label.INVESTIGATE_SIGNAL, Label.ADD_MONITORING))
 
 
 class InputValidationTests(unittest.TestCase):

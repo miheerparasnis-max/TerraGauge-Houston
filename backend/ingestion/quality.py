@@ -7,6 +7,8 @@ from math import isfinite
 from pathlib import Path
 from typing import Any
 
+from .corrections import validate_correction_record
+
 
 def validate_pair_artifact(input_path: str | Path) -> dict[str, Any]:
     """Return an auditable pass/fail report; never silently repair source data."""
@@ -44,6 +46,8 @@ def validate_pair_artifact(input_path: str | Path) -> dict[str, Any]:
     corrections = artifact.get("source_processing_corrections")
     if not isinstance(corrections, dict):
         findings.append("source processing-correction flags are missing")
+    applied = artifact.get("applied_corrections")
+    findings.extend(f"applied_corrections: {finding}" for finding in validate_correction_record(applied))
     return {
         "artifact_type": "terragauge_nisar_pair_integrity_report",
         "input_artifact": str(input_path),
@@ -53,6 +57,7 @@ def validate_pair_artifact(input_path: str | Path) -> dict[str, Any]:
         "cell_count": len(cells),
         "main_connected_component_cell_count": main_count,
         "correction_flag_count": len(corrections) if isinstance(corrections, dict) else 0,
+        "applied_corrections": applied if isinstance(applied, dict) else None,
         "claim": "Structural validation only; passing does not establish ground motion, a stable reference region, or a temporal rate.",
     }
 

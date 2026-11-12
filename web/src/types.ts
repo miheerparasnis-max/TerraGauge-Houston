@@ -89,7 +89,7 @@ export interface Meta {
 }
 
 export interface Sites {
-  gps: { id: string; lon: number; lat: number; up: number; y0: number; y1: number }[];
+  gps: { id: string; lon: number; lat: number; up: number | null; flag?: string | null; deepAnchorM?: number | null; y0: number; y1: number }[];
   ext: { id: string; name: string; lon: number; lat: number; c: number; d0: string; d1: string }[];
   wells: { id: string; name: string; lon: number; lat: number; dd: number | null; t0: string; t1: string }[];
 }

@@ -181,7 +181,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       <Section title="What we can't conclude">
         <ul className="reasons">
           <li>This is a 1 km average. It says nothing about any single building or property.</li>
-          <li>It does not say this spot will flood, or exactly why the ground is moving.</li>
+          <li>It does not tell you whether this spot floods, or exactly why the ground is moving.</li>
           <li>Up-and-down rates assume the ground moves vertically; the radar measures at a slant.</li>
           <li>The forecast assumes the next five years behave like the last ten, with no big change in groundwater pumping.</li>
         </ul>

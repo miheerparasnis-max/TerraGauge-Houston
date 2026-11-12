@@ -1,10 +1,11 @@
 import unittest
 
+from backend.ingestion.corrections import empty_correction_record
 from backend.ingestion.provisional import chain_sum, deramp_pair, fit_plane, opera_series
 
 
 def _pair(dates, values):
-    return {"parameters": {"acquisition_dates": dates}, "cells": [
+    return {"parameters": {"acquisition_dates": dates}, "applied_corrections": empty_correction_record(), "cells": [
         {"cell_id": f"c{i}", "longitude": -95.3 + (i % 5) * 0.01, "latitude": 29.7 + (i // 5) * 0.01, "pair_los_displacement_mm": v, "coherence_median": 0.8, "valid_fraction": 0.9, "in_main_connected_component": True}
         for i, v in enumerate(values)]}
 

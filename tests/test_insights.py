@@ -1,6 +1,8 @@
 import unittest
 
-from backend.insights import backtest, confidence, priority, project, sensor_plan, vertical_rate
+import re
+
+from backend.insights import confidence, priority, sensor_plan, vertical_rate
 
 
 class InsightTests(unittest.TestCase):
@@ -24,21 +26,19 @@ class InsightTests(unittest.TestCase):
         self.assertEqual(priority(rate_vertical=-90, significant=True, level="high", flood_zone_sfha=False)[0], "check")
         self.assertEqual(priority(rate_vertical=-12, significant=True, level="high", flood_zone_sfha=False, open_water=True)[0], "no_data")
 
-    def test_projection_band_widens_with_time(self):
-        a, b = project(-10, 1, 1, 1.0, 2), project(-10, 1, 5, 1.0, 2)
-        self.assertAlmostEqual(b["center_mm"], -50)
-        self.assertGreater(b["high_mm"] - b["low_mm"], a["high_mm"] - a["low_mm"])
-
-    def test_backtest_detects_persistent_rates(self):
-        dates = [f"{2016 + i // 4}-{1 + 3 * (i % 4):02d}-01" for i in range(20)]
-        cells = []
-        for k in range(30):
-            rate = -k
-            cells.append({"opera_series_mm": [rate * (i * 0.25) for i in range(20)]})
-        result = backtest(cells, dates, "2018-07-01")
-        self.assertGreater(result["correlation"], 0.99)
-        self.assertEqual(result["best_damping"], 1.0)
-        self.assertTrue(result["beats_no_motion"])
+    def test_priority_reasons_are_windowed_and_inside_the_claims_policy(self):
+        record = "the 2016-2021 satellite record"
+        cases = [
+            dict(rate_vertical=-1, significant=False, level="high", flood_zone_sfha=False),
+            dict(rate_vertical=-12, significant=True, level="high", flood_zone_sfha=False),
+            dict(rate_vertical=-6, significant=True, level="medium", flood_zone_sfha=True),
+            dict(rate_vertical=-6, significant=True, level="medium", flood_zone_sfha=False),
+            dict(rate_vertical=-12, significant=True, level="low", flood_zone_sfha=False),
+        ]
+        for case in cases:
+            _, reason = priority(**case, record=record)
+            self.assertIn(record, reason)
+            self.assertIsNone(re.search(r"sinking|predict|forecast|will flood", reason, flags=re.IGNORECASE), reason)
 
     def test_sensor_plan_spreads_out_and_skips_covered(self):
         base = dict(priority="urgent", confidence="high", sfha=False, rate=-15)

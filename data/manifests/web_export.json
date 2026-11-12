@@ -1,0 +1,119 @@
+{
+  "artifact_type": "terragauge_web_export_manifest",
+  "created_utc": "2026-11-12T23:17:22Z",
+  "git_head": "69641d55c12421ad0e465d0657918397006c8152",
+  "git_worktree_clean": false,
+  "command": "python3 scripts/export_web.py",
+  "inputs": [
+    {
+      "path": "data/derived/houstonnet_2024_summary.json",
+      "sha256": "d84b2a11b1032edc1adcb85d5a00590552a42f1f1fd60714f517ea7da54da55f",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/nasa_layers/dist_houston_cells.json",
+      "sha256": "7ad051d2c461da7d19ed89d37156c032b5819a2f4d830a18333ecfcbad1b55c7",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/nasa_layers/dswx_houston_cells.json",
+      "sha256": "02e14449583414fd1925012017ac875519dc6eb1a6ea61bb572e7a16d4983c3d",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/nasa_layers/nasadem_houston_cells.json",
+      "sha256": "6333e3228a4403cc48471005c1cbce7010c54915d9376447e8aee5fa252f37f9",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/backtest_recent.json",
+      "sha256": "14f5fdd40d735831ffd653d7ebed0ff21a022919f045daf27f51869a66279d14",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/build_report.json",
+      "sha256": "279e23c4795a76df559b2b8e0ac985713ad2f4177e58153321fdfc8d661b0346",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/forecast_benchmark.json",
+      "sha256": "a7d5f937311343bec8205c5fa85d1bede2f61824dd3efd089ce3249120b50e87",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/grid_cells.json",
+      "sha256": "da271b1bf923054adbf3c0a47eb851ecf20bb4b332e4ae6f4b2b15a8e92cf11e",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/harvey_check.json",
+      "sha256": "3889adea8e8df3541f4eb34d11c024b754de57cf94dc35873413c9d649c80343",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/hazards.json",
+      "sha256": "7fbc3bfd79f63ea0cdc2229feb45335bf188a30d8304c3dfd3fa7a37dc525934",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/ml_forecast.json",
+      "sha256": "904a1a8b567db59a449d7ef5c3e10ef7a3710bd6001e61f4754d1b84b323f0af",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/opera_houston_los_velocity.json",
+      "sha256": "fb82b67938b9c25fb0334d60b50c1cd268d311f91febeca487799a56e893c66b",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
+      "sha256": "b8c9818195c61444c2dda5e2683d5e6f5e29db44bf7f47908b5c058fd722f0d4",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/provisional/terragauge_houston_evidence_chain_20251102_20260101.json",
+      "sha256": "f0e1b89096fd2ca40a203cfa31cb874a44729515afb4597d99a3282a7b490c45",
+      "tracked": false,
+      "regenerate_with": "python3 scripts/build_provisional.py"
+    },
+    {
+      "path": "data/derived/provisional/terragauge_houston_evidence_pair_20251102_20251114.json",
+      "sha256": "d00dbec86e4457c1681d11c38dc20468786ae8d15a6a36e5ea917faf7cdb1e68",
+      "tracked": false,
+      "regenerate_with": "python3 scripts/build_provisional.py"
+    },
+    {
+      "path": "data/derived/usgs_houston_extensometer_compaction_2023.json",
+      "sha256": "aa8005eeff2d43118d6c2dd86cf28566650a3d551e7fd3c60680dd349ef58817",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
+      "sha256": "ff49efa8fe5277e4fb56dbdefcdf6bb1cb7999f171bad3fffc6bd83f5f407cc5",
+      "tracked": true
+    },
+    {
+      "path": "data/manifests/nisar_track062_inventory_20261110.json",
+      "sha256": "ad95cf30160fcc203713476866cf1047dd9d196c098ab983877e0bd215807abc",
+      "tracked": true
+    }
+  ],
+  "outputs": [
+    {
+      "path": "web/public/data/cells.json",
+      "sha256": "e99ea20171db719e0f8134bfdcd641e5886460f2c19e747fa475e39a55b963ae",
+      "tracked": true
+    },
+    {
+      "path": "web/public/data/meta.json",
+      "sha256": "88147d889938e58ce9aba14f7a45522f5f20a076619dd968ce95df6c4d04598e",
+      "tracked": true
+    },
+    {
+      "path": "web/public/data/sites.json",
+      "sha256": "a85e8f4d49d51ff9a44dde4e1c9defde6fe13b49fb0cce4bc6e122be6c5f1a69",
+      "tracked": true
+    }
+  ],
+  "note": "Per-square detail tiles (web/public/data/details/) are written alongside cells.json from the same records."
+}

@@ -2,7 +2,7 @@
 
 TerraGauge is an evidence-first monitoring-priority backend for Houston ground-motion analysis. It combines NASA NISAR pairwise line-of-sight observations, historic local GPS context, USGS groundwater context, FEMA station-point context, and a stationary GNSS repeatability experiment to explain **what evidence exists at a location and what is still missing**.
 
-It does **not** forecast flooding, diagnose the cause of motion, or claim that a weekend GNSS receiver measured subsidence.
+It does **not** forecast flooding, project future motion, diagnose the cause of motion, or present a weekend GNSS receiver's readings as land motion.
 
 ## Backend scope
 
@@ -22,11 +22,16 @@ The frontend can call these endpoints without duplicating scientific logic.
 
 ## Run locally
 
-Requires Python 3.11+.
+The core API needs Python 3.11+ and no third-party packages. Ingestion and the
+full test suite need the packages in `requirements.txt`; use **Python 3.14** for
+that environment. As of 2026-11-10, `h5py` has no binary wheel for Python 3.15,
+so a 3.15 environment cannot install the requirements without building HDF5.
 
 ```bash
-python3 -m unittest discover -s tests -v
-python3 -m backend
+python3.14 -m venv .venv
+.venv/bin/pip install -r requirements-layers.txt   # requirements.txt plus rasterio and earthaccess
+.venv/bin/python -m unittest discover -s tests -v   # expect 0 errors, 0 skips
+.venv/bin/python -m backend
 ```
 
 The API starts at `http://127.0.0.1:8000`.
@@ -36,7 +41,7 @@ The API starts at `http://127.0.0.1:8000`.
 | Method | Route | Purpose |
 |---|---|---|
 | `GET` | `/health` | Service health check |
-| `GET` | `/v1/summary` | Label counts, active thresholds, and disclaimer |
+| `GET` | `/v1/summary` | Dataset status (shows when the demo fixture is loaded), label counts, active thresholds, and disclaimer |
 | `GET` | `/v1/cells` | All analyzed 1 km cells |
 | `GET` | `/v1/cells/{cell_id}` | One evidence card payload |
 | `GET` | `/v1/data-ledger` | Versioned source-manifest records |
@@ -74,10 +79,8 @@ Each cell must provide coordinates, pairwise LOS displacement/quality values, an
 - Historic HoustonNet values are context, not time-matched validation of the NISAR pair.
 - A station-point FEMA result is context, not a cell-level flood classification.
 - A GNSS node result represents stationary receiver repeatability, not observed land motion.
-- The NISAR-derived artifacts preserve the product's ionospheric and tropospheric correction flags; TerraGauge never recommends applying an atmospheric correction twice.
-- The demo dataset is only for development and cannot appear as a real Houston result.
-
-## Next backend work
+- The NISAR-derived artifacts preserve the product's correction flags. The flags recorded so far are geocoding flags; they do not show that phase corrections were applied to the unwrapped phase (audit A1). GUNW includes an ionospheric phase screen and tropospheric and tide lookup tables that are not applied by default. TerraGauge applies each correction exactly once, records which were applied in the artifact, and never applies a correction that the artifact already records as applied.
+- The demo dataset is only for development and cannot appear as a real Houston result: `backend/publish_guard.py` refuses it in every build that produces a published output.
 
 ## Source-derived ingestion
 
@@ -101,11 +104,13 @@ python3 -m backend.ingestion.cli inspect-h5 /path/to/NISAR_GUNW.h5 > data/derive
 ```
 
 Then extract one quality-preserving pair artifact. Use the verified product CRS,
-x/y paths, wavelength, and acquisition dates from the product metadata:
+x/y paths, and acquisition dates from the product metadata. The wavelength is
+read from the product's frequency-A center frequency; `--wavelength-m` is optional
+and is rejected if it disagrees by more than 0.1%:
 
 ```bash
 python3 -m backend.ingestion.cli nisar-gunw /path/to/NISAR_GUNW.h5 data/derived/nisar-pair.json \
-  --wavelength-m 0.238 \
+  --wavelength-m 0.241962 \
   --crs EPSG:32615 \
   --x-path /verified/x/path --y-path /verified/y/path \
   --reference-date YYYY-MM-DD --secondary-date YYYY-MM-DD
@@ -125,7 +130,9 @@ write only the Houston study area instead of the entire source frame.
 
 Every compact pair artifact must pass the reproducible structural gate before it
 can be joined to Houston context. It rejects duplicate cell IDs, invalid/outside
-coordinates, missing product correction flags, and malformed date metadata. It
+coordinates, missing product correction flags, a missing or invalid
+`applied_corrections` record (`backend/ingestion/corrections.py`), and malformed
+date metadata. It
 also accepts only cells whose dominant local connected component matches the
 scene-wide dominant component; this prevents isolated phase islands from being
 treated as reliable evidence.
@@ -141,10 +148,15 @@ python3 -m backend.ingestion.cli validate-nisar-pair \
 Five checked track-062 Houston pairs now cover six dates from 2025-11-02 through
 2026-01-01. The reproducible diagnostic at
 `data/derived/nisar_track062_network_diagnostic_20251102_20260101.json` finds a
-connected **chain** with zero redundant edges. Accordingly, TerraGauge withholds
-a temporal rate. This is a result, not a missing feature: a defensible rate needs
-at least two independent loop-closure edges as well as a documented stable
-reference region.
+connected **chain** with zero redundant edges, so the strict (loop-closure) rule
+withholds a temporal rate.
+
+The NASA archive holds 27 track-062 frame-016 pairs on 28 dates (2025-11-02 to
+2026-10-16), all nearest-neighbor, so the archive never supplies loop closures
+(`data/manifests/nisar_track062_inventory_20261110.json`, regenerate with
+`python3 scripts/nisar_inventory.py --out ...`). Rates from the full chain are
+released only under the pre-registered validated rule in `docs/preregistration/`,
+and are always reported next to the strict result.
 
 Recreate the graph audit with:
 
@@ -282,7 +294,7 @@ When the LC29H(BS) arrives, keep the outdoor antenna fixed and complete three st
 python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_manifest.json data/derived/groundtruth_report.json
 ```
 
-A passing report proves only stationary receiver repeatability. It never proves Houston land motion.
+A passing report shows only stationary receiver repeatability. It never shows Houston land motion.
 
 ### macOS LC29H(BS) bring-up
 
@@ -313,7 +325,7 @@ enables RTCM, eliminating a host-side port re-open as a possible cause of an
 empty test capture. It does not save receiver configuration to flash.
 
 The bench configuration is intentionally not saved to the receiver. A nonzero
-log only proves that bytes were captured; keep the antenna fixed and use the
+log only shows that bytes were captured; keep the antenna fixed and use the
 three-session GroundTruth manifest plus RTKLIB/RINEX conversion before making
 any repeatability claim. An empty log is a diagnostic result, not evidence of
 ground movement.
@@ -321,7 +333,7 @@ ground movement.
 ## Remaining source work
 
 1. Science-review and document a stable reference region, then rebuild with `--reference-bbox WEST SOUTH EAST NORTH`.
-2. Acquire at least two valid redundant same-track pair edges, then run the existing temporal-network inversion.
+2. Process the remaining 22 track-062 frame-016 pairs and apply the pre-registered release rule (`docs/preregistration/`); the archive provides no redundant pair edges.
 3. Add the event’s real LC29H(BS) raw-log, RINEX conversion, CORS overlap, and RTKLIB static-solution record.
 
 ## Website (provisional build)
@@ -338,7 +350,7 @@ One combined map answers five questions (color the map by each). It has a square
 
 - **Movement:** OPERA satellite rate 2016–2026 converted to vertical, blended with a GPS station's rate where one is within 1 km.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check, record jumpiness, and agreement with neighboring squares.
-- **Future:** each square's season-aware trend (trend + yearly sine/cosine for clay shrink-swell), averaged 50/50 with the median rate within 3 km, continued to 2031 (`backend.forecast.seasonal_area_rates`). Chosen by `scripts/forecast_benchmark.py`, a walk-forward test of 9 methods from 21 start dates (2018–2025) at 1–5 years ahead, 84 tests each. Typical error per square: chosen 1.50 cm; long-term rate 1.56; Theil-Sen 1.59; recency-weighted 1.63; gradient-boosted ML 1.97; no motion 2.20. Year-by-year 80% ranges come from the same tests (±1.7, 2.6, 3.3, 4.1, 5.0 cm for 1–5 years). The ML model (`backend/forecast.py` train_and_forecast) is kept as a documented experiment: it scored well on spatial cross-validation but not on later years. Pooled ML (HistGradientBoosting, ExtraTrees, Ridge) and mean-reversion of the shared shrink-swell signal were also tried and did not help overall.
+- **Future:** each square's season-aware trend (trend + yearly sine/cosine for clay shrink-swell), averaged 50/50 with the median rate within 3 km, continued to 2031 (`backend.forecast.seasonal_area_rates`). Chosen by `scripts/forecast_benchmark.py`, a walk-forward test of 9 methods from 21 start dates (2018–2025) at 1–5 years ahead, 84 tests each. Typical error per square (with the pre-registered reference): chosen 1.32 cm, tied with Theil-Sen 1.32; neighbourhood-smoothed 1.33; long-term rate 1.35; recency-weighted 1.42; no motion 1.69; gradient-boosted ML 1.77. Year-by-year 80% ranges come from the same tests (±1.5, 2.5, 3.1, 3.9, 4.4 cm for 1–5 years). The ML model (`backend/forecast.py` train_and_forecast) is kept as a documented experiment: it scored well on spatial cross-validation but not on later years. Pooled ML (HistGradientBoosting, ExtraTrees, Ridge) and mean-reversion of the shared shrink-swell signal were also tried and did not help overall.
 - **Priority:** the plan's labels, first rule wins: No measurement → Review disagreement (GPS within 2 km differs by >5 mm/yr) → Investigate first (sinking in FEMA high-risk zone, GPS within 2 km) → Add monitoring here (same, no GPS within 2 km) → Observe (sinking outside the high-risk zone) → No clear motion. The numbered sensor pins are the top "Add monitoring here" squares by area sinking rate, 4 km apart.
 
 - **Hazards:** flood, drought and ground-bending views (see below).
@@ -369,15 +381,17 @@ python3 scripts/export_web.py          # writes web/public/data/
 python3 -m unittest discover -s tests  # 66 tests, incl. checks on the exported site data
 ```
 
+Both builds refuse demonstration data (`backend/publish_guard.py`) and hash every input and output (`backend/provenance.py`). The website export records the two gitignored intermediates it reads, with the command that regenerates them; their hashes must match `data/manifests/provisional_build.json`. `tests/test_claims_policy.py` fails if a forbidden phrase or a projection reaches the site.
+
 ### What the provisional build does
 
 Everything is flagged `provisional_unreviewed` until the team approves the reference:
 
 1. **Ramp removal.** A best-fit plane is removed from each NISAR pair. The raw pairs have 13–43 mm of frame-wide ionospheric/atmospheric scatter; after removal, 3–10 mm. Raw values are kept.
-2. **Re-referencing.** Cells are referenced to the median at half of the long-history HoustonNet stations with |vertical rate| ≤ 1 mm/yr; the other half are held out. (The single-patch candidate in `terragauge_reference_review_candidates_2026-11-07.json` is farmland where OPERA has too few coherent pixels.)
+2. **Re-referencing.** Every NISAR and OPERA product is referenced to the median of the pre-registered region A (`config/preregistration.json`, PR-4 with amendment A1): every cell within 3 km of GPS stations DEN2 or TMCC (59 OPERA cells, 52 NISAR cells). Deep-seated GNSS stations (ADKS, LKHU, NETP, TXEX, UHKD), whose antennas sit on deep extensometer anchors, are never used as surface references (Wang et al. 2022, *J. Surv. Eng.* 148(4): 04022008).
 3. **60-day NISAR chain.** The five consecutive pairs are summed (intermediate-date noise cancels). Still not a rate.
 4. **OPERA velocity.** The 19 chained OPERA DISP-S1 products (2016-07-12 to 2021-05-05) are re-referenced and fit with a least-squares LOS velocity per cell.
-5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 105 held-out stations: r = 0.66, median |difference| 1.7 mm/yr (approximate: vertical-only projection, overlapping but different time windows). Cells with an incomplete OPERA series are withheld rather than imputed.
+5. **Check against GPS.** OPERA velocity vs. HoustonNet vertical rate projected into LOS at 106 independent stations (all except the two reference stations and the deep-seated ones): r = 0.66, median |difference| 1.7 mm/yr, bias +0.3 mm/yr (approximate: vertical-only projection, overlapping but different time windows). The positive correlation also confirms OPERA's sign (positive = toward the satellite). Cells with an incomplete OPERA series are withheld rather than imputed.
 6. **NISAR signal check.** NISAR 12-day noise is ~18 mm vs. ~0.2 mm of expected real motion, and NISAR shows no correlation with OPERA (r ≈ 0). The map therefore defaults to OPERA-based priorities (`backend.decision.classify_opera_velocity`, same action order). NISAR views remain as a quality preview.
 
 To switch to a team-reviewed reference, change the reference selection in `scripts/build_provisional.py` and run it with `--reference-status reviewed`.
@@ -389,7 +403,7 @@ To switch to a team-reviewed reference, change the reference selection in `scrip
 
 ### Extending the record to 2026
 
-The OPERA record in the repo ends in May 2021. `scripts/fetch_opera_extension.py` downloads the 11 OPERA products (about 3.7 GB) that continue the chain to March 2026, ingests them, and rebuilds the site data. With ~10 years of data the backtest compares five years against the next five, which is long enough for a real forecast test.
+The OPERA record in the repo ends in May 2021. `scripts/fetch_opera_extension.py` downloads the 11 OPERA products (about 3.7 GB) that continue the chain to March 2026, ingests them, and rebuilds the site data. The cross-sensor check against NISAR (validation test V2) needs a different set: the products dated inside the NISAR window (plan task T1.6).
 
 ```bash
 python3 -m pip install earthaccess numpy h5py pyproj
@@ -422,3 +436,9 @@ python3 scripts/fetch_harvey.py      # optional, needs internet
 python3 scripts/build_hazards.py     # needs numpy
 python3 scripts/export_web.py
 ```
+
+## Project rules, audit and pre-registration
+
+`CLAUDE.md` and `MASTER.md` hold the project rules; `docs/` holds the codebase audit, execution plan, decisions log (`docs/decisions.md`), source fact-check, pre-registration (`config/preregistration.json`), AI-use record (`docs/ai-use.md`), team notes and Space Apps rule notes. Builds write SHA-256 provenance manifests to `data/manifests/` (`backend/provenance.py`).
+
+The forecast is kept as a tested trend continuation, not an unqualified prediction: it is shown with year-by-year 80% ranges from 84 walk-forward tests on past years and is limited to the 5 years those tests covered (see "Future" above and `scripts/forecast_benchmark.py`). This replaces the earlier no-projection rule (decision recorded in `docs/decisions.md`).

@@ -1,0 +1,6 @@
+# Optional: NASA raster layers and Earthdata downloads (scripts/fetch_*.py)
+# and the rasterio-dependent test in tests/test_raster_layers.py.
+# Verified on Python 3.14.8, 2026-11-10 (rasterio 1.5.2, earthaccess 0.19.0).
+-r requirements.txt
+rasterio>=1.5
+earthaccess>=0.19

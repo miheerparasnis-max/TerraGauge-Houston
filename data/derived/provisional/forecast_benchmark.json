@@ -28,138 +28,138 @@
  "test_cases": 84,
  "table": [
   {
-   "method": "seasonal_area",
-   "label": "Season-aware + neighborhood (chosen)",
-   "overall_cm": 1.5,
+   "method": "robust_theil_sen",
+   "label": "Robust trend (Theil-Sen)",
+   "overall_cm": 1.32,
    "by_horizon_cm": {
-    "1": 0.91,
-    "2": 1.35,
-    "3": 1.67,
-    "4": 1.81,
-    "5": 2.11
+    "1": 0.75,
+    "2": 1.2,
+    "3": 1.46,
+    "4": 1.65,
+    "5": 1.89
    }
   },
   {
-   "method": "seasonal",
-   "label": "Season-aware trend",
-   "overall_cm": 1.54,
+   "method": "seasonal_area",
+   "label": "Season-aware + neighborhood (chosen)",
+   "overall_cm": 1.32,
    "by_horizon_cm": {
-    "1": 0.92,
-    "2": 1.38,
-    "3": 1.71,
-    "4": 1.86,
-    "5": 2.21
+    "1": 0.73,
+    "2": 1.21,
+    "3": 1.47,
+    "4": 1.69,
+    "5": 1.86
    }
   },
   {
    "method": "area_smoothed",
    "label": "Neighborhood-smoothed rate",
-   "overall_cm": 1.54,
+   "overall_cm": 1.33,
    "by_horizon_cm": {
-    "1": 0.91,
-    "2": 1.39,
-    "3": 1.73,
-    "4": 1.89,
-    "5": 2.17
+    "1": 0.74,
+    "2": 1.22,
+    "3": 1.46,
+    "4": 1.69,
+    "5": 1.86
    }
   },
   {
    "method": "long_term",
    "label": "Long-term rate",
-   "overall_cm": 1.56,
+   "overall_cm": 1.35,
    "by_horizon_cm": {
-    "1": 0.91,
-    "2": 1.41,
-    "3": 1.74,
-    "4": 1.92,
-    "5": 2.22
+    "1": 0.74,
+    "2": 1.24,
+    "3": 1.49,
+    "4": 1.73,
+    "5": 1.93
+   }
+  },
+  {
+   "method": "seasonal",
+   "label": "Season-aware trend",
+   "overall_cm": 1.36,
+   "by_horizon_cm": {
+    "1": 0.74,
+    "2": 1.24,
+    "3": 1.51,
+    "4": 1.74,
+    "5": 1.93
    }
   },
   {
    "method": "recent_5yr",
    "label": "Last 5 years' rate",
-   "overall_cm": 1.58,
+   "overall_cm": 1.37,
    "by_horizon_cm": {
-    "1": 0.94,
-    "2": 1.41,
-    "3": 1.77,
-    "4": 1.97,
-    "5": 2.22
-   }
-  },
-  {
-   "method": "robust_theil_sen",
-   "label": "Robust trend (Theil-Sen)",
-   "overall_cm": 1.59,
-   "by_horizon_cm": {
-    "1": 0.92,
-    "2": 1.4,
-    "3": 1.78,
-    "4": 1.97,
-    "5": 2.31
+    "1": 0.76,
+    "2": 1.27,
+    "3": 1.51,
+    "4": 1.76,
+    "5": 1.93
    }
   },
   {
    "method": "recency_weighted",
    "label": "Recent years weighted more",
-   "overall_cm": 1.63,
+   "overall_cm": 1.42,
    "by_horizon_cm": {
-    "1": 0.93,
-    "2": 1.43,
-    "3": 1.8,
-    "4": 2.05,
-    "5": 2.43
-   }
-  },
-  {
-   "method": "ml_gradient_boosting",
-   "label": "Machine learning (gradient boosting)",
-   "overall_cm": 1.97,
-   "by_horizon_cm": {
-    "1": 1.07,
-    "2": 1.87,
-    "3": 2.09,
-    "4": 2.51,
-    "5": 2.85
+    "1": 0.76,
+    "2": 1.25,
+    "3": 1.56,
+    "4": 1.89,
+    "5": 2.09
    }
   },
   {
    "method": "no_motion",
    "label": "No motion",
-   "overall_cm": 2.2,
+   "overall_cm": 1.69,
    "by_horizon_cm": {
-    "1": 0.96,
+    "1": 0.89,
+    "2": 1.46,
+    "3": 1.88,
+    "4": 2.25,
+    "5": 2.51
+   }
+  },
+  {
+   "method": "ml_gradient_boosting",
+   "label": "Machine learning (gradient boosting)",
+   "overall_cm": 1.77,
+   "by_horizon_cm": {
+    "1": 0.97,
     "2": 1.66,
-    "3": 2.43,
-    "4": 3.14,
-    "5": 3.75
+    "3": 1.8,
+    "4": 2.31,
+    "5": 2.61
    }
   }
  ],
  "bands_80": [
   {
    "years_ahead": 1,
-   "half_width_cm": 1.68,
+   "half_width_cm": 1.48,
    "tests": 21
   },
   {
    "years_ahead": 2,
-   "half_width_cm": 2.64,
+   "half_width_cm": 2.51,
    "tests": 19
   },
   {
    "years_ahead": 3,
-   "half_width_cm": 3.33,
+   "half_width_cm": 3.11,
    "tests": 17
   },
   {
    "years_ahead": 4,
-   "half_width_cm": 4.05,
+   "half_width_cm": 3.85,
    "tests": 15
   },
   {
    "years_ahead": 5,
-   "half_width_cm": 4.95,
+   "half_width_cm": 4.43,
    "tests": 12
   }
  ]

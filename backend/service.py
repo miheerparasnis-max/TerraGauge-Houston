@@ -10,7 +10,7 @@ from typing import Any
 from .decision import classify_cell
 from .detection import gnss_session_noise_floor
 from .model import Thresholds
-from .repository import cell_from_dict, load_cells
+from .repository import cell_from_dict, dataset_status, load_cells
 
 
 class TerraGaugeService:
@@ -33,6 +33,7 @@ class TerraGaugeService:
         for result in results:
             counts[result["label"]] = counts.get(result["label"], 0) + 1
         return {
+            "dataset_status": dataset_status(self.dataset_path),
             "cells": len(results),
             "labels": counts,
             "thresholds": asdict(self.thresholds),

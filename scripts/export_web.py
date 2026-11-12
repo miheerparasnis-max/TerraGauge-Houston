@@ -8,11 +8,14 @@ For each 1 km square:
 - Movement: OPERA satellite rate (2016-2026) converted to vertical, blended
   with a GPS station's rate when one is within 1 km (inverse-variance).
 - Confidence: High / Medium / Low with reasons (backend.insights.confidence).
-- Future: the tested ML forecast (backend.forecast) for 2027-2031.
+- Future: the benchmark-winning trend forecast (backend.forecast.seasonal_area_rates)
+  with tested 80% ranges, 2027-2031.
 - Priority: the plan's action labels (backend.insights.action_label); the
   numbered sensor pins are the top "Add monitoring here" squares.
 - Detectability: how long NISAR (and a permanent GPS station) would need to
   measure this square's rate, shown in each square's card.
+Rates are relative to the pre-registered reference GPS stations. Every input and
+output is hashed into data/manifests/web_export.json (backend.provenance).
 All science runs in Python; the website only displays these numbers.
 """
 
@@ -24,17 +27,24 @@ from math import cos, radians, sqrt
 from pathlib import Path
 from statistics import median
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from backend.insights import (  # noqa: E402
     IMPLAUSIBLE_MM_YEAR, action_label, shrink_to_neighbours, confidence, decimal_year, distance_km, gps_difference, neighborhood_medians, passes_to_detect, vertical_rate,
 )
+from backend.ingestion.station_types import DEEP_SEATED_GNSS, display_gps_rate, is_deep_seated  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
+from backend.provenance import ProvenanceLog  # noqa: E402
+from backend.publish_guard import assert_publishable  # noqa: E402
 
-DERIVED = Path("data/derived")
+DERIVED = ROOT / "data" / "derived"
 PROV = DERIVED / "provisional"
 LAYERS = DERIVED / "nasa_layers"
-OUT = Path("web/public/data")
+INVENTORY = ROOT / "data" / "manifests" / "nisar_track062_inventory_20261110.json"
+MANIFEST = ROOT / "data" / "manifests" / "web_export.json"
+OUT = ROOT / "web" / "public" / "data"
+BUILD_COMMAND = "python3 scripts/build_provisional.py"
 GPS_SIGMA_MM_YEAR = 0.5       # assumed uncertainty of a >=10-year HoustonNet rate
 GPS_BLEND_KM = 1.0
 GPS_DAILY_SIGMA_MM = 4.0      # typical daily vertical scatter of a permanent GPS station (assumption)
@@ -54,8 +64,15 @@ GAP_MIN_GPS_KM = 4.0
 COS = cos(radians(38.0))
 
 
+LOG: ProvenanceLog | None = None
+
+
 def load(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert_publishable(payload, str(path))
+    if LOG is not None:
+        LOG.read(path)
+    return payload
 
 
 def r(value, digits=1):
@@ -67,7 +84,13 @@ def robust_sd(values: list[float]) -> float:
     return 1.4826 * median(abs(v - center) for v in values)
 
 
+def relative(path: Path) -> str:
+    return Path(path).resolve().relative_to(ROOT).as_posix()
+
+
 def main() -> None:
+    global LOG
+    LOG = ProvenanceLog(ROOT, regenerate={relative(PROV / "terragauge_houston_evidence_pair_20251102_20251114.json"): BUILD_COMMAND, relative(PROV / "terragauge_houston_evidence_chain_20251102_20260101.json"): BUILD_COMMAND})
     t = Thresholds()
     opera = load(PROV / "opera_houston_los_velocity.json")
     comparison = load(PROV / "opera_vs_houstonnet_comparison.json")
@@ -82,7 +105,11 @@ def main() -> None:
     bench = load(bench_path) if bench_path.is_file() else None
     from backend.forecast import seasonal_area_rates
     forecast_rates = seasonal_area_rates(opera) if bench else {}
-    stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
+    all_stations = load(DERIVED / "houstonnet_2024_summary.json")["stations"]
+    # Deep-seated antennas sit on deep extensometer anchors and do not measure
+    # the land surface (Wang et al. 2022): never blend, cross-check, or count
+    # them as surface coverage. They still appear on the GPS layer, labelled.
+    stations = [s for s in all_stations if not is_deep_seated(s["station_id"])]
     extensometers = load(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = load(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
     grid_path = PROV / "grid_cells.json"
@@ -143,13 +170,14 @@ def main() -> None:
     # (backend.insights.shrink_to_neighbours). Precise squares keep their own
     # value; noisy ones (about 1 in 10) are pulled toward their neighbourhood.
     # Weights use each square's own trend-fit error, so clean records keep
-    # their local detail. Tested against GPS stations within 3 km: typical gap
-    # 2.1 -> 1.9 mm/yr, worst 10% 9.3 -> 7.9 mm/yr.
+    # their local detail. Tested against GPS stations within 3 km (2,584
+    # squares, pre-registered reference): typical gap 1.9 -> 1.7 mm/yr,
+    # worst 10% 7.6 -> 6.5 mm/yr.
     raw_rates = {c["cell_id"]: (float(c["longitude"]), float(c["latitude"]), vertical_rate(c["opera_los_velocity_mm_year"]),
                                 vertical_rate(c["opera_velocity_se_mm_year"]))
                  for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= IMPLAUSIBLE_MM_YEAR}
     shrunk = shrink_to_neighbours(raw_rates, floor_mm_year=1.5)
-    long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and s.get("up_mm_year") is not None]
+    long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and display_gps_rate(s.get("up_mm_year"))[0] is not None]
     active = [s for s in stations if (s.get("end_decimal_year") or 0) >= 2022 and s.get("up_mm_year") is not None]
 
     cells, candidates = [], []
@@ -207,7 +235,7 @@ def main() -> None:
 
         significant = rate is not None and abs(rate) >= stable_vertical and abs(rate) >= 2 * (se or 0)
         sat_vertical = sat_rate if sat_rate is not None else rate
-        act, act_why = action_label(rate_vertical=sat_vertical if sat_vertical is not None else None, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=cover["up_mm_year"], covered_km=t.gps_nearby_km, open_water=open_water)
+        act, act_why = action_label(rate_vertical=sat_vertical if sat_vertical is not None else None, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=display_gps_rate(cover["up_mm_year"])[0], covered_km=t.gps_nearby_km, open_water=open_water)
         if act == "insufficient_data":
             level, conf_why = None, []
             if open_water:
@@ -248,7 +276,7 @@ def main() -> None:
             "series": op["opera_series_mm"] if op and act != "insufficient_data" else None,
             "quality": {"periods": op.get("opera_links_used") if op else None, "periodsTotal": opera["product_count"], "fitSe": r(vertical_rate(op["opera_velocity_se_mm_year"])) if op else None,
                         "nisarCoh": r(row.get("coherence_median"), 2), "nisarValid": r(row.get("valid_fraction"), 2), "nisarOk": bool(row.get("in_main_connected_component") and (row.get("coherence_median") or 0) >= t.coherence_min and (row.get("valid_fraction") or 0) >= t.valid_fraction_min)},
-            "gps": {"id": cover["station_id"], "km": r(cover_km), "up": cover["up_mm_year"], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
+            "gps": {"id": cover["station_id"], "km": r(cover_km), "up": display_gps_rate(cover["up_mm_year"])[0], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
             "check": check,
             "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha, "share": f.get("sfha_share")},
             "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(ev.get("groundwater_depth_change_ft"), 2)} if ev.get("usgs_site_id") else None,
@@ -499,8 +527,17 @@ def main() -> None:
             "harvey": {k: harvey.get(k) for k in ("source", "areas", "squares", "by_class", "flooded_area_outside_high_risk_pct", "by_sinking", "high_water_marks", "depth_by_class")} if harvey else None,
         }
 
+    inventory = load(INVENTORY)
+    chain_report = inventory["chain"]
+    nisar_archive = {
+        "passes": chain_report["date_count"], "pairs": chain_report["pair_count"],
+        "first": chain_report["first_date"], "last": chain_report["last_date"],
+        "processedPairs": sum(1 for granule in inventory["granules"] if granule.get("in_repo")),
+        "retrieved": inventory["retrieved_utc"][:10], "inventory": relative(INVENTORY),
+    }
     meta = {
         "status": "provisional_unreviewed",
+        "nisarArchive": nisar_archive,
         "record": {"start": dates[0], "end": dates[-1], "dates": dates, "products": opera["product_count"]},
         "thresholds": {"stable_mm_year": r(stable_vertical), "gps_covered_km": t.gps_nearby_km, "gps_blend_km": GPS_BLEND_KM, "disagree_mm_year": 5.0, "sensor_spacing_km": SENSOR_SPACING_KM, "incidence_deg": 38, "gps_daily_sigma_mm": GPS_DAILY_SIGMA_MM},
         "counts": counts,
@@ -518,9 +555,11 @@ def main() -> None:
                      "node_weeks_10": r((passes_to_detect(-10, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_10": r((passes_to_detect(-10, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0),
                      "node_weeks_5": r((passes_to_detect(-5, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_5": r((passes_to_detect(-5, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0)},
         "nasaLayers": {k: v["meta"].get("source") for k, v in nasa.items()},
+        "provenance": {"manifest": relative(MANIFEST)},
+        "stations": {"total": len(all_stations), "deepSeated": sorted(s["station_id"] for s in all_stations if is_deep_seated(s["station_id"])), "rateWithheld": sorted(s["station_id"] for s in all_stations if display_gps_rate(s.get("up_mm_year"))[1])},
     }
     sites = {
-        "gps": [{"id": s["station_id"], "lon": s["longitude"], "lat": s["latitude"], "up": s["up_mm_year"], "y0": s["start_decimal_year"], "y1": s["end_decimal_year"]} for s in stations],
+        "gps": [{"id": s["station_id"], "lon": s["longitude"], "lat": s["latitude"], "up": display_gps_rate(s["up_mm_year"])[0], "flag": display_gps_rate(s["up_mm_year"])[1], "deepAnchorM": DEEP_SEATED_GNSS.get(s["station_id"], {}).get("anchor_depth_m"), "y0": s["start_decimal_year"], "y1": s["end_decimal_year"]} for s in all_stations],
         "ext": [{"id": s["station_id"], "name": s.get("station_name"), "lon": s["longitude"], "lat": s["latitude"], "c": s.get("cumulative_compaction_change"), "d0": s["first_observation"]["date"], "d1": s["last_observation"]["date"]} for s in extensometers],
         "wells": [{"id": s["site_id"], "name": s.get("site_name"), "lon": s["longitude"], "lat": s["latitude"], "dd": r(s.get("depth_change_ft"), 2), "t0": s["first_observation"]["time"][:10], "t1": s["last_observation"]["time"][:10]} for s in wells],
     }
@@ -572,6 +611,10 @@ def main() -> None:
     (OUT / "cells.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "meta.json").write_text(json.dumps(meta, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "sites.json").write_text(json.dumps(sites, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    for name in ("cells.json", "meta.json", "sites.json"):
+        LOG.wrote(OUT / name)
+    LOG.write(MANIFEST, artifact_type="terragauge_web_export_manifest", command="python3 scripts/export_web.py",
+              extra={"note": "Per-square detail tiles (web/public/data/details/) are written alongside cells.json from the same records."})
     print(json.dumps({"cells": len(cells), "counts": counts, "stable": stable_vertical, "years": years, "sensors": len(sensor_out), "nodes": [(n["rank"], n["areaRate"], n["weeks"], n["act"], n["est"]) for n in node_out[:8]], "estimates": meta["estimates"], "gpsEstimates": meta["gpsEstimates"], "gaps": len(gap_out), "hardware": meta["hardware"]}, indent=1))
 
 
