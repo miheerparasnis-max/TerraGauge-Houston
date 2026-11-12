@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_provisional_build_manifest",
-  "created_utc": "2026-11-11T23:57:54Z",
-  "git_head": "c0144ba73aabe8c7c77ddd0e35291f3081dd5f25",
-  "git_worktree_clean": true,
+  "created_utc": "2026-11-12T23:12:10Z",
+  "git_head": "d4aba4cbd2a241b1acd8dfb39804cf3adfdc00ae",
+  "git_worktree_clean": false,
   "command": "python3 scripts/build_provisional.py",
   "inputs": [
     {
@@ -52,102 +52,157 @@
     },
     {
       "path": "data/derived/opera_disp_houston_20160712_20161016_pair_cells.json",
-      "sha256": "436cd69f2583618cdd4743eaf5492649efa543929247dd7649db880e32a5454f",
+      "sha256": "a1b8bdefa0934d8ea6b64a94001d0b2763108b7b26f45ed84e73421456f562ee",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20160712_20161109_pair_cells.json",
-      "sha256": "0ae30af7acebb1d9a842d17317412a085b9a048c69bb3cbcd1795ae16fa41792",
+      "sha256": "8f592d0a3cefd049d6ba73dbc57ff21170c1dc01b80b3d1d825764cfdb5aa2b6",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20161109_20170213_pair_cells.json",
-      "sha256": "1920114c9c2cf4898a67d216837b74333395c811d1992747fe68a3d1600868a7",
+      "sha256": "0d1f4928041ee550431634bd7cdc326e4d85e392be584d3a51317e805fe44037",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20170213_20170514_pair_cells.json",
-      "sha256": "a2844fbf98b81f496690fbfed91d14912c775ba304341470cf06286b8f527587",
+      "sha256": "e52a0da896233b7537d85f9e414ef7c96fc69b3d68ff38fe50c9b1ccb70a1542",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20170514_20170812_pair_cells.json",
-      "sha256": "6562ef1fd7e16cf21dfac855a7fae2d1f84c115ab597889db857ad3e1403b11f",
+      "sha256": "98da93966da6d7beda44ffe8759e2db0a7a23c061d92c3a695ba4337a1839a44",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20170812_20171110_pair_cells.json",
-      "sha256": "a15c0c509e99e17722f78a46bbdd9e2c25067c2af00d598dfa8c6023ef14ed3b",
+      "sha256": "662b570d11dbdb71d92f36696a8e05902f0750b485aaf24e53d69b0e8c56be59",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20171110_20180208_pair_cells.json",
-      "sha256": "930c5aecd0783cfbe8fbaf2ca9c95d5a48a76b66aaffa55c7958c9afd1419446",
+      "sha256": "a654a5a2012a28262640fa98577e2548f17e765e9c884b205b34c6860fc183b4",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20180208_20180515_pair_cells.json",
-      "sha256": "f2f66fe1aa746fe3e427e7acf2e9d45dd928b00220029dc82ab5616da993fc71",
+      "sha256": "342e2b7b2058aa47aee6797e8a7a6792d523f76e0992cd94f964767240d28884",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20180515_20180813_pair_cells.json",
-      "sha256": "dfe048815ae5143db686012902efc5d4cfcd53f5a4f24ada7062653edda60642",
+      "sha256": "7a0caca061cbbda4076cc0dbb343e5aa063ee4d0e702619a85e3b135412f71bd",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20180813_20181111_pair_cells.json",
-      "sha256": "36cc98ca7af9ca26e809039da056cf289e7a81a2a61f1a10a08b243acd9a2445",
+      "sha256": "003c1e14f9391fe12911dac7eff7e369aa0e611bf9bcaaf5e62d40bdab199fff",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20181111_20190209_pair_cells.json",
-      "sha256": "cd0e02a6e0475e96e519552d3f0d70a3957c05ec9ef47c22969949c492298fee",
+      "sha256": "be77ec6805a22fab7a16117ef400dad380ee9a94a4dcacf229769dfe6b3420e4",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20190209_20190510_pair_cells.json",
-      "sha256": "6e5ae305bde12d6ccc76a841cd4656ff6cca0238b7b33d0a2d5597ee7cac7461",
+      "sha256": "802abeacb3c2413d7d6c09ac4dea8f24f0c747d3aa4686d00f33c84d60767561",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20190510_20190808_pair_cells.json",
-      "sha256": "493729d5e624838d92ba53b08a859f4a8a2370d363912f5d0a6915a71277c401",
+      "sha256": "6e4522307d4db6db058a63e046fd13877f8dfdd7cecebe24f9d84cea91f102d2",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20190808_20191106_pair_cells.json",
-      "sha256": "fcf81e240895a113033140e9fa2e912375ccc9ba23280d83a4abf7ae3b886ee2",
+      "sha256": "9f30c5ff6efb2b084c5de592fbde009346055300805bb4ceeec63f95d8952bb3",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20191106_20200204_pair_cells.json",
-      "sha256": "a6a2b85e0fe1cf5d2c4af3c49e71c74b983dde3447b98b04dd94510fa16fa2fc",
+      "sha256": "324c2c4cdd42fd93c1328a355de0fb82e59e8452977b3d114e62ab28f7eb11a2",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20200204_20200504_pair_cells.json",
-      "sha256": "91aef7371491f63be07ec05ca28c6a0c9cd9fa310751668ec50059836891c277",
+      "sha256": "54471d9c5d65e88af44c9104e95f93340ae7ed04458b75c60ffb01a90884ba77",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20200504_20200802_pair_cells.json",
-      "sha256": "e6831e7af88e2dd5391f8e3037388e80ea32755f59b1a813f1ef0a6185449f45",
+      "sha256": "77e6473f82ac8750329e6b78c47d9cdfc8eafada024270f7fd4f5349d519dac7",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20200802_20201031_pair_cells.json",
-      "sha256": "0e4a1f888dfc1779f46d90f206f21d40ca9e07cdd33161dfefdffef2d42601b7",
+      "sha256": "54ba5ca4e92c5d54f9d73ed69aaed19b1470dc8280f60fc1d3edb3871a4469ff",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20201031_20210204_pair_cells.json",
-      "sha256": "ef5bd938f770e52d1a0b5524ac2c3d7fa7f9c86591ace486a9ed15ac372083ff",
+      "sha256": "75f71d15ffbd52a9b78e830c0deaf3b9e06d6e5ef6b2b0a1a90b2037b38ba02c",
       "tracked": true
     },
     {
       "path": "data/derived/opera_disp_houston_20210204_20210505_pair_cells.json",
-      "sha256": "14f8fd58594ad07650e295305cd9b820c08c7fb74a707bbacaec27caea68bafc",
+      "sha256": "7f0e6e115b630a2e95a3e614ba651aed55341c6fde19d045619becbaa8c0e7a5",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20210505_20210803_pair_cells.json",
+      "sha256": "7a04c03113372aa6312fa50b4cfadc0149580d274c7aa06208ece3e24c2bc65b",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20210803_20211101_pair_cells.json",
+      "sha256": "77962b7930afb9e3f2dd9f49d453c5c7fc4807f91301d4f6ab5b0329205afa47",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20211101_20220319_pair_cells.json",
+      "sha256": "3f93397a3e52ef538b63778bb9226ccef993c93aa635825e93e4395db6df5466",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20220319_20220927_pair_cells.json",
+      "sha256": "df3d0c49c48451a6c4bdf2b0d63dc8f306ee796f0d25a727d7d6cb0d25d711f6",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20220927_20230407_pair_cells.json",
+      "sha256": "bb4950dccd5f27e1a8d03ab754c905ae20306c8ca3772c965bccfea2b8f30dd7",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20230407_20231004_pair_cells.json",
+      "sha256": "3cd1337cbab5e88f563fe1e19557edae918ae4f33e5bac94fea1438fb3b3e1be",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20231004_20240401_pair_cells.json",
+      "sha256": "4fd9ba314cb12a9a09d1e358a2c8df46a3d0c8b48ea83930ac5fcfdf8e53711b",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20240401_20240928_pair_cells.json",
+      "sha256": "e2ced7af62330d2838105f97c9d22e2595cb129c936baf7048090f52d858de54",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20240928_20250327_pair_cells.json",
+      "sha256": "0fa128f42b5da5dbf575f0abfb94ef348a9e0ba6551792a4bb33290e6fda86d8",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20250327_20250923_pair_cells.json",
+      "sha256": "db587fc957cf5a3c9846abc370ca6d0bc26197cea852e777c7990aa7103266ea",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_disp_houston_20250923_20260322_pair_cells.json",
+      "sha256": "f10a0deaa319e6badff1905469b6085c52d32e7277f1e69999c4e4a78faf8342",
       "tracked": true
     },
     {
@@ -174,7 +229,7 @@
   "outputs": [
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "e6bb01083666a166a79bdb686b5449f2f59fd4b4f734034c27609cf5a55c6cf7",
+      "sha256": "562dd8c0bfc5a65c4b24988720c30dd9a6bca655c5fbdf878eef69b927391075",
       "tracked": true
     },
     {
@@ -208,13 +263,13 @@
       "tracked": false
     },
     {
-      "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20210505.json",
-      "sha256": "544e315e310d1933edd3e2ad2b73918b563cc4f143f47413e5b3917a195df24d",
+      "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20260322.json",
+      "sha256": "e5f2dfd8a59ca4970f8204ce300272e2014523afa0efd5f4ffc6ac07a2f43661",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "a053a14cc6c6842699a007e1878d14612e363141c3dd57498da24f690f89bfbd",
+      "sha256": "4e20b61c3580828502ba663dda51eef4b7fae882a65d50f9d3318172c953258a",
       "tracked": true
     },
     {
