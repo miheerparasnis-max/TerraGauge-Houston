@@ -265,6 +265,18 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 
 *Approved by the repository owner (2026-11-11 instruction).*
 
+### D-039: Teammate branch `reyansh/website-and-fixes` audited; D-032 superseded
+- **Correction to D-032.** The branch received 16 commits (`2d44a42..1705aad`) after the D-032 check. The "4% better" is its forecast benchmark: 1.50 cm against 1.56 cm typical error, 3.8% lower. `5c0513c` came from a different teammate.
+- **Take:**
+  - The 11 OPERA F38238 products through 2026-03-22. Under our rules they give r 0.660 → 0.800, median |d| 1.68 → 1.00 mm/yr, bias +0.34 → −0.01 mm/yr, n 106 → 102.
+  - The F38239 south frame, after two fixes: reference offsets from the primary frame only; no fill for the missing 2025-09-23 → 2026-03-22 product.
+  - The UI shell (search, shareable links, tour, phone layout, detail tiles), the full 1 km grid with no-reading reasons, and the sampler and error-message fixes.
+- **Drop:** forecasts and ML (MASTER §20, §10); flood-depth projections; the drought claim, which fails a placebo test; labels on interpolated squares (MASTER §0.6); labels that use historic GPS for disagreement (MASTER §5.2); detectability numbers from an unregistered σ, white-noise GPS, or an assumed node σ; the deep-seated reference; about 80 G2 phrases.
+- **Pre-registration:** V3 is registered over 2016–2021. Using 2016–2026 for V3 would be a logged deviation, reported with both results.
+- **How:** port, not merge (16 conflicting files). Full evidence: `docs/audit/2026-11-11-teammate-branch-audit.md`.
+
+*Delegated (the 2026-11-11 instruction: "audit through and determine what's good and what's bad").*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.
