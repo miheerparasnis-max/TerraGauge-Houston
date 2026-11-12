@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-11T23:57:57Z",
-  "git_head": "ae1bb71de36704f97797a830583bde844998cc13",
-  "git_worktree_clean": true,
+  "created_utc": "2026-11-12T23:12:12Z",
+  "git_head": "6a548904dce22a0e3c230ce852518b2ac796e909",
+  "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
     {
@@ -17,17 +17,17 @@
     },
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "e6bb01083666a166a79bdb686b5449f2f59fd4b4f734034c27609cf5a55c6cf7",
+      "sha256": "562dd8c0bfc5a65c4b24988720c30dd9a6bca655c5fbdf878eef69b927391075",
       "tracked": true
     },
     {
-      "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20210505.json",
-      "sha256": "544e315e310d1933edd3e2ad2b73918b563cc4f143f47413e5b3917a195df24d",
+      "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20260322.json",
+      "sha256": "e5f2dfd8a59ca4970f8204ce300272e2014523afa0efd5f4ffc6ac07a2f43661",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "a053a14cc6c6842699a007e1878d14612e363141c3dd57498da24f690f89bfbd",
+      "sha256": "4e20b61c3580828502ba663dda51eef4b7fae882a65d50f9d3318172c953258a",
       "tracked": true
     },
     {
@@ -61,12 +61,12 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "fe99eb0a85e48b50045fd9cb5a50603e4343906acac8027a64f5537ba19cdd6c",
+      "sha256": "4b244c69e2b31d5937dd60bde7886cef6e786e83b281840bdd35fbcf5082c386",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "19feccb9ca217e677641b1b6f10f27318cbb52257a5cd887fbfc15868cc85de0",
+      "sha256": "433f76857eb419a7055ac227e841b4e0b9b8b16698936f5cf2f0bfffd8f8d02e",
       "tracked": true
     },
     {
