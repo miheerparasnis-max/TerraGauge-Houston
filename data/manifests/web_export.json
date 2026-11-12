@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-12T23:12:12Z",
-  "git_head": "6a548904dce22a0e3c230ce852518b2ac796e909",
-  "git_worktree_clean": false,
+  "created_utc": "2026-11-12T23:12:28Z",
+  "git_head": "b17cac584fb5b248b1ec8ce60db3654af0049136",
+  "git_worktree_clean": true,
   "command": "python3 scripts/export_web.py",
   "inputs": [
     {
