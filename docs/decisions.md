@@ -297,6 +297,20 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 
 *Approved by the repository owner (2026-11-12: "commit the audit and D-039, then step 2 (with the check in point 3)").*
 
+### D-041: OPERA → NISAR prediction test pre-registered, commit `6f8a5a5`
+- **Rules.** `docs/preregistration/2026-11-12-opera-nisar-prediction.md` and `config/prediction_test.json`.
+- **Frozen predictor.** `data/derived/prediction/opera_predictor_20160712_20250923.json`: 5,538 squares, 29 products, ending before the test window.
+- **Blindness.** The test uses NISAR pairs from 2026-01-01 onward, none of which had been downloaded when this was registered. The five previewed pairs are excluded and disclosed.
+- **Blocking.** The test does not run until the NISAR GUNW sign convention is read from the product (F-4) and at least 6 test pairs are processed.
+- **Effect on the critical path.** The test depends on the same items as the headline:
+  - downloading and processing the 22 new granules (T1.4/B1), which also gives the sign convention, corrections, geometry, and the measured noise for the confirmation-time headline;
+  - the organizers' written answer on pre-event work (G1);
+  - the HGSD and Fort Bend emails.
+
+  No confirmation-time number goes on the site until the noise is measured.
+
+*Approved by the repository owner (2026-11-12: "then the prediction-test pre-registration").*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.
