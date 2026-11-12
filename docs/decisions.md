@@ -277,6 +277,26 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 
 *Delegated (the 2026-11-11 instruction: "audit through and determine what's good and what's bad").*
 
+### D-040: OPERA record extended to 2026-03-22 (11 F38238 products from the teammate branch)
+- **What changed.** The provisional OPERA chain now runs 2016-07-12 → 2026-03-22 (30 products), up from 2016-07-12 → 2021-05-05 (19 products). The `source_file` field of all 31 OPERA pair files now holds the granule file name, not a local home-directory path.
+- **Like-for-like check.** All windows are scored on the same 102 stations, with the region A reference and deep-seated stations excluded. Units are mm/yr LOS; source is `build_report.json → opera.window_check`.
+
+  | Window end | r | Median \|d\| | Bias |
+  |---|---|---|---|
+  | 2021-05-05 | 0.749 | 1.58 | +0.36 |
+  | 2024-04-01 | 0.807 | 1.30 | −0.69 |
+  | **2026-03-22** | **0.800** | **1.00** | **−0.01** |
+
+- **The earlier figure.** The 0.660 previously published used 106 stations. Four of them have no complete record in the longer chain. The like-for-like gain is 0.749 → 0.800, not 0.660 → 0.800.
+- **Nothing tuned.** The reference region, radius, and station exclusions were pre-registered (`1c84d17`, amendment A1 `051ca6c`) before any of these runs. The comparison function is unchanged.
+- **Time match.** The compared GPS rates span a median of 2012.3 → 2023.9, so no radar window matches them exactly. The 2016 → 2024-04 window, the closest match, gives r 0.807.
+- **Cost.**
+  - Squares with a complete record fall from 6,491 to 5,538, because every product must pass.
+  - Priority counts shift, because longer fits have smaller errors: urgent 391 → 807, high 118 → 604, watch 1,148 → 981, stable 2,813 → 1,490, no data 4,639 → 5,229.
+- **Pre-registration.** V3 is registered over 2016–2021 and is not changed by this decision. If the 2016–2026 record is ever used as V3, that is a deviation and both results are reported. V2 (F38238 products inside the NISAR window) is unaffected.
+
+*Approved by the repository owner (2026-11-12: "commit the audit and D-039, then step 2 (with the check in point 3)").*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.

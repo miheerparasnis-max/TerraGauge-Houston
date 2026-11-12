@@ -54,6 +54,31 @@ def save(path: Path, payload: dict) -> None:
         LOG.wrote(path)
 
 
+# Window check (D-040): GPS agreement for chains ending on these dates, scored on
+# the stations every window can compare, so a longer record is not credited for
+# dropping stations. 2021-05-05 is the previously published end; 2024-04-01 is
+# the product date nearest the median end of the compared GPS records (~2023.9).
+WINDOW_CHECK_ENDS = ("2021-05-05", "2024-04-01")
+
+
+def window_check(operas: list, reference_cells: set, stations: list, reference_ids: list, ends: tuple) -> dict:
+    from statistics import correlation, median
+
+    runs = {}
+    for end in (*ends, max(a["parameters"]["secondary_date"] for a in operas)):
+        series = opera_series([a for a in operas if a["parameters"]["secondary_date"] <= end], reference_cell_ids=reference_cells)
+        runs[end] = {row["station_id"]: row for row in compare_opera_gps(series, stations, exclude_station_ids=set(reference_ids))["stations"]}
+    common = sorted(set.intersection(*(set(rows) for rows in runs.values())))
+    out = {"stations": common, "rule": "Same stations in every window; reference stations and deep-seated stations excluded.", "windows": []}
+    for end, rows in runs.items():
+        gps = [rows[s]["gps_los_approx_mm_year"] for s in common]
+        sat = [rows[s]["opera_los_mm_year"] for s in common]
+        diff = [b - a for a, b in zip(gps, sat)]
+        out["windows"].append({"end": end, "station_count": len(common), "pearson_r": correlation(gps, sat),
+                               "median_abs_residual_mm_year": median(abs(d) for d in diff), "median_residual_mm_year": median(diff)})
+    return out
+
+
 def summarize(evidence: dict) -> dict:
     counts: dict[str, int] = {}
     for row in evidence["cells"]:
@@ -100,12 +125,17 @@ def main() -> None:
         report[key] = {"reference_median_mm": evidence["reference_median_mm"], "reference_scatter_mm": evidence["reference_scatter_mm"], "reference_cells": evidence["reference_cell_count"], "labels": summarize(evidence)}
 
     operas = [load(path) for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json"))]
-    velocity = opera_series(operas, reference_cell_ids=region_cell_ids(stations_by_id, reference_ids, operas[0]["cells"], radius_km))
+    opera_reference = region_cell_ids(stations_by_id, reference_ids, operas[0]["cells"], radius_km)
+    velocity = opera_series(operas, reference_cell_ids=opera_reference)
     velocity["reference_method"] = report["reference"]["method"]
-    save(OUT / "opera_houston_los_velocity_20160712_20210505.json", velocity)
+    for stale in OUT.glob("opera_houston_los_velocity_*.json"):
+        stale.unlink()
+    window = f"{velocity['dates'][0].replace('-', '')}_{velocity['dates'][-1].replace('-', '')}"
+    save(OUT / f"opera_houston_los_velocity_{window}.json", velocity)
     comparison = compare_opera_gps(velocity, stations, exclude_station_ids=set(reference_ids))
     save(OUT / "opera_vs_houstonnet_comparison.json", comparison)
-    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "reference_cells": len(velocity.get("reference_cell_ids") or []), "gps_comparison": comparison["stats"]}
+    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "window": [velocity["dates"][0], velocity["dates"][-1]], "reference_cells": len(velocity.get("reference_cell_ids") or []), "gps_comparison": comparison["stats"],
+                       "window_check": window_check(operas, opera_reference, stations, reference_ids, WINDOW_CHECK_ENDS)}
     save(OUT / "build_report.json", report)
     for path in (value for value in common.values() if isinstance(value, Path)):
         LOG.read(path)  # read directly by build_houston_evidence

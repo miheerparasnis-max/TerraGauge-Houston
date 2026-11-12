@@ -1,6 +1,6 @@
 {
   "artifact_type": "opera_disp_pair_cells",
-  "source_file": "/Users/miheerparasnis/Downloads/OPERA_L3_DISP-S1_IW_F38238_VV_20170514T122200Z_20170812T122247Z_v1.0_20251024T182409Z.nc",
+  "source_file": "OPERA_L3_DISP-S1_IW_F38238_VV_20170514T122200Z_20170812T122247Z_v1.0_20251024T182409Z.nc",
   "parameters": {
     "crs": "EPSG:32615",
     "x_path": "/x",

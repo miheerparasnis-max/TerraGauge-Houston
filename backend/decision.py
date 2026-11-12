@@ -73,7 +73,7 @@ def classify_opera_velocity(
     reference-network noise floor and twice its own fit standard error.
     """
     if velocity_mm_year is None or velocity_se_mm_year is None:
-        return Label.INSUFFICIENT_DATA, ["No OPERA velocity: the cell failed the valid-pixel or water check in at least one 2016-2021 product."], None
+        return Label.INSUFFICIENT_DATA, ["No OPERA velocity: the cell failed the valid-pixel or water check in at least one product of the OPERA chain."], None
     if noise_floor_mm_year is None or noise_floor_mm_year <= 0:
         return Label.CONTEXT_ONLY, ["OPERA velocity exists, but no reference-network noise floor is available for a threshold."], None
     threshold = thresholds.pair_signal_sigma_multiplier * noise_floor_mm_year
@@ -81,9 +81,9 @@ def classify_opera_velocity(
     nearby_gps = gps_distance_km is not None and gps_distance_km <= thresholds.gps_nearby_km
     flood_note = ["FEMA flood-zone context is present."] if flood_exposed is True else []
     if candidate and not nearby_gps:
-        return Label.ADD_MONITORING, [f"OPERA 2016-2021 LOS velocity ({velocity_mm_year:.1f} mm/yr) exceeds the {threshold:.1f} mm/yr noise threshold and its own 2-sigma fit error, but no permanent GNSS station is within {thresholds.gps_nearby_km:g} km."] + flood_note, threshold
+        return Label.ADD_MONITORING, [f"OPERA multi-year LOS velocity ({velocity_mm_year:.1f} mm/yr) exceeds the {threshold:.1f} mm/yr noise threshold and its own 2-sigma fit error, but no permanent GNSS station is within {thresholds.gps_nearby_km:g} km."] + flood_note, threshold
     if candidate:
-        return Label.INVESTIGATE_SIGNAL, [f"OPERA 2016-2021 LOS velocity ({velocity_mm_year:.1f} mm/yr) exceeds the {threshold:.1f} mm/yr noise threshold and its own 2-sigma fit error; a permanent GNSS station is nearby for follow-up."] + flood_note, threshold
+        return Label.INVESTIGATE_SIGNAL, [f"OPERA multi-year LOS velocity ({velocity_mm_year:.1f} mm/yr) exceeds the {threshold:.1f} mm/yr noise threshold and its own 2-sigma fit error; a permanent GNSS station is nearby for follow-up."] + flood_note, threshold
     reasons = [f"OPERA velocity ({velocity_mm_year:.1f} mm/yr) is within the {threshold:.1f} mm/yr noise threshold or its own fit error."]
     if flood_exposed is True:
         reasons.append("FEMA flood-zone context is present but does not override a below-threshold signal.")
