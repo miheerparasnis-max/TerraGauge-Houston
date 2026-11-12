@@ -8,6 +8,7 @@ surveyed coordinate or evidence of land motion.
 
 Examples:
   python3 scripts/lc29h_macos.py probe --port /dev/cu.usbserial-110
+  python3 scripts/lc29h_macos.py audit --port /dev/cu.usbserial-110
   python3 scripts/lc29h_macos.py configure-test --port /dev/cu.usbserial-110
   python3 scripts/lc29h_macos.py capture --port /dev/cu.usbserial-110 \
       --seconds 240 --output ~/Desktop/terragauge_rtcm_test.bin
@@ -107,6 +108,42 @@ def probe(args: argparse.Namespace) -> int:
     return 0
 
 
+def audit(args: argparse.Namespace) -> int:
+    """Send only documented read-only LC29H(BS) queries at selected baud rates.
+
+    The audit deliberately does not write receiver configuration or NVM.  A
+    healthy LC29H(BS) returns a response to each query.  An echoed command on
+    its own is not a receiver response.
+    """
+    queries = ("PQTMVERNO", "PQTMCFGSVIN,R", "PAIR433", "PAIR435", "PAIR437")
+    any_response = False
+    for baud in args.bauds:
+        print(f"\n=== {args.port} at {baud} bps ===")
+        try:
+            fd = open_port(args.port, baud)
+        except (OSError, ValueError) as error:
+            print(f"Could not open: {error}")
+            continue
+        try:
+            for body in queries:
+                command = nmea_sentence(body)
+                os.write(fd, command)
+                reply = read_for(fd, args.wait)
+                # The module is expected to return a sentence that contains
+                # extra fields after the command name, not merely the command
+                # byte-for-byte. Preserve every received byte for diagnosis.
+                echoed = reply == command
+                print_bytes(f"{body}{' (echo only)' if echoed else ''}", reply)
+                any_response = any_response or bool(reply and not echoed)
+        finally:
+            os.close(fd)
+    if not any_response:
+        print("\nNo documented LC29H(BS) query produced a receiver response.")
+        return 2
+    print("\nAt least one documented receiver query returned data beyond command echo.")
+    return 0
+
+
 def configure_test(args: argparse.Namespace) -> int:
     """Start a short, clearly non-survey-grade Survey-in and enable RTCM output.
 
@@ -173,6 +210,17 @@ def parser() -> argparse.ArgumentParser:
     probe_parser = subparsers.add_parser("probe", help="ask the receiver for its firmware version")
     probe_parser.add_argument("--wait", type=float, default=5, help="seconds to wait for a response")
     probe_parser.set_defaults(handler=probe)
+
+    audit_parser = subparsers.add_parser("audit", help="run read-only official receiver queries across baud rates")
+    audit_parser.add_argument(
+        "--bauds",
+        type=int,
+        nargs="+",
+        default=[9600, 19200, 38400, 57600, 115200, 230400],
+        help="serial speeds to test",
+    )
+    audit_parser.add_argument("--wait", type=float, default=1.5, help="seconds to await each query response")
+    audit_parser.set_defaults(handler=audit)
 
     configure_parser = subparsers.add_parser("configure-test", help="start a reversible bench Survey-in and enable RTCM")
     configure_parser.add_argument("--seconds", type=int, default=120, help="bench Survey-in duration in seconds (minimum 60)")
