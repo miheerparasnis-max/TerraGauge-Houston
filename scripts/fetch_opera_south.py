@@ -29,6 +29,15 @@ VELOCITY = ROOT / "data" / "derived" / "provisional" / "opera_houston_los_veloci
 SOUTH_BBOX = (-95.95, 29.38, -94.80, 29.80)   # gap plus an overlap band with F38238
 
 
+def file_crs(path: Path) -> str:
+    """Each OPERA frame is in its own UTM zone (F38239 is zone 14, F38238 zone 15)."""
+    import h5py
+
+    with h5py.File(path, "r") as f:
+        wkt = f["spatial_ref"].attrs.get("crs_wkt")
+    return wkt.decode() if isinstance(wkt, bytes) else str(wkt)
+
+
 def main() -> None:
     try:
         import earthaccess
@@ -61,15 +70,23 @@ def main() -> None:
         if output.exists():
             print(f"[{i}/{len(todo)}] already done {output.name}")
             continue
-        print(f"[{i}/{len(todo)}] downloading {ref} -> {sec}")
-        files = earthaccess.download([best[(ref, sec)][1]], str(RAW))
+        already = sorted(RAW.glob(f"*_F38239_VV_{ref}T*_{sec}T*.nc"))
+        if already:
+            print(f"[{i}/{len(todo)}] using downloaded {ref} -> {sec}")
+            files = [str(f) for f in already]
+        else:
+            print(f"[{i}/{len(todo)}] downloading {ref} -> {sec}")
+            files = earthaccess.download([best[(ref, sec)][1]], str(RAW))
         nc = [Path(f) for f in files if str(f).endswith(".nc")]
         if not nc:
             sys.exit("Download failed. Sign in once at https://search.asf.alaska.edu with your Earthdata account, accept the data agreement, then run this again.")
         iso = lambda s: f"{s[:4]}-{s[4:6]}-{s[6:]}"  # noqa: E731
-        write_disp_cells(nc[0], output, OperaConfig(crs="EPSG:32615", reference_date=iso(ref), secondary_date=iso(sec), bounding_box=SOUTH_BBOX))
+        write_disp_cells(nc[0], output, OperaConfig(crs=file_crs(nc[0]), reference_date=iso(ref), secondary_date=iso(sec), bounding_box=SOUTH_BBOX))
         if not keep:
-            nc[0].unlink()
+            for extra in RAW.glob(f"*F38239*{ref}T*{sec}T*"):
+                extra.unlink()
+            for extra in RAW.glob("*short_wavelength_displacement.zarr.json.gz"):
+                extra.unlink()
     print("Rebuilding TerraGauge data with the southern frame...")
     for script in ("build_provisional.py", "build_hazards.py", "export_web.py"):
         subprocess.run([sys.executable, str(ROOT / "scripts" / script)], check=True, cwd=ROOT)
