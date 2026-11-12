@@ -275,3 +275,34 @@ def passes_to_detect(rate_mm_year: float, sigma_mm: float, interval_days: float,
         if rate_uncertainty_mm_year(sigma_mm, interval_days, n) <= abs(rate_mm_year) / sigma_multiplier:
             return n
     return None
+
+
+def shrink_to_neighbours(rates: dict[str, tuple[float, float, float, float]], radius_km: float = 3.0, min_neighbours: int = 5, floor_mm_year: float = 1.0) -> dict[str, tuple[float, float]]:
+    """Noise-weighted rate per square.
+
+    ``rates`` maps id -> (lon, lat, rate, se). Each rate is combined with the
+    median rate of the other squares within ``radius_km`` (its neighbourhood),
+    weighting each by 1/variance: the square's own ``se`` against the natural
+    spread of its neighbours (robust, at least ``floor_mm_year``). Returns
+    id -> (weighted rate, its standard error). Squares with too few
+    neighbours keep their own values.
+    """
+    ids = list(rates)
+    buckets: dict[tuple[int, int], list[str]] = {}
+    for cid in ids:
+        lon, lat = rates[cid][0], rates[cid][1]
+        buckets.setdefault((int(lon // 0.04), int(lat // 0.04)), []).append(cid)
+    out: dict[str, tuple[float, float]] = {}
+    for cid in ids:
+        lon, lat, rate, se = rates[cid]
+        bx, by = int(lon // 0.04), int(lat // 0.04)
+        near = [rates[o][2] for dx in (-1, 0, 1) for dy in (-1, 0, 1) for o in buckets.get((bx + dx, by + dy), [])
+                if o != cid and distance_km(lon, lat, rates[o][0], rates[o][1]) <= radius_km]
+        if len(near) < min_neighbours:
+            out[cid] = (rate, se)
+            continue
+        m = median(near)
+        spread = max(1.4826 * median(abs(v - m) for v in near), floor_mm_year)
+        w_own, w_area = 1 / max(se, 0.3) ** 2, 1 / spread ** 2
+        out[cid] = ((rate * w_own + m * w_area) / (w_own + w_area), (w_own + w_area) ** -0.5)
+    return out

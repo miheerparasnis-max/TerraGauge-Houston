@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Cell, ColorBy, Meta, NodeSite, SensorSite, Sites } from "./types";
+import type { Cell, ColorBy, GapSite, Meta, NodeSite, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";
 import { cellColor, cellSummary } from "./labels";
 
-export interface Layers { sensors: boolean; nodes: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
+export interface Layers { sensors: boolean; nodes: boolean; gaps: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
 
 interface Props {
   cells: Cell[];
   sites: Sites;
   sensors: SensorSite[];
   nodes: NodeSite[];
+  gaps: GapSite[];
   mode: ColorBy;
   meta: Meta;
   year: number;
@@ -54,7 +55,7 @@ const points = (rows: { lon: number; lat: number }[]) => ({
   features: rows.map((r) => ({ type: "Feature" as const, properties: { ...r }, geometry: { type: "Point" as const, coordinates: [r.lon, r.lat] } })),
 });
 
-export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers, selected, focus, onSelect }: Props) {
+export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, layers, selected, focus, onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const ready = useRef<Promise<void> | null>(null);
@@ -158,6 +159,13 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
       el.addEventListener("click", (ev) => { ev.stopPropagation(); latest.current.onSelect(id); });
       markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(m));
     };
+    if (layers.gaps) for (const g of gaps) {
+      const el = document.createElement("button");
+      el.className = "node-pin gap-pin";
+      el.setAttribute("aria-label", `Fill-the-gap node site ${g.rank}`);
+      el.title = `Fill-the-gap node site ${g.rank}: nothing measures this ground yet`;
+      add(el, g.id, g.lon, g.lat);
+    }
     if (layers.nodes) for (const n of nodes) {
       const el = document.createElement("button");
       el.className = "node-pin";
@@ -172,7 +180,7 @@ export function MapView({ cells, sites, sensors, nodes, mode, meta, year, layers
       el.setAttribute("aria-label", `Suggested GPS station site ${s.rank}`);
       add(el, s.id, s.lon, s.lat);
     }
-  }), [sensors, nodes, layers.sensors, layers.nodes]);
+  }), [sensors, nodes, gaps, layers.sensors, layers.nodes, layers.gaps]);
 
   useEffect(() => { if (focus) whenReady((m) => { m.resize(); m.flyTo({ center: [focus.lon, focus.lat], zoom: Math.min(13, Math.max(m.getZoom(), 11.5)), duration: 900 }); }); }, [focus]);
 

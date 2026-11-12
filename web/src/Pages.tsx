@@ -144,6 +144,9 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
 
       <h4>Squares without a measurement</h4>
       <p>Where the satellite has no reliable reading but at least {meta.estimates.min_neighbors} measured squares lie within {meta.estimates.radius_km} km, we estimate the rate from them (closer squares count more). We tested this by hiding {meta.estimates.tested.toLocaleString()} measured squares and estimating them: typical error {num(meta.estimates.median_error_mm_year)} mm a year, 80% within {num(meta.estimates.p80_error_mm_year)}. Estimated squares are drawn lighter and always get low confidence.</p>
+      <p>South of the satellite product's coverage, we estimate from GPS stations instead: at least {meta.gpsEstimates.min_stations} stations with 5+ years of record within {meta.gpsEstimates.radius_km} km. Tested by predicting {meta.gpsEstimates.tested.toLocaleString()} satellite-measured squares from GPS alone: typical error {num(meta.gpsEstimates.median_error_mm_year)} mm a year, 80% within {num(meta.gpsEstimates.p80_error_mm_year)}. Squares with too few stations stay blank and get fill-the-gap sensor sites.</p>
+      <h4>Noisy squares</h4>
+      <p>About 1 in 10 squares has a noisy satellite record (its trend could be off by 15 mm a year or more), which made isolated squares look wildly different from their neighbors. The map now combines each square's own rate with the typical rate within 3 km, weighting each by how precise it is: precise squares keep their own value, noisy ones are pulled toward their neighborhood. Against GPS stations, this cut the typical gap from 2.1 to 1.9 mm a year and the worst 10% from 9.3 to 7.9. Squares with clean records keep their own value. Each card still shows the square's own reading.</p>
 
       <h3>Still provisional</h3>
       <p className="small">Satellite radar measures movement relative to a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move as that reference and held out {meta.reference.held_out_stable_stations.length} similar stations for checking. The team still needs to review this choice.</p>
@@ -231,6 +234,9 @@ export function HardwarePage({ meta, onShow }: { meta: Meta; onShow: (id: string
       <h4>{meta.nodes.length} low-cost nodes (diamonds on the map)</h4>
       <p className="small">Rule: squares that are clearly sinking ("Add monitoring here" or "Observe", measured or estimated) with no GPS within {meta.thresholds.gps_covered_km} km, where a node could confirm the sinking within {hw.node_max_years} years, ranked by sinking speed, kept {hw.node_spacing_km} km apart and away from the permanent-station sites.</p>
       <ol className="site-list">{meta.nodes.map((n) => <li key={n.id}><button className="link" onClick={() => onShow(n.id)}>Sinking {num(Math.abs(n.areaRate))} mm/yr</button> <small>, about {n.weeks} weeks to confirm{n.est ? ", estimated square" : ""}</small></li>)}</ol>
+      <h4>{meta.gaps.length} fill-the-gap nodes (white diamonds on the map)</h4>
+      <p className="small">Rule: land squares the satellite product doesn't cover, at least 4 km from any active GPS, high-risk flood zones first, then the most isolated, kept 6 km apart. Nothing measures the ground there directly, so the first job of a node is simply to give a reading.</p>
+      <ol className="site-list">{meta.gaps.map((g) => <li key={g.id}><button className="link" onClick={() => onShow(g.id)}>{num(g.gpsKm)} km from the nearest GPS</button> <small>, flood zone {g.zone ?? "not mapped"}{g.sfha ? " (high risk)" : ""}</small></li>)}</ol>
 
       <h3>Our hackathon test</h3>
       <p>During the event we test the basic node ourselves: the antenna is fixed to a metal sheet in a backyard and never moved, so any change in its readings is pure noise. That measured noise replaces the {hw.node_daily_sigma_mm} mm planning guess above.</p>

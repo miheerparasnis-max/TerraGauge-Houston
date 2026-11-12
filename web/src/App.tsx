@@ -70,10 +70,10 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
   const items: Key[] = mode === "priority"
     ? (["investigate_first", "add_monitoring", "review_disagreement", "observe", "no_clear_motion"] as const).map((k) => ({ key: k, ...ACTION[k], n: meta.counts.action[k] ?? 0 }))
     : (["high", "medium", "low"] as const).map((k) => ({ key: k, ...CONFIDENCE[k], n: meta.counts.confidence[k] ?? 0 }));
-  return <KeyList items={[...items, noData]} note={mode === "priority" ? <>Rules are checked in this order; the first that fits decides. Numbered pins are suggested permanent GPS stations; diamonds are suggested low-cost nodes.</> : undefined} />;
+  return <KeyList items={[...items, noData]} note={mode === "priority" ? <>Rules are checked in this order; the first that fits decides. Numbered pins are suggested permanent GPS stations; diamonds are suggested low-cost nodes; white diamonds are low-cost nodes for places nothing measures yet.</> : undefined} />;
 }
 
-const LAYER_NAMES: [keyof Layers, string][] = [["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost nodes (diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]];
+const LAYER_NAMES: [keyof Layers, string][] = [["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost nodes (diamonds)"], ["gaps", "Fill-the-gap nodes (white diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]];
 
 export default function App() {
   const initial = useMemo(readHash, []);
@@ -85,7 +85,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>(initial.mode ?? "movement");
   const [hazard, setHazard] = useState<Hazard>(initial.hazard ?? "flood");
   const [year, setYear] = useState<number>(initial.year ?? 0);
-  const [layers, setLayers] = useState<Layers>({ sensors: true, nodes: true, gps: false, ext: false, wells: false, flood: false });
+  const [layers, setLayers] = useState<Layers>({ sensors: true, nodes: true, gaps: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(initial.cell ?? null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
   const [sheet, setSheet] = useState(false);
@@ -178,7 +178,7 @@ export default function App() {
       </header>
 
       <main className={`stage${tab === "map" ? "" : " hidden"}${cell ? " has-card" : ""}`}>
-        {mapSeen && <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} mode={(mode === "hazards" ? hazard : mode) as ColorBy} meta={meta} year={year} layers={layers} selected={selected} focus={focus} onSelect={(id) => { setSelected(id); setFound(null); }} />}
+        {mapSeen && <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} gaps={meta.gaps} mode={(mode === "hazards" ? hazard : mode) as ColorBy} meta={meta} year={year} layers={layers} selected={selected} focus={focus} onSelect={(id) => { setSelected(id); setFound(null); }} />}
 
         <div className="controls">
           <div className="box">
@@ -235,7 +235,7 @@ export default function App() {
                   <strong>{ht ? `${num(ht.drought.flagged_median_drop_mm / ht.drought.others_median_drop_mm, 0)}×` : "—"}</strong><span>more drop in the 2023 drought where we predicted it from 2018. Flood, drought and ground-bending views.</span><small>Hazards</small>
                 </button>
               </div>
-              <p className="fine">{stats.total.toLocaleString()} squares of 1 km: {stats.direct.toLocaleString()} measured, {(stats.measured - stats.direct).toLocaleString()} estimated from neighbors. Click any square, or search an address, for its full story. Forecast to {lastYear}.</p>
+              <p className="fine">{stats.total.toLocaleString()} squares of 1 km: {stats.direct.toLocaleString()} measured, {(stats.measured - stats.direct).toLocaleString()} estimated from neighboring squares or GPS stations. Click any square, or search an address, for its full story. Forecast to {lastYear}.</p>
 
               <details className="list-block" open>
                 <summary>Suggested permanent GPS stations <span>{meta.sensors.length}</span></summary>
@@ -254,7 +254,7 @@ export default function App() {
         </section>
       </main>
       {tab === "how" && <HowWeKnow meta={meta} cells={cells} />}
-      {tab === "hardware" && <HardwarePage meta={meta} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true })); pick(id); }} />}
+      {tab === "hardware" && <HardwarePage meta={meta} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true, gaps: true })); pick(id); }} />}
       {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). Not a flood forecast or a property assessment.</footer>}
     </div>
   );

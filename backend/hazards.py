@@ -59,7 +59,16 @@ def drought_and_bending(velocity: dict[str, Any], exclude: set[str] | None = Non
     times = np.array([_decimal_year(d) for d in dates])
     series = np.array([c["opera_series_mm"] for c in cells], dtype=float) / cos(radians(INCIDENCE_DEG))
     coef, resid = _seasonal_fit(np, times, series)
-    rate = coef[1]
+    rate = coef[1].copy()
+    # Bending uses noise-weighted rates (see backend.insights.shrink_to_neighbours)
+    # so one noisy square can't fake a sharp bend.
+    from backend.insights import shrink_to_neighbours
+
+    dof = max(len(times) - 4, 1)
+    slope_se = np.sqrt((resid ** 2).sum(axis=1) / dof) / np.sqrt(((times - times.mean()) ** 2).sum())
+    plain = {c["cell_id"]: (float(c["longitude"]), float(c["latitude"]), float(r), float(e)) for c, r, e in zip(cells, rate, slope_se) if abs(r) <= 40}
+    weighted = shrink_to_neighbours(plain, floor_mm_year=1.5)
+    bend_rate = np.array([weighted.get(c["cell_id"], (r, 0))[0] for c, r in zip(cells, rate)])
     cols = [dates.index(d) for d in DROUGHT_EPOCHS if d in dates]
     drop = resid[:, cols].mean(axis=1) if cols else np.zeros(len(cells))
 
@@ -71,7 +80,7 @@ def drought_and_bending(velocity: dict[str, Any], exclude: set[str] | None = Non
         ij = _grid_index(cid)
         bend = None
         if usable[n] and ij is not None:
-            diffs = [abs(rate[n] - rate[k]) for k in (grid.get((ij[0] + a, ij[1] + b)) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))) if k is not None and usable[k]]
+            diffs = [abs(bend_rate[n] - bend_rate[k]) for k in (grid.get((ij[0] + a, ij[1] + b)) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))) if k is not None and usable[k]]
             if len(diffs) >= 2:
                 bend = float(max(diffs))
         out[cid] = {"drought_drop_mm": float(drop[n]), "bend_mm_year_km": bend, "seasonal_mm": float(np.hypot(coef[2][n], coef[3][n]))}

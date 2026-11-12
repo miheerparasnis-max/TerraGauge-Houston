@@ -72,7 +72,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
   const f = meta.forecast;
   const measured = cell.act !== "insufficient_data" && cell.rate !== null;
   const estimated = cell.src.includes("estimated");
-  const sources = estimated ? `an estimate from ${cell.est} measured squares nearby` : cell.src.length === 2 ? "satellite and a GPS station inside the square, combined" : cell.src[0] === "gps" ? "a GPS station inside the square" : "satellite (NASA OPERA)";
+  const sources = estimated ? (cell.estFrom === "gps" ? `an estimate from ${cell.est} GPS stations nearby (outside the satellite's coverage)` : `an estimate from ${cell.est} measured squares nearby`) : cell.src.length === 2 ? "satellite and a GPS station inside the square, combined" : cell.src[0] === "gps" ? "a GPS station inside the square" : "satellite (NASA OPERA)";
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLElement>(null);
   useEffect(() => { ref.current?.closest(".panel")?.scrollTo({ top: 0 }); }, [cell.id]);
@@ -104,6 +104,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       <div className="chips">
         {sensor && <span className="chip pin-chip">GPS station site #{sensor.rank}</span>}
         {cell.nodeRank && <span className="chip">Low-cost node site #{cell.nodeRank}</span>}
+        {cell.gapRank && <span className="chip">Fill-the-gap node #{cell.gapRank}</span>}
         {estimated && <span className="chip">Estimated, not measured</span>}
       </div>
       <div className="matters"><h3>Why it matters here</h3><p>{a.why}</p></div>
@@ -112,6 +113,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
         {measured ? (
           <dl>
             <Row k="Up and down" v={`${num(cell.rate)} ± ${num(cell.se)} mm/yr`} note={`${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}, from ${sources}`} />
+            {cell.raw !== null && cell.raw !== undefined && <Row k="This square's own reading" v={`${num(cell.raw)} mm/yr`} note="Its satellite record is noisy, so the map combines it with the squares around it, weighting each by how precise it is. In tests this matched GPS stations better than the raw readings." />}
             {!estimated && cell.los !== null && <Row k="Satellite's slanted view" v={`${num(cell.los)} mm/yr`} note={`What the radar measures directly. Converted to up/down assuming the ground moves vertically (${th.incidence_deg}° viewing angle).`} />}
           </dl>
         ) : <p className="muted">{cell.actWhy}</p>}
@@ -154,6 +156,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       <Section title="Sensors" peek={`nearest GPS ${num(cell.gps.km)} km`}>
         <dl><Row k="Nearest active GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}: ${num(cell.gps.up)} mm/yr${cell.gps.y0 ? ` over ${cell.gps.y0}–${cell.gps.y1}` : ""}`} /></dl>
         {sensor ? <p className="good">Suggested permanent GPS station site #{sensor.rank} of {meta.sensors.length}: the area around it is sinking about {num(Math.abs(sensor.areaRate))} mm/yr in a high-risk flood zone, and the nearest GPS is {num(sensor.gpsKm)} km away.</p>
+          : cell.gapRank ? <p className="good">Fill-the-gap node site #{cell.gapRank} of {meta.gaps.length}: no satellite coverage here and the nearest GPS is {num(cell.gps.km)} km away, so nothing measures this ground directly. A low-cost node gives the first reading.</p>
           : cell.nodeRank ? <p className="good">Suggested low-cost node site #{cell.nodeRank} of {meta.nodes.length}: sinking fast enough that a cheap node could confirm it in about {cell.detect?.nodeWeeks} weeks, and no GPS within {th.gps_covered_km} km.</p>
           : cell.act === "add_monitoring" ? <p className="good">Needs a sensor: no GPS within {th.gps_covered_km} km. Faster-sinking areas rank higher on the sensor list.</p>
           : cell.gps.km <= th.gps_covered_km ? <p className="muted">Covered: a GPS station is within {th.gps_covered_km} km.</p>

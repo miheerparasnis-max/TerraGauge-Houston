@@ -80,6 +80,20 @@ class SiteDataTests(unittest.TestCase):
             self.assertIn(n["id"], self.by_id)
             self.assertGreater(self.by_id[n["id"]]["gps"]["km"], self.meta["thresholds"]["gps_covered_km"])
 
+    def test_gap_sites(self):
+        gaps = self.meta.get("gaps", [])
+        self.assertTrue(gaps)
+        for g in gaps:
+            c = self.by_id[g["id"]]
+            self.assertNotIn("satellite", c["src"])
+            self.assertEqual(c["act"], "insufficient_data")
+            self.assertGreaterEqual(c["gps"]["km"], 4.0)
+
+    def test_weighted_rates_stay_close_for_precise_squares(self):
+        for c in self.cells:
+            if c.get("raw") is not None and c["src"] == ["satellite"] and c["quality"]["fitSe"] is not None and c["quality"]["fitSe"] < 1.0:
+                self.assertLess(abs(c["raw"] - c["rate"]), 5.0, c["id"])
+
     def test_hazard_levels(self):
         for c in self.cells:
             h = c.get("hz")

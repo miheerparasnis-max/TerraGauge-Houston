@@ -27,7 +27,7 @@ from statistics import median
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.insights import (  # noqa: E402
-    IMPLAUSIBLE_MM_YEAR, action_label, confidence, decimal_year, distance_km, gps_difference, neighborhood_medians, passes_to_detect, vertical_rate,
+    IMPLAUSIBLE_MM_YEAR, action_label, shrink_to_neighbours, confidence, decimal_year, distance_km, gps_difference, neighborhood_medians, passes_to_detect, vertical_rate,
 )
 from backend.model import Thresholds  # noqa: E402
 
@@ -46,6 +46,11 @@ NODE_DAILY_SIGMA_MM = 10.0    # planning assumption for a low-cost node until ou
 NODE_MAX_YEARS = 2.0          # only suggest nodes where they could confirm the sinking within this time
 ESTIMATE_RADIUS_KM = 3.0
 ESTIMATE_MIN_NEIGHBORS = 4
+GPS_EST_RADIUS_KM = 10.0      # outside satellite coverage: estimate from GPS stations this close
+GPS_EST_MIN_STATIONS = 3
+GAP_COUNT = 12                # low-cost "fill the gap" nodes where nothing measures the ground
+GAP_SPACING_KM = 6.0
+GAP_MIN_GPS_KM = 4.0
 COS = cos(radians(38.0))
 
 
@@ -132,6 +137,18 @@ def main() -> None:
 
     sat_rates = [{"id": c["cell_id"], "lon": float(c["longitude"]), "lat": float(c["latitude"]), "rate": vertical_rate(c["opera_los_velocity_mm_year"])} for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= IMPLAUSIBLE_MM_YEAR]
     area = neighborhood_medians(sat_rates)
+
+    # Noise-weighted rates: each square's own rate is combined with the median
+    # of satellite squares within 3 km, weighted by how precise each is
+    # (backend.insights.shrink_to_neighbours). Precise squares keep their own
+    # value; noisy ones (about 1 in 10) are pulled toward their neighbourhood.
+    # Weights use each square's own trend-fit error, so clean records keep
+    # their local detail. Tested against GPS stations within 3 km: typical gap
+    # 2.1 -> 1.9 mm/yr, worst 10% 9.3 -> 7.9 mm/yr.
+    raw_rates = {c["cell_id"]: (float(c["longitude"]), float(c["latitude"]), vertical_rate(c["opera_los_velocity_mm_year"]),
+                                vertical_rate(c["opera_velocity_se_mm_year"]))
+                 for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= IMPLAUSIBLE_MM_YEAR}
+    shrunk = shrink_to_neighbours(raw_rates, floor_mm_year=1.5)
     long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and s.get("up_mm_year") is not None]
     active = [s for s in stations if (s.get("end_decimal_year") or 0) >= 2022 and s.get("up_mm_year") is not None]
 
@@ -158,11 +175,13 @@ def main() -> None:
         cover = min(active, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
         cover_km = distance_km(lon, lat, cover["longitude"], cover["latitude"])
 
-        sources, rate, se, sat_los, gps_weight = [], None, None, None, 0.0
+        sources, rate, se, sat_los, gps_weight, sat_rate = [], None, None, None, 0.0, None
         if op:
             sat_los = op["opera_los_velocity_mm_year"]
-            rate = vertical_rate(sat_los)
+            # Weighted rate for the map; the square's own uncertainty for "is it clearly moving?"
             se = sqrt(vertical_rate(op["opera_velocity_se_mm_year"]) ** 2 + model_error ** 2)
+            rate = shrunk.get(cid, (vertical_rate(sat_los), se))[0]
+            sat_rate = rate
             sources.append("satellite")
             if blend_km <= GPS_BLEND_KM:
                 w_s, w_g = 1 / se ** 2, 1 / GPS_SIGMA_MM_YEAR ** 2
@@ -187,7 +206,7 @@ def main() -> None:
             level, conf_why = "high", ["A long-running GPS station sits inside this square."]
 
         significant = rate is not None and abs(rate) >= stable_vertical and abs(rate) >= 2 * (se or 0)
-        sat_vertical = vertical_rate(sat_los) if sat_los is not None else rate
+        sat_vertical = sat_rate if sat_rate is not None else rate
         act, act_why = action_label(rate_vertical=sat_vertical if sat_vertical is not None else None, significant=significant, flood_zone_sfha=sfha, gps_km=cover_km, gps_rate=cover["up_mm_year"], covered_km=t.gps_nearby_km, open_water=open_water)
         if act == "insufficient_data":
             level, conf_why = None, []
@@ -222,7 +241,7 @@ def main() -> None:
 
         cell = {
             "id": cid, "lon": r(lon, 5), "lat": r(lat, 5),
-            "rate": r(rate), "se": r(se), "los": r(sat_los), "src": sources, "sig": significant,
+            "rate": r(rate), "se": r(se), "los": r(sat_los), "raw": r(vertical_rate(sat_los)) if sat_los is not None and "gps" not in sources and abs(vertical_rate(sat_los) - (sat_rate or 0)) >= 1 else None, "src": sources, "sig": significant,
             "conf": level, "confWhy": conf_why,
             "act": act, "actWhy": act_why,
             "future": future, "detect": detect,
@@ -267,19 +286,12 @@ def main() -> None:
         near = neighbours(c["lon"], c["lat"])
         if len(near) >= ESTIMATE_MIN_NEIGHBORS:
             w = [1 / max(d, 0.5) ** 2 for d, _ in near]
-            loo.append(abs(sum(wi * vertical_rate(o["los"]) for wi, (_, o) in zip(w, near)) / sum(w) - vertical_rate(c["los"])))
+            # compare with the hidden square's own raw reading (not its weighted value)
+            loo.append(abs(sum(wi * o["rate"] for wi, (_, o) in zip(w, near)) / sum(w) - vertical_rate(c["los"])))
     loo.sort()
     estimate_error = {"median": loo[len(loo) // 2], "p80": loo[int(len(loo) * 0.8)], "tested": len(loo)}
-    estimated = 0
-    for c in cells:
-        if c["act"] != "insufficient_data" or c["flood"]["zone"] == "OPEN WATER" or (c.get("dswx", {}).get("water_fraction") or 0) > 0.5:
-            continue
-        near = neighbours(c["lon"], c["lat"])
-        if len(near) < ESTIMATE_MIN_NEIGHBORS:
-            continue
-        w = [1 / max(d, 0.5) ** 2 for d, _ in near]
-        est = sum(wi * vertical_rate(o["los"]) for wi, (_, o) in zip(w, near)) / sum(w)
-        est_se = estimate_error["p80"] / 1.28
+    def apply_estimate(c: dict, est: float, est_se: float, n: int, source: str, why: list[str], tag: str) -> None:
+        nonlocal estimated
         sig = abs(est) >= stable_vertical and abs(est) >= 2 * est_se
         counts["action"]["insufficient_data"] -= 1
         act, act_why = action_label(rate_vertical=est, significant=sig, flood_zone_sfha=c["flood"]["sfha"], gps_km=c["gps"]["km"], gps_rate=c["gps"]["up"], covered_km=t.gps_nearby_km)
@@ -298,12 +310,61 @@ def main() -> None:
         n_gps = passes_to_detect(est, GPS_DAILY_SIGMA_MM, 1) if est < 0 else None
         n_node = passes_to_detect(est, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) if est < 0 else None
         c.update({
-            "rate": r(est), "se": r(est_se), "src": ["estimated"], "sig": sig, "est": len(near),
-            "conf": "low", "confWhy": [f"No direct measurement: estimated from {len(near)} measured squares within {ESTIMATE_RADIUS_KM:g} km.", f"In testing, estimates like this were within {estimate_error['p80']:.1f} mm/yr of the real value 80% of the time."],
-            "act": act, "actWhy": act_why + " (Estimated from neighbouring squares.)", "future": future,
+            "rate": r(est), "se": r(est_se), "src": ["estimated"], "estFrom": source, "sig": sig, "est": n,
+            "conf": "low", "confWhy": why,
+            "act": act, "actWhy": act_why + tag, "future": future,
             "detect": {"nisarMonths": r((n_nisar - 1) * 12 / 30.44, 0) if n_nisar else None, "gpsWeeks": r((n_gps - 1) / 7, 0) if n_gps else None, "nodeWeeks": r((n_node - 1) / 7, 0) if n_node else None} if est < 0 else None,
         })
         estimated += 1
+
+    estimated = 0
+    for c in cells:
+        if c["act"] != "insufficient_data" or c["flood"]["zone"] == "OPEN WATER" or (c.get("dswx", {}).get("water_fraction") or 0) > 0.5:
+            continue
+        near = neighbours(c["lon"], c["lat"])
+        if len(near) < ESTIMATE_MIN_NEIGHBORS:
+            continue
+        w = [1 / max(d, 0.5) ** 2 for d, _ in near]
+        est = sum(wi * o["rate"] for wi, (_, o) in zip(w, near)) / sum(w)
+        apply_estimate(c, est, estimate_error["p80"] / 1.28, len(near), "satellite",
+                       [f"No direct measurement: estimated from {len(near)} measured squares within {ESTIMATE_RADIUS_KM:g} km.", f"In testing, estimates like this were within {estimate_error['p80']:.1f} mm/yr of the real value 80% of the time."],
+                       " (Estimated from neighbouring squares.)")
+
+    # Outside the satellite product's coverage (mostly the far south): estimate
+    # from nearby GPS stations with at least 5 years of record. Tested by
+    # predicting satellite-measured squares from GPS alone.
+    gps_ok = [s for s in stations if s.get("up_mm_year") is not None and (s.get("history_years") or 0) >= 5 and abs(s["up_mm_year"]) <= IMPLAUSIBLE_MM_YEAR]
+
+    def gps_idw(lon: float, lat: float):
+        near = sorted(((distance_km(lon, lat, s["longitude"], s["latitude"]), s) for s in gps_ok), key=lambda p: p[0])
+        near = [(d, s) for d, s in near if d <= GPS_EST_RADIUS_KM][:8]
+        if len(near) < GPS_EST_MIN_STATIONS:
+            return None, near
+        w = [1 / max(d, 1.0) ** 2 for d, _ in near]
+        return sum(wi * s["up_mm_year"] for wi, (_, s) in zip(w, near)) / sum(w), near
+
+    gps_test = []
+    for c in measured[::2]:
+        if "gps" in c["src"]:
+            continue
+        g, _ = gps_idw(c["lon"], c["lat"])
+        if g is not None:
+            gps_test.append(abs(g - vertical_rate(c["los"])))
+    gps_test.sort()
+    gps_error = {"median": gps_test[len(gps_test) // 2], "p80": gps_test[int(len(gps_test) * 0.8)], "tested": len(gps_test)} if gps_test else None
+    gps_estimated = 0
+    for c in cells:
+        if c["act"] != "insufficient_data" or not gps_error or c["flood"]["zone"] == "OPEN WATER" or (c.get("dswx", {}).get("water_fraction") or 0) > 0.5:
+            continue
+        g, near = gps_idw(c["lon"], c["lat"])
+        if g is None:
+            c["actWhy"] = f"Nobody measures this ground: outside the satellite's coverage, with fewer than {GPS_EST_MIN_STATIONS} GPS stations within {GPS_EST_RADIUS_KM:g} km. A sensor here would give the first reading."
+            continue
+        apply_estimate(c, g, gps_error["p80"] / 1.28, len(near), "gps",
+                       [f"Outside the satellite's coverage: estimated from {len(near)} GPS stations within {GPS_EST_RADIUS_KM:g} km (nearest {near[0][0]:.1f} km).",
+                        f"In testing against satellite-measured squares, GPS-only estimates were within {gps_error['p80']:.1f} mm/yr 80% of the time."],
+                       " (Estimated from nearby GPS stations; outside satellite coverage.)")
+        gps_estimated += 1
 
     # Sensor sites: the "Add monitoring here" squares in the fastest-sinking
     # areas (median of squares within 3 km), kept at least 4 km apart.
@@ -338,6 +399,34 @@ def main() -> None:
     for rank, n in enumerate(nodes, start=1):
         by_id[n["id"]]["nodeRank"] = rank
     node_out = [{"rank": i + 1, "id": n["id"], "lon": r(n["lon"], 5), "lat": r(n["lat"], 5), "areaRate": r(n["area"]), "weeks": n["weeks"], "act": n["act"], "zone": n["zone"], "est": n["est"]} for i, n in enumerate(nodes)]
+
+    # "Fill the gap" nodes: land squares outside the satellite's coverage whose
+    # nearest GPS is far away. Nothing measures the ground there directly, so a
+    # node gives the first reading. Flood-zone squares first, then the most
+    # isolated, kept apart from each other and from the other sites.
+    gap_candidates = [c for c in cells if "satellite" not in c["src"] and c["id"] not in opera_cells and c["flood"]["zone"] != "OPEN WATER"
+                      and (c.get("dswx", {}).get("water_fraction") or 0) <= 0.5 and c["gps"]["km"] >= GAP_MIN_GPS_KM]
+    # Rank by the size of the blind area around each square (unmeasured,
+    # un-estimated land within 3 km), so a node sits in the middle of the
+    # biggest blind spots rather than on the edge of the study box.
+    blind = [c for c in cells if c["act"] == "insufficient_data" and c["flood"]["zone"] != "OPEN WATER" and (c.get("dswx", {}).get("water_fraction") or 0) <= 0.5]
+    blind_ids = {c["id"] for c in blind}
+    gap_candidates = [c for c in gap_candidates if c["id"] in blind_ids]
+    for c in gap_candidates:
+        c["_blind"] = sum(1 for o in blind if abs(o["lon"] - c["lon"]) < 0.035 and abs(o["lat"] - c["lat"]) < 0.03 and distance_km(c["lon"], c["lat"], o["lon"], o["lat"]) <= 3.0)
+    gap_candidates.sort(key=lambda c: (not c["flood"]["sfha"], -c["_blind"], -c["gps"]["km"]))
+    gaps: list[dict] = []
+    taken = sensors + nodes
+    for c in gap_candidates:
+        if all(distance_km(c["lon"], c["lat"], g["lon"], g["lat"]) >= GAP_SPACING_KM for g in gaps) and all(distance_km(c["lon"], c["lat"], o["lon"], o["lat"]) >= NODE_SPACING_KM for o in taken):
+            gaps.append(c)
+        if len(gaps) >= GAP_COUNT:
+            break
+    for rank, g in enumerate(gaps, start=1):
+        by_id[g["id"]]["gapRank"] = rank
+    gap_out = [{"rank": i + 1, "id": g["id"], "lon": r(g["lon"], 5), "lat": r(g["lat"], 5), "gpsKm": r(g["gps"]["km"]), "zone": g["flood"]["zone"], "sfha": g["flood"]["sfha"], "rate": g["rate"], "blindKm2": g["_blind"]} for i, g in enumerate(gaps)]
+    for c in gap_candidates:
+        c.pop("_blind", None)
 
     def nisar_check(source: dict, days: int) -> dict:
         xs, ys = [], []
@@ -414,7 +503,9 @@ def main() -> None:
         "reference": build["reference"],
         "sensors": sensor_out,
         "nodes": node_out,
-        "estimates": {"count": estimated, "radius_km": ESTIMATE_RADIUS_KM, "min_neighbors": ESTIMATE_MIN_NEIGHBORS, "median_error_mm_year": r(estimate_error["median"]), "p80_error_mm_year": r(estimate_error["p80"]), "tested": estimate_error["tested"]},
+        "gaps": gap_out,
+        "gpsEstimates": {"count": gps_estimated, "radius_km": GPS_EST_RADIUS_KM, "min_stations": GPS_EST_MIN_STATIONS, "median_error_mm_year": r(gps_error["median"]) if gps_error else None, "p80_error_mm_year": r(gps_error["p80"]) if gps_error else None, "tested": gps_error["tested"] if gps_error else 0},
+        "estimates": {"count": estimated - gps_estimated, "radius_km": ESTIMATE_RADIUS_KM, "min_neighbors": ESTIMATE_MIN_NEIGHBORS, "median_error_mm_year": r(estimate_error["median"]), "p80_error_mm_year": r(estimate_error["p80"]), "tested": estimate_error["tested"]},
         "hardware": {"node_daily_sigma_mm": NODE_DAILY_SIGMA_MM, "node_max_years": NODE_MAX_YEARS, "node_spacing_km": NODE_SPACING_KM, "gps_daily_sigma_mm": GPS_DAILY_SIGMA_MM,
                      "node_weeks_10": r((passes_to_detect(-10, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_10": r((passes_to_detect(-10, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0),
                      "node_weeks_5": r((passes_to_detect(-5, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_5": r((passes_to_detect(-5, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0)},
@@ -429,7 +520,7 @@ def main() -> None:
     (OUT / "cells.json").write_text(json.dumps(cells, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "meta.json").write_text(json.dumps(meta, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "sites.json").write_text(json.dumps(sites, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
-    print(json.dumps({"cells": len(cells), "counts": counts, "stable": stable_vertical, "years": years, "sensors": len(sensor_out), "nodes": [(n["rank"], n["areaRate"], n["weeks"], n["act"], n["est"]) for n in node_out[:8]], "estimates": meta["estimates"], "hardware": meta["hardware"]}, indent=1))
+    print(json.dumps({"cells": len(cells), "counts": counts, "stable": stable_vertical, "years": years, "sensors": len(sensor_out), "nodes": [(n["rank"], n["areaRate"], n["weeks"], n["act"], n["est"]) for n in node_out[:8]], "estimates": meta["estimates"], "gpsEstimates": meta["gpsEstimates"], "gaps": len(gap_out), "hardware": meta["hardware"]}, indent=1))
 
 
 if __name__ == "__main__":

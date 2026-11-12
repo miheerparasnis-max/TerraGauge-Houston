@@ -13,7 +13,10 @@ export interface Cell {
   se: number | null;
   los: number | null;           // satellite line-of-sight mm/yr
   src: ("satellite" | "gps" | "estimated")[];
-  est?: number;                 // number of neighbours used when estimated
+  est?: number;                 // number of neighbours (or GPS stations) used when estimated
+  estFrom?: "satellite" | "gps";
+  raw?: number | null;          // the square's own satellite rate when the map shows a noise-weighted one
+  gapRank?: number;
   sig: boolean;
   conf: Confidence | null;
   confWhy: string[];
@@ -37,6 +40,7 @@ export interface Cell {
 }
 
 export interface SensorSite { rank: number; id: string; lon: number; lat: number; areaRate: number; rate: number; gpsKm: number; conf: Confidence | null; zone: string | null; weeks: number | null }
+export interface GapSite { rank: number; id: string; lon: number; lat: number; gpsKm: number; zone: string | null; sfha: boolean; rate: number | null }
 export interface NodeSite { rank: number; id: string; lon: number; lat: number; areaRate: number; weeks: number; act: Action; zone: string | null; est: boolean }
 
 interface Score { median_abs_error: number; mean_abs_error: number; correlation: number | null; fast_median_abs_error: number | null }
@@ -46,6 +50,8 @@ export interface Meta {
   record: { start: string; end: string; dates: string[]; products: number };
   thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number; disagree_mm_year: number; sensor_spacing_km: number; incidence_deg: number; gps_daily_sigma_mm: number };
   counts: { action: Record<string, number>; confidence: Record<string, number> };
+  gaps: GapSite[];
+  gpsEstimates: { count: number; radius_km: number; min_stations: number; median_error_mm_year: number | null; p80_error_mm_year: number | null; tested: number };
   hazards: null | {
     tests: { drought: { flagged_median_drop_mm: number; others_median_drop_mm: number; flagged_share_in_worst10_pct: number; auc: number; cells: number }; bending: { r: number; hotspot_later_median: number; others_later_median: number; cells: number } };
     drought: { epochs: string[]; high_mm: number; medium_mm: number };
