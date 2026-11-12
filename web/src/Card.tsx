@@ -208,6 +208,9 @@ function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number })
               ? <>By {year} the same flood would be about <b>{num(fl.total)} cm deeper</b>{fl.ocean > 0 ? <> ({num(fl.sink)} cm from the ground sinking, {num(fl.ocean)} cm from ocean rise)</> : <>, because the ground here is forecast to sink that much</>}.</>
               : fl.total !== null ? <>The ground here isn't forecast to sink much, so floods shouldn't get deeper by {year}.</> : null}
           </p>
+          {cell.harvey && <p className="harvey">{cell.harvey.wet > 0
+            ? <>In <b>Hurricane Harvey</b> (2017), about {Math.round(cell.harvey.wet * 100)}% of this square flooded{cell.harvey.ft !== null ? <>, on average {num(cell.harvey.ft)} ft deep where it was wet</> : null} (USGS flood maps).</>
+            : <>USGS flood maps show this square stayed dry in <b>Hurricane Harvey</b> (2017).</>}</p>}
         </div>
       )}
       {hz && (

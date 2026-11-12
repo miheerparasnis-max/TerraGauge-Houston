@@ -93,6 +93,17 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
           <p>We can't predict when a hurricane or drought will come. Nobody can, years ahead. What we can do is show what Houston's moving ground does when one comes, and we tested each view on past years.</p>
           <h4>Floods</h4>
           <p>FEMA's flood maps give the odds of a big flood in each area: a 1% chance each year in high-risk zones (1-in-100-year) and 0.2% in moderate ones (1-in-500-year). Over a 30-year mortgage, 1% a year adds up to about a 26% chance. Sinking ground makes the same flood deeper by however much the ground drops, so we add our forecast sinking for the chosen year. On the coast, the Gulf is also rising about 1 cm a year (Liu et al. 2020, Galveston Pier 21), and we add that too. This is a simple, honest estimate, not a full flood simulation: real flooding also depends on drains, bayous and where the rain falls.</p>
+          {meta.hazards.harvey && (() => { const h = meta.hazards.harvey!; const row = (k: "1pct" | "0.2pct" | "minimal", name: string) => { const b = h.by_class[k], d = h.depth_by_class[k]; return b ? <tr key={k}><td>{name}</td><td>{b.squares.toLocaleString()}</td><td>{num(b.flooded_pct, 0)}%</td><td>{num(b.mean_flooded_share_pct, 0)}%</td><td>{d ? `${num(d.median_depth_ft)} ft` : "—"}</td></tr> : null; }; return (
+            <>
+              <p><b>Reality check, Hurricane Harvey (2017).</b> USGS mapped exactly where Harvey's water reached, and how deep, across the San Jacinto River basin: northeast and north Houston, Kingwood, Lake Houston and Cypress Creek ({h.squares.toLocaleString()} of our squares). We compared that with each square's FEMA flood zone:</p>
+              <table className="table">
+                <thead><tr><th>FEMA zone</th><th>Squares</th><th>Flooded at all</th><th>Share of area flooded</th><th>Typical depth where wet</th></tr></thead>
+                <tbody>{row("1pct", "High risk (1-in-100)")}{row("0.2pct", "Moderate (1-in-500)")}{row("minimal", "Low risk")}</tbody>
+              </table>
+              <p>The flood odds on our map hold up: high-risk squares had far more of their area flooded, and deeper, than low-risk ones. But {num(h.flooded_area_outside_high_risk_pct, 0)}% of Harvey's flooded area was outside the high-risk zones, which is why every square shows its flood zone and not just a yes/no.</p>
+              <p>Sinking speed alone did not predict where Harvey flooded: fast-sinking and stable squares flooded about equally. That's expected. Where one storm's water goes is set by terrain and drainage; sinking matters over years, by making the same flood deeper each time. That's what our flood view shows. Each square's card in this area says how much of it flooded in Harvey and how deep.</p>
+            </>
+          ); })()}
           <h4>Droughts</h4>
           <p>Houston's clay shrinks when it dries out. In the 2011 and 2023 droughts the city had thousands of water main breaks and widespread foundation cracking. Our satellite record shows the shrinking directly: in late summer 2018 and in October 2023, many squares dropped well below their normal trend. We measured how much extra each square dropped.</p>
           <p><b>Test:</b> we pretended it was early 2023 and used only the 2018 drought to pick the 10% of squares most likely to drop. In the October 2023 drought, those squares dropped a median <b>{num(t.drought.flagged_median_drop_mm, 0)} mm</b>, versus {num(t.drought.others_median_drop_mm, 0)} mm for everywhere else, and {num(t.drought.flagged_share_in_worst10_pct, 0)}% of them landed in the worst-hit 10% (chance would be 10%). AUC {num(t.drought.auc, 2)}, where 0.5 is a coin flip and 1 is perfect. Drought damage repeats in the same places.</p>
@@ -168,6 +179,7 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
         <li>USGS groundwater daily values and the 2023 Houston extensometer release.</li>
         <li>Liu et al. (2020), Land subsidence contributions to relative sea level rise at tide gauge Galveston Pier 21, Texas. Scientific Reports. Used for the Gulf rise rate.</li>
         <li>USGS Flood Event Viewer high-water marks, Hurricane Harvey (2017), when downloaded.</li>
+        <li>Garvin, K.M. (2018), Flood inundation geospatial data for the August and September 2017 flood event in Texas (Hurricane Harvey), USGS data release, doi:10.5066/F7VH5N3N. San Jacinto River basin flooded area, depth and high-water marks.</li>
         <li>Address search by OpenStreetMap Nominatim.</li>
         <li>FEMA National Flood Hazard Layer. Basemap © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.</li>
       </ul>

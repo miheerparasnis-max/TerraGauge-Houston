@@ -318,3 +318,4 @@ dl { margin: 0; }
 
 .gap-pin { background: #fff; }
 .gap-pin:hover { background: var(--brass); }
+.harvey { margin: 6px 0 0 !important; font-size: 13.5px; background: #E6EEF6; border-left: 3px solid #2563A8; padding: 6px 10px; border-radius: 0 8px 8px 0; }

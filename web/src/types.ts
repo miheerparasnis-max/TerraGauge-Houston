@@ -36,6 +36,7 @@ export interface Cell {
   nasadem?: { elevation_m?: number };
   dswx?: { water_fraction?: number };
   dist?: { disturbed_fraction?: number };
+  harvey?: { wet: number; ft: number | null };
   hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null };
 }
 
@@ -57,6 +58,12 @@ export interface Meta {
     drought: { epochs: string[]; high_mm: number; medium_mm: number };
     bend: { high: number; medium: number };
     flood: { ocean_rise_mm_year: number; coastal_elevation_m: number };
+    harvey: null | {
+      source: string; mapped_bbox: number[]; squares: number; flooded_area_outside_high_risk_pct: number; high_water_marks: number;
+      by_class: Record<"1pct" | "0.2pct" | "minimal", { squares: number; flooded_pct: number; mean_flooded_share_pct: number } | null>;
+      depth_by_class: Record<"1pct" | "0.2pct" | "minimal", { squares: number; median_depth_ft: number } | null>;
+      by_sinking: Record<string, { squares: number; flooded_pct: number; mean_flooded_share_pct: number } | null>;
+    };
   };
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
   forecast: null | {

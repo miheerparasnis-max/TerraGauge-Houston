@@ -484,11 +484,19 @@ def main() -> None:
                 "bend": r(b) if b is not None else None,
                 "bl": None if b is None else "high" if b >= bend_hi else "medium" if b >= bend_mid else "low",
             }
+        harvey_path = PROV / "harvey_check.json"
+        harvey = load(harvey_path) if harvey_path.is_file() else None
+        if harvey:
+            for c in cells:
+                h = harvey["cells"].get(c["id"])
+                if h:
+                    c["harvey"] = {"wet": h[0], "ft": h[1]}
         hazards_meta = {
             "tests": hz_all["tests"],
             "drought": {"epochs": ["2018-08-13", "2023-10-04"], "high_mm": r(typical - q10), "medium_mm": r(typical - q30)},
             "bend": {"high": bend_hi, "medium": bend_mid},
             "flood": {"ocean_rise_mm_year": 10.0, "coastal_elevation_m": 3.0},
+            "harvey": {k: harvey[k] for k in ("source", "mapped_bbox", "squares", "by_class", "flooded_area_outside_high_risk_pct", "by_sinking", "high_water_marks", "depth_by_class")} if harvey else None,
         }
 
     meta = {

@@ -94,6 +94,14 @@ class SiteDataTests(unittest.TestCase):
             if c.get("raw") is not None and c["src"] == ["satellite"] and c["quality"]["fitSe"] is not None and c["quality"]["fitSe"] < 1.0:
                 self.assertLess(abs(c["raw"] - c["rate"]), 5.0, c["id"])
 
+    def test_harvey_values(self):
+        for c in self.cells:
+            h = c.get("harvey")
+            if h:
+                self.assertTrue(0 <= h["wet"] <= 1)
+                if h["ft"] is not None:
+                    self.assertTrue(0 < h["ft"] < 60)
+
     def test_hazard_levels(self):
         for c in self.cells:
             h = c.get("hz")

@@ -60,7 +60,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
     const keys = hazard === "flood" ? ["deeper", "1pct", "0.2pct", "minimal"] : ["high", "medium", "low"];
     const t = meta.hazards?.tests;
     const note = hazard === "flood"
-      ? <>FEMA's flood zones give the odds of a big flood. Our forecast gives how much the ground sinks by {year}, which makes the same flood that much deeper. Coastal squares also get about 1 cm a year of Gulf rise.</>
+      ? <>FEMA's flood zones give the odds of a big flood. Our forecast gives how much the ground sinks by {year}, which makes the same flood that much deeper. Coastal squares also get about 1 cm a year of Gulf rise.{meta.hazards?.harvey?.by_class["1pct"] && meta.hazards.harvey.by_class.minimal ? <> Checked against Hurricane Harvey: in northeast Houston, {num(meta.hazards.harvey.by_class["1pct"].mean_flooded_share_pct, 0)}% of high-risk squares' area flooded, versus {num(meta.hazards.harvey.by_class.minimal.mean_flooded_share_pct, 0)}% of low-risk squares'.</> : null}</>
       : hazard === "drought" && t ? <>Tested: using only data from before 2023, the squares flagged from the 2018 drought dropped a median {num(t.drought.flagged_median_drop_mm, 0)} mm in the 2023 drought, versus {num(t.drought.others_median_drop_mm, 0)} mm for the rest.</>
       : t ? <>Tested: the sharpest-bending squares in 2016–2021 were still bending about {num(t.bending.hotspot_later_median / t.bending.others_later_median, 0)}× more than the rest in 2021–2026.</> : undefined;
     const items: Key[] = keys.map((k) => ({ key: k, ...table[k], n: counts.get(k) ?? 0 }));
