@@ -13,26 +13,36 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "raw" / "harvey_usgs_high_water_marks.json"
-BASE = "https://stn.wim.usgs.gov/STNServices"
+BASES = ["https://stn.wim.usgs.gov/STNServices", "https://stn.wim.usgs.gov/STNDataPortal/STNServices"]
+HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 TerraGauge-NASA-SpaceApps",
+    "Referer": "https://stn.wim.usgs.gov/FEV/",
+}
 BOX = (-96.2, 29.2, -94.7, 30.4)   # west, south, east, north
 
 
 def get(url: str):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=120) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=120) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
 def main() -> None:
-    try:
-        events = get(f"{BASE}/Events.json")
-        ids = [e["event_id"] for e in events if "harvey" in (e.get("event_name") or "").lower()]
-        if not ids:
-            sys.exit("Couldn't find Hurricane Harvey in the USGS event list.")
-        marks = []
-        for eid in ids:
-            marks += get(f"{BASE}/HWMs/FilteredHWMs.json?Event={eid}&States=TX")
-    except Exception as exc:  # noqa: BLE001
-        sys.exit(f"Download failed ({exc}). Check your internet connection and try again.")
+    marks, ids, errors = [], [], []
+    for base in BASES:
+        try:
+            events = get(f"{base}/Events.json")
+            ids = [e["event_id"] for e in events if "harvey" in (e.get("event_name") or "").lower()]
+            if not ids:
+                errors.append(f"{base}: Harvey not in event list")
+                continue
+            for eid in ids:
+                marks += get(f"{base}/HWMs/FilteredHWMs.json?Event={eid}&States=TX")
+            break
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{base}: {exc}")
+    if not marks:
+        sys.exit("Download failed:\n  " + "\n  ".join(errors) + "\nThe site works without this; it only adds the Harvey reality check.")
     keep = []
     for m in marks:
         lon, lat = m.get("longitude_dd"), m.get("latitude_dd")
