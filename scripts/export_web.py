@@ -496,7 +496,7 @@ def main() -> None:
             "drought": {"epochs": ["2018-08-13", "2023-10-04"], "high_mm": r(typical - q10), "medium_mm": r(typical - q30)},
             "bend": {"high": bend_hi, "medium": bend_mid},
             "flood": {"ocean_rise_mm_year": 10.0, "coastal_elevation_m": 3.0},
-            "harvey": {k: harvey[k] for k in ("source", "mapped_bbox", "squares", "by_class", "flooded_area_outside_high_risk_pct", "by_sinking", "high_water_marks", "depth_by_class")} if harvey else None,
+            "harvey": {k: harvey.get(k) for k in ("source", "areas", "squares", "by_class", "flooded_area_outside_high_risk_pct", "by_sinking", "high_water_marks", "depth_by_class")} if harvey else None,
         }
 
     meta = {
@@ -525,7 +525,51 @@ def main() -> None:
         "wells": [{"id": s["site_id"], "name": s.get("site_name"), "lon": s["longitude"], "lat": s["latitude"], "dd": r(s.get("depth_change_ft"), 2), "t0": s["first_observation"]["time"][:10], "t1": s["last_observation"]["time"][:10]} for s in wells],
     }
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "cells.json").write_text(json.dumps(cells, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    # Fast first load: cells.json holds only what the map, legends and
+    # downloads need (~4 MB); each square's full record lives in a 16 km tile
+    # under details/, fetched when someone opens that square.
+    import re as _re
+
+    tl_times = [decimal_year(d) for d in dates]
+    t0 = tl_times[0]
+
+    def timelapse(c: dict) -> list[int] | None:
+        """Ground-level change since 2016 at each satellite date (vertical mm).
+        Clean records show the measurement (lightly smoothed); noisy or
+        estimated squares show their trend."""
+        if c["act"] == "insufficient_data" or c["rate"] is None:
+            return None
+        op = opera_cells.get(c["id"])
+        fit = (c.get("quality") or {}).get("fitSe")
+        if op and "estimated" not in c["src"] and fit is not None and fit <= 5:
+            v = [x / COS for x in op["opera_series_mm"]]
+            sm = [v[0]] + [(v[k - 1] + v[k] + v[k + 1]) / 3 for k in range(1, len(v) - 1)] + [v[-1]]
+            return [round(x - sm[0]) for x in sm]
+        return [round(c["rate"] * (t - t0)) for t in tl_times]
+
+    slim_keys = ("id", "lon", "lat", "rate", "se", "src", "sig", "conf", "act", "est", "estFrom", "sensorRank", "nodeRank", "gapRank", "hz", "harvey")
+    slim = []
+    tiles: dict[str, dict] = {}
+    for c in cells:
+        row = {k: c[k] for k in slim_keys if k in c}
+        row["flood"] = c["flood"]
+        if c.get("nasadem", {}).get("elevation_m") is not None:
+            row["elev"] = c["nasadem"]["elevation_m"]
+        if c.get("future"):
+            row["future"] = {"rate": c["future"]["rate"], "by": {y: {"c": v["c"]} for y, v in c["future"]["by"].items()}}
+        tl = timelapse(c)
+        if tl:
+            row["tl"] = tl
+        slim.append(row)
+        m = _re.search(r"(-?\d+)-(-?\d+)$", c["id"])
+        key = f"{int(m.group(1)) // 16}_{int(m.group(2)) // 16}"
+        tiles.setdefault(key, {})[c["id"]] = c
+    details_dir = OUT / "details"
+    details_dir.mkdir(parents=True, exist_ok=True)
+    for key, rows in tiles.items():
+        (details_dir / f"{key}.json").write_text(json.dumps(rows, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    meta["timelapse"] = {"dates": dates}
+    (OUT / "cells.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "meta.json").write_text(json.dumps(meta, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "sites.json").write_text(json.dumps(sites, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     print(json.dumps({"cells": len(cells), "counts": counts, "stable": stable_vertical, "years": years, "sensors": len(sensor_out), "nodes": [(n["rank"], n["areaRate"], n["weeks"], n["act"], n["est"]) for n in node_out[:8]], "estimates": meta["estimates"], "gpsEstimates": meta["gpsEstimates"], "gaps": len(gap_out), "hardware": meta["hardware"]}, indent=1))

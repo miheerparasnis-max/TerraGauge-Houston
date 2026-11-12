@@ -14,8 +14,12 @@ ACTIONS = {"investigate_first", "add_monitoring", "review_disagreement", "observ
 class SiteDataTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cells = json.loads((DATA / "cells.json").read_text(encoding="utf-8"))
+        cls.slim = json.loads((DATA / "cells.json").read_text(encoding="utf-8"))
         cls.meta = json.loads((DATA / "meta.json").read_text(encoding="utf-8"))
+        full = {}
+        for tile in (DATA / "details").glob("*.json"):
+            full.update(json.loads(tile.read_text(encoding="utf-8")))
+        cls.cells = [full[c["id"]] for c in cls.slim]
         cls.by_id = {c["id"]: c for c in cls.cells}
 
     def test_ids_unique(self):
@@ -101,6 +105,16 @@ class SiteDataTests(unittest.TestCase):
                 self.assertTrue(0 <= h["wet"] <= 1)
                 if h["ft"] is not None:
                     self.assertTrue(0 < h["ft"] < 60)
+
+    def test_slim_matches_details(self):
+        self.assertEqual(len(self.slim), len(self.cells))
+        n = len(self.meta["timelapse"]["dates"])
+        for s, c in zip(self.slim, self.cells):
+            self.assertEqual(s["rate"], c["rate"])
+            self.assertEqual(s["act"], c["act"])
+            if "tl" in s:
+                self.assertEqual(len(s["tl"]), n)
+                self.assertEqual(s["tl"][0], 0)
 
     def test_hazard_levels(self):
         for c in self.cells:

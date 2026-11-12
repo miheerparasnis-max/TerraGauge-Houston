@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { usePlaceName } from "./places";
 import type { Cell, Meta, SensorSite } from "./types";
 import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, chanceOver, duration, floodExtra, headline, num } from "./labels";
 
@@ -82,6 +83,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { window.prompt("Copy this link", url); }
   };
   const yv = cell.future?.by[String(year)];
+  const place = usePlaceName(cell.id, cell.lon, cell.lat);
   return (
     <article className="card" aria-labelledby="card-title" ref={ref}>
       <div className="card-head">
@@ -92,6 +94,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
           <button className="close" onClick={onClose} aria-label="Close">×</button>
         </div>
         <h2 id="card-title"><span className="badge" style={{ background: a.color }} />{a.name}</h2>
+        {place && <p className="place">Near {place}</p>}
       </div>
       <p className="why">{cell.actWhy}</p>
 

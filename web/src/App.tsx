@@ -4,6 +4,8 @@ import { MapView, type Layers } from "./MapView";
 import { Card } from "./Card";
 import { HardwarePage, HowWeKnow } from "./Pages";
 import { Search } from "./Search";
+import { Tour, tourSteps } from "./Tour";
+import { usePlaceName } from "./places";
 import { cellIdAt } from "./geo";
 import { readHash, writeHash, type Tab } from "./url";
 import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, HAZARDS, MODES, NOT_DIRECT, NO_MEASUREMENT, floodExtra, movementColor, num } from "./labels";
@@ -73,6 +75,23 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
   return <KeyList items={[...items, noData]} note={mode === "priority" ? <>Rules are checked in this order; the first that fits decides. Numbered pins are suggested permanent GPS stations; diamonds are suggested low-cost nodes; white diamonds are low-cost nodes for places nothing measures yet.</> : undefined} />;
 }
 
+function detailTile(id: string): string | null {
+  const m = /(-?\d+)-(-?\d+)$/.exec(id);
+  return m ? `${Math.floor(Number(m[1]) / 16)}_${Math.floor(Number(m[2]) / 16)}` : null;
+}
+
+function AtRisk({ c, rank, onPick }: { c: Cell; rank: number; onPick: (id: string) => void }) {
+  const name = usePlaceName(c.id, c.lon, c.lat);
+  const by = c.future ? Object.values(c.future.by) : [];
+  const last = by.length ? by[by.length - 1].c : null;
+  return (
+    <li><button onClick={() => onPick(c.id)}>
+      <span className="rank">{rank}</span>
+      <span><b>{name ?? `${c.lat.toFixed(3)}, ${c.lon.toFixed(3)}`}</b><small>Sinking {num(Math.abs(c.rate ?? 0))} mm a year in a high-risk flood zone, {num(last)} cm by {c.future ? Object.keys(c.future.by).slice(-1)[0] : ""}</small></span>
+    </button></li>
+  );
+}
+
 const LAYER_NAMES: [keyof Layers, string][] = [["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost nodes (diamonds)"], ["gaps", "Fill-the-gap nodes (white diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]];
 
 export default function App() {
@@ -91,6 +110,10 @@ export default function App() {
   const [sheet, setSheet] = useState(false);
   const [found, setFound] = useState<string | null>(null);
   const [mapSeen, setMapSeen] = useState(tab === "map");
+  const [details, setDetails] = useState<Map<string, Cell>>(new Map());
+  const [frame, setFrame] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [tourAt, setTourAt] = useState<number | null>(null);
   useEffect(() => { if (tab === "map") setMapSeen(true); }, [tab]);
 
   useEffect(() => {
@@ -129,13 +152,44 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Full record for the opened square, from its details tile.
+  useEffect(() => {
+    if (!selected || details.has(selected)) return;
+    const tile = detailTile(selected);
+    if (!tile) return;
+    let live = true;
+    getJSON<Record<string, Cell>>(`details/${tile}.json`).then((rows) => {
+      if (!live) return;
+      setDetails((d) => { const n = new Map(d); for (const [k, v] of Object.entries(rows)) n.set(k, { ...v, detailed: true }); return n; });
+    }).catch(() => undefined);
+    return () => { live = false; };
+  }, [selected, details]);
+
+  // Time-lapse playback.
+  const frames = meta?.timelapse?.dates.length ?? 0;
+  useEffect(() => {
+    if (!playing || frame === null) return;
+    if (frame >= frames - 1) { setPlaying(false); return; }
+    const t = setTimeout(() => setFrame((f) => (f === null ? null : f + 1)), 380);
+    return () => clearTimeout(t);
+  }, [playing, frame, frames]);
+  useEffect(() => { if (mode !== "movement") { setFrame(null); setPlaying(false); } }, [mode]);
+
   const byId = useMemo(() => new Map((cells ?? []).map((c) => [c.id, c])), [cells]);
   const stats = useMemo(() => {
     if (!cells) return null;
     const measured = cells.filter((c) => c.rate !== null && c.act !== "insufficient_data");
     const direct = measured.filter((c) => !c.src.includes("estimated"));
     const sorted = direct.map((c) => c.rate as number).sort((a, b) => a - b);
-    return { total: cells.length, measured: measured.length, direct: direct.length, fast: measured.filter((c) => (c.rate ?? 0) <= -10).length, sorted };
+    // Most at-risk: directly measured, high-risk flood zone, fastest forecast sinking, 5 km apart.
+    const risky = direct.filter((c) => c.flood.sfha && c.future && c.sig && c.act !== "review_disagreement").sort((a, b) => (a.future!.rate - b.future!.rate));
+    const top: Cell[] = [];
+    for (const c of risky) {
+      if (top.every((t) => Math.hypot((t.lon - c.lon) * 96.5, (t.lat - c.lat) * 111) >= 5)) top.push(c);
+      if (top.length >= 10) break;
+    }
+    const harvey = direct.filter((c) => c.harvey && c.harvey.wet >= 0.5 && c.flood.sfha && (c.rate ?? 0) < -5).sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0];
+    return { total: cells.length, measured: measured.length, direct: direct.length, fast: measured.filter((c) => (c.rate ?? 0) <= -10).length, sorted, top, harveyPick: harvey?.id };
   }, [cells]);
 
   const pick = useCallback((id: string) => { const c = byId.get(id); if (!c) return; setSelected(id); setFocus({ lon: c.lon, lat: c.lat, key: Date.now() }); }, [byId]);
@@ -153,7 +207,18 @@ export default function App() {
   if (error) return <div className="loading">{error}</div>;
   if (!cells || !meta || !sites || !stats) return <div className="loading"><span className="spinner" aria-hidden="true" />Loading Houston's ground record…</div>;
 
-  const cell = selected ? byId.get(selected) ?? null : null;
+  const slimCell = selected ? byId.get(selected) ?? null : null;
+  const cell = selected ? details.get(selected) ?? null : null;
+  const steps = tourSteps(meta, stats, { fastest: meta.sensors[0]?.id, harvey: stats.harveyPick });
+  const goTour = (i: number) => {
+    if (i < 0 || i >= steps.length) return;
+    const s = steps[i];
+    setTourAt(i); setTab("map"); setMode(s.mode); if (s.hazard) setHazard(s.hazard);
+    if (s.cell) pick(s.cell); else setSelected(null);
+    if (s.history) { setFrame(0); setPlaying(true); } else { setFrame(null); setPlaying(false); }
+  };
+  const history = mode === "movement" && frame !== null;
+  const dates = meta.timelapse?.dates ?? [];
   const fc = meta.forecast;
   const lastYear = fc ? fc.years[fc.years.length - 1] : 2031;
   const question = mode === "hazards" ? HAZARDS.find((h) => h.key === hazard)!.question : MODES.find((m) => m.key === mode)!.question;
@@ -171,6 +236,7 @@ export default function App() {
           <div><h1>TerraGauge</h1><p>Where is Houston's ground sinking?</p></div>
         </div>
         <nav aria-label="Pages">
+          <button className="tab tour-btn" onClick={() => goTour(0)}>Take the tour</button>
           {([["map", "Map"], ["how", "How we know"], ["hardware", "Hardware"]] as const).map(([k, name]) => (
             <button key={k} className={tab === k ? "tab on" : "tab"} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>{name}</button>
           ))}
@@ -178,7 +244,7 @@ export default function App() {
       </header>
 
       <main className={`stage${tab === "map" ? "" : " hidden"}${cell ? " has-card" : ""}`}>
-        {mapSeen && <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} gaps={meta.gaps} mode={(mode === "hazards" ? hazard : mode) as ColorBy} meta={meta} year={year} layers={layers} selected={selected} focus={focus} onSelect={(id) => { setSelected(id); setFound(null); }} />}
+        {mapSeen && <MapView cells={cells} sites={sites} sensors={meta.sensors} nodes={meta.nodes} gaps={meta.gaps} mode={(history ? "history" : mode === "hazards" ? hazard : mode) as ColorBy} meta={meta} year={history ? frame! : year} layers={layers} selected={selected} focus={focus} onSelect={(id) => { setSelected(id); setFound(null); }} />}
 
         <div className="controls">
           <div className="box">
@@ -202,7 +268,24 @@ export default function App() {
                 </label>
               )}
             </div>
-            <Legend mode={mode} hazard={hazard} year={year} meta={meta} cells={cells} />
+            {history ? (
+              <div className="timelapse">
+                <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * 20, 20)).join(",")})` }} />
+                <div className="ramp-keys"><span>Sunk 20+ cm</span><span>No change</span><span>Rose</span></div>
+                <div className="tl-row">
+                  <button className="tl-play" onClick={() => { if (frame! >= frames - 1) setFrame(0); setPlaying((p) => !p); }} aria-label={playing ? "Pause" : "Play"}>{playing ? "Pause" : "Play"}</button>
+                  <input type="range" min={0} max={frames - 1} value={frame!} onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }} aria-label="Date" />
+                  <span className="tl-date">{new Date(dates[frame!]).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+                </div>
+                <p className="legend-note">Ground-level change since July 2016, from NASA OPERA radar. Squares with noisy records show their trend.</p>
+                <button className="link small-link" onClick={() => { setFrame(null); setPlaying(false); }}>Back to the yearly rate</button>
+              </div>
+            ) : (
+              <>
+                <Legend mode={mode} hazard={hazard} year={year} meta={meta} cells={cells} />
+                {mode === "movement" && frames > 0 && <button className="watch" onClick={() => { setFrame(0); setPlaying(true); }}>Watch 2016–2026</button>}
+              </>
+            )}
           </div>
           <details className="box layers">
             <summary>Show on map</summary>
@@ -213,7 +296,9 @@ export default function App() {
         </div>
 
         <section className={`panel${cell ? " open" : ""}${sheet ? " expanded" : ""}`} aria-live="polite">
-          {cell ? <Card key={cell.id} cell={cell} meta={meta} sensor={meta.sensors.find((s) => s.id === cell.id)} year={year} ranks={stats.sorted} onShare={shareUrl} onClose={() => setSelected(null)} /> : (
+          {selected && !cell ? (
+            <div className="card loading-card"><span className="spinner" aria-hidden="true" />Loading this square{slimCell ? "" : "…"}</div>
+          ) : cell ? <Card key={cell.id} cell={cell} meta={meta} sensor={meta.sensors.find((s) => s.id === cell.id)} year={year} ranks={stats.sorted} onShare={shareUrl} onClose={() => setSelected(null)} /> : (
             <div className="summary">
               <button className="sheet-handle" onClick={() => setSheet((s) => !s)} aria-expanded={sheet}><span>Houston at a glance</span><i aria-hidden="true">{sheet ? "▾" : "▴"}</i></button>
               <h2>Houston at a glance</h2>
@@ -237,7 +322,14 @@ export default function App() {
               </div>
               <p className="fine">{stats.total.toLocaleString()} squares of 1 km: {stats.direct.toLocaleString()} measured, {(stats.measured - stats.direct).toLocaleString()} estimated from neighboring squares or GPS stations. Click any square, or search an address, for its full story. Forecast to {lastYear}.</p>
 
-              <details className="list-block" open>
+              {stats.top.length > 0 && (
+                <details className="list-block" open>
+                  <summary>Most at-risk areas <span>{stats.top.length}</span></summary>
+                  <p className="fine">Fastest forecast sinking inside FEMA high-risk flood zones, directly measured, at least 5 km apart.</p>
+                  <ol className="sensor-list">{stats.top.map((c, i) => <AtRisk key={c.id} c={c} rank={i + 1} onPick={pick} />)}</ol>
+                </details>
+              )}
+              <details className="list-block">
                 <summary>Suggested permanent GPS stations <span>{meta.sensors.length}</span></summary>
                 <ol className="sensor-list">
                   {meta.sensors.map((s) => (
@@ -255,6 +347,7 @@ export default function App() {
       </main>
       {tab === "how" && <HowWeKnow meta={meta} cells={cells} />}
       {tab === "hardware" && <HardwarePage meta={meta} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true, gaps: true })); pick(id); }} />}
+      {tourAt !== null && tab === "map" && <Tour steps={steps} index={tourAt} onGo={goTour} onClose={() => { setTourAt(null); setPlaying(false); }} />}
       {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). Not a flood forecast or a property assessment.</footer>}
     </div>
   );

@@ -3,7 +3,7 @@ import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Cell, ColorBy, GapSite, Meta, NodeSite, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";
-import { cellColor, cellSummary } from "./labels";
+import { NO_MEASUREMENT, cellColor, cellSummary, movementColor } from "./labels";
 
 export interface Layers { sensors: boolean; nodes: boolean; gaps: boolean; gps: boolean; ext: boolean; wells: boolean; flood: boolean }
 
@@ -40,15 +40,36 @@ async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
   }
 }
 
+const rings = new Map<string, [number, number][] | null>();
+const ringOf = (id: string) => { let r = rings.get(id); if (r === undefined) { r = cellRing(id); rings.set(id, r); } return r; };
+
 function cellsGeoJSON(cells: Cell[], mode: ColorBy, year: number, meta: Meta) {
   return {
     type: "FeatureCollection" as const,
     features: cells.flatMap((c) => {
-      const ring = cellRing(c.id);
+      const ring = ringOf(c.id);
       return ring ? [{ type: "Feature" as const, properties: { id: c.id, fill: cellColor(c, mode, year, meta), sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82 }, geometry: { type: "Polygon" as const, coordinates: [ring] } }] : [];
     }),
   };
 }
+
+/** Time-lapse: every frame's value is a feature property (f0, f1, ...), so a
+ * frame change only swaps the paint expression instead of rebuilding data. */
+function historyGeoJSON(cells: Cell[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: cells.flatMap((c) => {
+      const ring = ringOf(c.id);
+      if (!ring) return [];
+      const props: Record<string, number | string | boolean> = { id: c.id, sfha: c.flood.sfha, op: c.src.includes("estimated") ? 0.45 : 0.82, fill: NO_MEASUREMENT };
+      c.tl?.forEach((v, i) => { props[`f${i}`] = v / 10; });
+      return [{ type: "Feature" as const, properties: props, geometry: { type: "Polygon" as const, coordinates: [ring] } }];
+    }),
+  };
+}
+const HISTORY_STOPS = [-20, -15, -10, -6, -3, -1, 0, 2, 4, 6.6].flatMap((v) => [v, movementColor(v, 20)]);
+const historyPaint = (frame: number): maplibregl.ExpressionSpecification =>
+  ["case", ["has", `f${frame}`], ["interpolate", ["linear"], ["get", `f${frame}`], ...HISTORY_STOPS], NO_MEASUREMENT] as unknown as maplibregl.ExpressionSpecification;
 
 const points = (rows: { lon: number; lat: number }[]) => ({
   type: "FeatureCollection" as const,
@@ -143,7 +164,17 @@ export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, 
 
   const whenReady = (fn: (m: MLMap) => void) => { ready.current?.then(() => map.current && fn(map.current)); };
 
-  useEffect(() => whenReady((m) => (m.getSource("cells") as GeoJSONSource).setData(cellsGeoJSON(cells, mode, year, meta))), [cells, mode, year, meta]);
+  const historyOn = useRef(false);
+  useEffect(() => whenReady((m) => {
+    const src = m.getSource("cells") as GeoJSONSource;
+    if (mode === "history") {
+      if (!historyOn.current) { src.setData(historyGeoJSON(cells)); historyOn.current = true; }
+      m.setPaintProperty("cells", "fill-color", historyPaint(year));
+      return;
+    }
+    if (historyOn.current) { m.setPaintProperty("cells", "fill-color", ["get", "fill"]); historyOn.current = false; }
+    src.setData(cellsGeoJSON(cells, mode, year, meta));
+  }), [cells, mode, year, meta]);
   useEffect(() => whenReady((m) => m.setFilter("selected", ["==", ["get", "id"], selected ?? ""])), [selected]);
   useEffect(() => whenReady((m) => {
     m.setLayoutProperty("gps", "visibility", layers.gps ? "visible" : "none");

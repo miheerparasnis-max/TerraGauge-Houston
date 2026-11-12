@@ -47,7 +47,7 @@ export function floodExtra(cell: Cell, year: number, meta: Meta) {
   const cls = floodClass(cell);
   const v = cell.future?.by[String(year)];
   const sink = v ? Math.max(0, -v.c) : null;
-  const elev = cell.nasadem?.elevation_m;
+  const elev = cell.elev ?? cell.nasadem?.elevation_m;
   const coastal = cell.flood.zone === "VE" || cell.flood.zone === "V" || (cls === "1pct" && elev !== undefined && elev < (meta.hazards?.flood.coastal_elevation_m ?? 3));
   const base = meta.forecast ? Number(meta.forecast.base.slice(0, 4)) + (Number(meta.forecast.base.slice(5, 7)) - 1) / 12 : 2026.2;
   const ocean = coastal ? ((meta.hazards?.flood.ocean_rise_mm_year ?? 10) * (year - base)) / 10 : 0;
@@ -91,6 +91,7 @@ export function movementColor(value: number | null, span = 25): string {
 }
 
 export function cellColor(cell: Cell, mode: ColorBy, year: number, meta?: Meta): string {
+  if (mode === "history") return cell.tl ? movementColor(cell.tl[year] / 10, 20) : NO_MEASUREMENT;
   if (mode === "flood") {
     const f = meta ? floodExtra(cell, year, meta) : null;
     if (!f || !f.cls) return NO_MEASUREMENT;
@@ -124,6 +125,7 @@ export function duration(months: number | null): string {
 
 /** One-line hover text for a square in the current view. */
 export function cellSummary(cell: Cell, mode: ColorBy, year: number, meta: Meta): string {
+  if (mode === "history") return cell.tl ? `${num(cell.tl[year] / 10)} cm since July 2016` : "No measurement";
   if (mode === "flood") {
     const f = floodExtra(cell, year, meta);
     if (!f.cls) return "No flood zone data";

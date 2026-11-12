@@ -2,7 +2,8 @@ export type Action = "investigate_first" | "add_monitoring" | "review_disagreeme
 export type Confidence = "high" | "medium" | "low";
 export type Mode = "movement" | "confidence" | "future" | "priority" | "hazards";
 export type Hazard = "flood" | "drought" | "bending";
-export type ColorBy = Exclude<Mode, "hazards"> | Hazard;
+/** "history" colours the 2016-2026 time-lapse; its frame index travels in the `year` slot. */
+export type ColorBy = Exclude<Mode, "hazards"> | Hazard | "history";
 export type Level = "high" | "medium" | "low";
 
 export interface Cell {
@@ -37,6 +38,10 @@ export interface Cell {
   dswx?: { water_fraction?: number };
   dist?: { disturbed_fraction?: number };
   harvey?: { wet: number; ft: number | null };
+  elev?: number;                // NASADEM elevation (m), in the map file
+  tl?: number[];                // time-lapse: ground change since 2016 (mm) at each satellite date
+  /** cells.json carries only map fields; the rest arrive from details/<tile>.json when a square is opened. */
+  detailed?: boolean;
   hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null };
 }
 
@@ -53,13 +58,14 @@ export interface Meta {
   counts: { action: Record<string, number>; confidence: Record<string, number> };
   gaps: GapSite[];
   gpsEstimates: { count: number; radius_km: number; min_stations: number; median_error_mm_year: number | null; p80_error_mm_year: number | null; tested: number };
+  timelapse?: { dates: string[] };
   hazards: null | {
     tests: { drought: { flagged_median_drop_mm: number; others_median_drop_mm: number; flagged_share_in_worst10_pct: number; auc: number; cells: number }; bending: { r: number; hotspot_later_median: number; others_later_median: number; cells: number } };
     drought: { epochs: string[]; high_mm: number; medium_mm: number };
     bend: { high: number; medium: number };
     flood: { ocean_rise_mm_year: number; coastal_elevation_m: number };
     harvey: null | {
-      source: string; mapped_bbox: number[]; squares: number; flooded_area_outside_high_risk_pct: number; high_water_marks: number;
+      source: string; areas?: string[]; mapped_bbox?: number[]; squares: number; flooded_area_outside_high_risk_pct: number; high_water_marks: number;
       by_class: Record<"1pct" | "0.2pct" | "minimal", { squares: number; flooded_pct: number; mean_flooded_share_pct: number } | null>;
       depth_by_class: Record<"1pct" | "0.2pct" | "minimal", { squares: number; median_depth_ft: number } | null>;
       by_sinking: Record<string, { squares: number; flooded_pct: number; mean_flooded_share_pct: number } | null>;

@@ -35,7 +35,7 @@ function toCSV(cells: Cell[], meta: Meta): string {
   const years = meta.forecast?.years ?? [];
   const head = ["square_id", "longitude", "latitude", "rate_mm_per_year", "uncertainty_mm_per_year", "source", "confidence", "priority", "flood_zone", "high_risk_flood", ...years.map((y) => `forecast_${y}_cm`), "drought_level", "bending_level", "elevation_m"];
   const esc = (v: unknown) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
-  const rows = cells.map((c) => [c.id, c.lon, c.lat, c.rate, c.se, c.src.join("+") || "none", c.conf, c.act, c.flood.zone, c.flood.sfha, ...years.map((y) => c.future?.by[String(y)]?.c), c.hz?.dl, c.hz?.bl, c.nasadem?.elevation_m].map(esc).join(","));
+  const rows = cells.map((c) => [c.id, c.lon, c.lat, c.rate, c.se, c.src.join("+") || "none", c.conf, c.act, c.flood.zone, c.flood.sfha, ...years.map((y) => c.future?.by[String(y)]?.c), c.hz?.dl, c.hz?.bl, c.elev ?? c.nasadem?.elevation_m].map(esc).join(","));
   return [head.join(","), ...rows].join("\n");
 }
 
@@ -95,13 +95,13 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
           <p>FEMA's flood maps give the odds of a big flood in each area: a 1% chance each year in high-risk zones (1-in-100-year) and 0.2% in moderate ones (1-in-500-year). Over a 30-year mortgage, 1% a year adds up to about a 26% chance. Sinking ground makes the same flood deeper by however much the ground drops, so we add our forecast sinking for the chosen year. On the coast, the Gulf is also rising about 1 cm a year (Liu et al. 2020, Galveston Pier 21), and we add that too. This is a simple, honest estimate, not a full flood simulation: real flooding also depends on drains, bayous and where the rain falls.</p>
           {meta.hazards.harvey && (() => { const h = meta.hazards.harvey!; const row = (k: "1pct" | "0.2pct" | "minimal", name: string) => { const b = h.by_class[k], d = h.depth_by_class[k]; return b ? <tr key={k}><td>{name}</td><td>{b.squares.toLocaleString()}</td><td>{num(b.flooded_pct, 0)}%</td><td>{num(b.mean_flooded_share_pct, 0)}%</td><td>{d ? `${num(d.median_depth_ft)} ft` : "—"}</td></tr> : null; }; return (
             <>
-              <p><b>Reality check, Hurricane Harvey (2017).</b> USGS mapped exactly where Harvey's water reached, and how deep, across the San Jacinto River basin: northeast and north Houston, Kingwood, Lake Houston and Cypress Creek ({h.squares.toLocaleString()} of our squares). We compared that with each square's FEMA flood zone:</p>
+              <p><b>Reality check, Hurricane Harvey (2017).</b> USGS mapped exactly where Harvey's water reached, and how deep, for {(h.areas ?? ["north and northeast Houston"]).join(" and ")}: {h.squares.toLocaleString()} of our squares. We compared that with each square's FEMA flood zone:</p>
               <table className="table">
                 <thead><tr><th>FEMA zone</th><th>Squares</th><th>Flooded at all</th><th>Share of area flooded</th><th>Typical depth where wet</th></tr></thead>
                 <tbody>{row("1pct", "High risk (1-in-100)")}{row("0.2pct", "Moderate (1-in-500)")}{row("minimal", "Low risk")}</tbody>
               </table>
               <p>The flood odds on our map hold up: high-risk squares had far more of their area flooded, and deeper, than low-risk ones. But {num(h.flooded_area_outside_high_risk_pct, 0)}% of Harvey's flooded area was outside the high-risk zones, which is why every square shows its flood zone and not just a yes/no.</p>
-              <p>Sinking speed alone did not predict where Harvey flooded: fast-sinking and stable squares flooded about equally. That's expected. Where one storm's water goes is set by terrain and drainage; sinking matters over years, by making the same flood deeper each time. That's what our flood view shows. Each square's card in this area says how much of it flooded in Harvey and how deep.</p>
+              {h.by_sinking.fast && h.by_sinking.stable && <p>Sinking speed alone did not predict where Harvey flooded: fast-sinking squares had {num(h.by_sinking.fast.mean_flooded_share_pct, 0)}% of their area flooded and stable ones {num(h.by_sinking.stable.mean_flooded_share_pct, 0)}%, because the most-flooded places were river floodplains, many of them stable. That's expected. Where one storm's water goes is set by terrain and drainage; sinking matters over years, by making the same flood deeper each time, and that's what our flood view adds. Each square's card in these areas says how much of it flooded in Harvey{h.depth_by_class["1pct"] ? " and, where USGS mapped depth, how deep" : ""}.</p>}
             </>
           ); })()}
           <h4>Droughts</h4>
