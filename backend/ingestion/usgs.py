@@ -25,12 +25,21 @@ def import_groundwater_daily(path: str | Path) -> dict[str, Any]:
         codes = source.get("siteCode", [])
         values_groups = item.get("values", [])
         values = values_groups[0].get("value", []) if values_groups else []
+        try:
+            no_data = float(item.get("variable", {}).get("noDataValue", -999999.0))
+        except (TypeError, ValueError):
+            no_data = -999999.0
         observations = []
         for value in values:
             try:
-                observations.append((value["dateTime"], float(value["value"])))
+                depth = float(value["value"])
             except (KeyError, TypeError, ValueError):
                 continue
+            # USGS marks missing days with a no-data value (-999999); a real
+            # depth is never anywhere near that.
+            if depth == no_data or depth <= -9999:
+                continue
+            observations.append((value["dateTime"], depth))
         if not codes or not observations or "longitude" not in location or "latitude" not in location:
             continue
         observations.sort(key=lambda entry: entry[0])

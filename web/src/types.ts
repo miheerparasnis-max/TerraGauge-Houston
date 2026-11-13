@@ -43,7 +43,7 @@ export interface Cell {
   tl?: number[];                // time-lapse: ground change since 2016 (mm) at each satellite date
   /** cells.json carries only map fields; the rest arrive from details/<tile>.json when a square is opened. */
   detailed?: boolean;
-  hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null };
+  hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null; filled?: boolean };
 }
 
 export interface SensorSite { rank: number; id: string; lon: number; lat: number; areaRate: number; rate: number; gpsKm: number; conf: Confidence | null; zone: string | null; weeks: number | null }

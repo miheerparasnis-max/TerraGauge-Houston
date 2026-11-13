@@ -112,6 +112,11 @@ def main() -> None:
     stations = [s for s in all_stations if not is_deep_seated(s["station_id"])]
     extensometers = load(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = load(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
+    # Older summaries kept USGS's no-data value (-999999 ft) as a last reading;
+    # treat any change that size as unknown rather than a real water level.
+    clean_dd = lambda v: None if v is None or abs(float(v)) > 1000 else v  # noqa: E731
+    for s_ in wells:
+        s_["depth_change_ft"] = clean_dd(s_.get("depth_change_ft"))
     grid_path = PROV / "grid_cells.json"
     if grid_path.is_file():
         # Full 1 km grid (scripts/build_grid.py): every square in the study box,
@@ -282,7 +287,7 @@ def main() -> None:
             "gps": {"id": cover["station_id"], "km": r(cover_km), "up": display_gps_rate(cover["up_mm_year"])[0], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
             "check": check,
             "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha, "share": f.get("sfha_share")},
-            "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(ev.get("groundwater_depth_change_ft"), 2)} if ev.get("usgs_site_id") else None,
+            "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(clean_dd(ev.get("groundwater_depth_change_ft")), 2)} if ev.get("usgs_site_id") else None,
             "ext": {"km": r(ev.get("extensometer_distance_km")), "c": r(ev.get("cumulative_compaction_change_ft"), 2)} if ev.get("nearest_extensometer_station") else None,
         }
         for name, layer in nasa.items():
@@ -577,6 +582,22 @@ def main() -> None:
                 "bend": r(b) if b is not None else None,
                 "bl": None if b is None else "high" if b >= bend_hi else "medium" if b >= bend_mid else "low",
             }
+        # Stripe squares (filled from touching squares) take the average
+        # drought drop and bending of the measured squares they were filled
+        # from, so the hazard views don't show the grid's stripes.
+        for (i, j), c in grid_index.items():
+            if not c.get("adj") or c.get("hz"):
+                continue
+            near = [grid_index.get((i + a2, j + b2)) for a2 in (-1, 0, 1) for b2 in (-1, 0, 1) if (a2, b2) != (0, 0)]
+            near = [o for o in near if o is not None and o.get("hz") and "estimated" not in o["src"]]
+            if len(near) < 2:
+                continue
+            d = typical - sum(o["hz"]["drop"] for o in near) / len(near)
+            bends = [o["hz"]["bend"] for o in near if o["hz"]["bend"] is not None]
+            b = sum(bends) / len(bends) if bends else None
+            c["hz"] = {"drop": r(typical - d), "dl": "high" if d <= q10 else "medium" if d <= q30 else "low",
+                       "bend": r(b) if b is not None else None,
+                       "bl": None if b is None else "high" if b >= bend_hi else "medium" if b >= bend_mid else "low", "filled": True}
         harvey_path = PROV / "harvey_check.json"
         harvey = load(harvey_path) if harvey_path.is_file() else None
         if harvey:

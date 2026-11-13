@@ -99,11 +99,11 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       <p className="why">{cell.actWhy}</p>
 
       <div className="headline-stats">
-        <div><strong>{measured ? `${num(cell.rate)}` : "—"}</strong><span>mm a year{measured ? (cell.rate! < 0 ? ", sinking" : ", rising") : ""}</span></div>
+        <div><strong>{measured ? `${num(cell.rate)}` : "—"}</strong><span>mm a year{measured ? (!cell.sig ? ", too small to call" : cell.rate! < 0 ? ", sinking" : ", rising") : ""}</span></div>
         {yv && <div><strong>{num(yv.c)}</strong><span>cm change by {year}, likely {num(yv.lo)} to {num(yv.hi)}</span></div>}
         {cell.conf && <div><strong className="conf"><i style={{ background: CONFIDENCE[cell.conf].color }} />{CONFIDENCE[cell.conf].name}</strong><span>confidence</span></div>}
       </div>
-      {pctile !== null && <p className="pctile">Sinking faster than <b>{pctile}%</b> of measured Houston squares.</p>}
+      {pctile !== null && <p className="pctile">{pctile >= 99 ? <>Among the <b>fastest-sinking 1%</b> of measured Houston squares.</> : <>Sinking faster than <b>{pctile}%</b> of measured Houston squares.</>}</p>}
       <div className="chips">
         {sensor && <span className="chip pin-chip">GPS station site #{sensor.rank}</span>}
         {cell.nodeRank && <span className="chip">Low-cost node site #{cell.nodeRank}</span>}

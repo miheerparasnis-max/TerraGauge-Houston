@@ -22,6 +22,16 @@ class SiteDataTests(unittest.TestCase):
         cls.cells = [full[c["id"]] for c in cls.slim]
         cls.by_id = {c["id"]: c for c in cls.cells}
 
+    def test_groundwater_changes_are_real_levels(self):
+        # USGS's no-data value (-999999 ft) must never show as a water level.
+        for c in self.cells:
+            if c.get("well") and c["well"]["dd"] is not None:
+                self.assertLess(abs(c["well"]["dd"]), 1000, c["id"])
+        sites = json.loads((DATA / "sites.json").read_text(encoding="utf-8"))
+        for w in sites["wells"]:
+            if w["dd"] is not None:
+                self.assertLess(abs(w["dd"]), 1000, w["id"])
+
     def test_ids_unique(self):
         self.assertEqual(len(self.by_id), len(self.cells))
 
@@ -122,7 +132,7 @@ class SiteDataTests(unittest.TestCase):
             if h:
                 self.assertIn(h["dl"], ("high", "medium", "low"))
                 self.assertIn(h["bl"], ("high", "medium", "low", None))
-                self.assertNotIn("estimated", c["src"])
+                self.assertTrue("estimated" not in c["src"] or (c.get("adj") and h.get("filled")), c["id"])
 
 
 if __name__ == "__main__":
