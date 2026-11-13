@@ -116,3 +116,20 @@ Do not merge the branch. It conflicts in 16 files, and its base predates the pre
 - Gabrysch, R.K. (1982), [USGS OFR 82-571](https://pubs.usgs.gov/publication/ofr82571); Gabrysch, R.K. & Bonnet, C.W. (1974), [USGS OFR 74-123](https://pubs.usgs.gov/publication/ofr74123).
 - Blewitt, G. & Lavallée, D. (2002), Effect of annual signals on geodetic velocity, *JGR* 107(B7), doi:10.1029/2001JB000570.
 - Wang et al. (2022), *J. Surv. Eng.* 148(4): 04022008 (deep-seated stations; see `docs/factcheck/2026-11-11-source-verification.md`).
+
+## Addendum (2026-11-12): the update at `7e2159a`
+
+The branch now merges `main` (`df42205`) and our pushed branch (`03e92cf`), plus two commits: `c0a1828` and `7e2159a`. Its 128 tests pass, but only because the merge rewrote our claims test.
+
+| # | Item | Verdict | Evidence |
+|---|---|---|---|
+| A1 | `tests/test_claims_policy.py` rewritten in the merge: "sinking" and "predict" removed from the forbidden list; the no-projection test replaced by one that allows forecasts. A new "D-039" overrides the policy on one person's authority. | **Revert** | MASTER §0.5: never weaken a test to make it pass. Changing the claims policy is a team decision; it cannot happen inside a merge. The number also collides with our D-039. |
+| A2 | USGS −999999 no-data value read as a water level (`backend/ingestion/usgs.py`, plus an export guard and tests) | **Take** | Our branch has the bug: 1,210 squares show a well change of more than 500 ft, and the derived groundwater file holds 3 no-data values. |
+| A3 | Gap rule: a square counts if at least 90% of products are valid; the rate uses observed intervals only; the error comes from a common-slope fit per unbroken run | **Take, with gapped squares flagged as lower confidence** | Not circular. It adds 899 squares (5,538 → 6,437). On the same 102 stations it agrees with GPS as well as the complete-only rule (r 0.800, median \|d\| 0.98 against 1.00). But the 6 stations on gapped squares agree worse (r 0.45, median \|d\| 3.64 mm/yr). |
+| A4 | "Stripe" squares filled from touching squares (2,724) | **Fix at the source instead** | The stripes are a gridding bug, not missing data. `backend/ingestion/opera.py` takes 33 × 33-pixel (990 m) blocks and files each under the EPSG:3857 square holding its centre. At 29.8° N those squares are about 868 m across on the ground, so about 23% get no block. The right fix is to assign each pixel to its own square, which needs the raw OPERA files. Until then, a fill may be drawn, but it must be flagged and must not get labels. |
+| A5 | Sensor and node sites rank less-certain squares first | **Take the idea** | It matches the agreed story: sensors go where radar alone would take longest to confirm. Rebuild it on our labels in the UI pass. |
+| A6 | Card copy: "too small to call" when a rate is not significant | **Take** | Plain and accurate. Replace "among the fastest-sinking 1%" with G2-safe wording. |
+| A7 | Still on the branch: forecasts to 2031, hazard views, NISAR detection times from σ = 3.0 mm, and 4,242 interpolated squares (32%) that carry labels | **Unchanged: drop** | See X1–X8. σ = 3.0 mm is the region-A reference scatter, not the per-epoch noise PR-3 requires; the ramp-removed cross-cell scatter is about 18 mm. |
+| A8 | Still on the branch: the F38239 merge runs before the region-A reference is taken | **Unchanged: fix** | See K2, bug 1. |
+
+**Recommendation.** Do not merge `7e2159a`. Port A2 now, A3 with a flag, and A5 and A6 in the UI pass. Fix A4 when the raw OPERA files are re-downloaded. The forecast question (A1) needs a team decision before anything is merged.
