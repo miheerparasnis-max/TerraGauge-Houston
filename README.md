@@ -329,7 +329,7 @@ enables RTCM, eliminating a host-side port re-open as a possible cause of an
 empty test capture. It does not save receiver configuration to flash.
 
 The bench configuration is intentionally not saved to the receiver. A nonzero
-log only proves that bytes were captured; keep the antenna fixed and use the
+log shows only that bytes were captured; keep the antenna fixed and use the
 three-session GroundTruth manifest plus RTKLIB/RINEX conversion before making
 any repeatability claim. An empty log is a diagnostic result, not evidence of
 ground movement.
