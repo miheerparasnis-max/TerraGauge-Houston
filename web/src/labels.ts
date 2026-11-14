@@ -7,23 +7,24 @@ export const MODES: { key: Mode; name: string; question: string }[] = [
 ];
 
 export const PRIORITY: Record<Priority, { name: string; color: string; meaning: string }> = {
-  urgent: { name: "Urgent", color: "#7A1F3D", meaning: "Moved down at least 1 cm a year in the satellite record, or 5 mm a year inside a FEMA high-risk flood zone, clearly above noise." },
-  high: { name: "High", color: "#B8862B", meaning: "Moved down at least 5 mm a year in the satellite record, clearly above noise." },
-  watch: { name: "Watch", color: "#E6CF8F", meaning: "Some sign of downward motion in the satellite record, but the evidence is weaker. Worth a closer look." },
-  stable: { name: "Stable", color: "#CBD6D1", meaning: "No up-or-down motion we can tell apart from noise in the satellite record." },
-  check: { name: "Check data", color: "#6B7280", meaning: "The reading is faster than any reliable GPS rate in Houston's current GPS network, so it's probably a glitch." },
+  urgent: { name: "Urgent", color: "#FF4D6D", meaning: "Moved down at least 1 cm a year in the satellite record, or 5 mm a year inside a FEMA high-risk flood zone, clearly above noise." },
+  high: { name: "High", color: "#F5A23A", meaning: "Moved down at least 5 mm a year in the satellite record, clearly above noise." },
+  watch: { name: "Watch", color: "#E9D27C", meaning: "Some sign of downward motion in the satellite record, but the evidence is weaker. Worth a closer look." },
+  stable: { name: "Stable", color: "#33476B", meaning: "No up-or-down motion we can tell apart from noise in the satellite record." },
+  check: { name: "Check data", color: "#8B93A7", meaning: "The reading is faster than any reliable GPS rate in Houston's current GPS network, so it's probably a glitch." },
   no_data: { name: "No reliable reading", color: "transparent", meaning: "Trees, fields, or water block the satellite here, and no GPS station is inside the square." },
 };
 
 export const CONFIDENCE: Record<Confidence, { name: string; color: string; meaning: string }> = {
-  high: { name: "High", color: "#1F5F5B", meaning: "Steady satellite record, confirmed by a nearby GPS station." },
-  medium: { name: "Medium", color: "#7FA8A0", meaning: "Steady satellite record, but no GPS station close enough to confirm it." },
-  low: { name: "Low", color: "#DCE5E1", meaning: "Noisy record, or a nearby GPS station disagrees." },
+  high: { name: "High", color: "#19E6D9", meaning: "Steady satellite record, confirmed by a nearby GPS station." },
+  medium: { name: "Medium", color: "#1C8F96", meaning: "Steady satellite record, but no GPS station close enough to confirm it." },
+  low: { name: "Low", color: "#24385A", meaning: "Noisy record, or a nearby GPS station disagrees." },
 };
 
-const NEUTRAL = [236, 239, 233];
-const DOWN = [74, 25, 120];
-const UP = [20, 110, 112];
+// Tuned for the dark basemap: no-motion squares sit close to the background, motion glows.
+const NEUTRAL = [44, 58, 92];
+const DOWN = [196, 120, 255];
+const UP = [25, 210, 200];
 
 function mix(a: number[], b: number[], k: number) {
   const c = a.map((v, i) => Math.round(v + (b[i] - v) * k));

@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/EvidenceCard.tsx","./src/MapView.tsx","./src/Panels.tsx","./src/geo.ts","./src/labels.ts","./src/main.tsx","./src/types.ts"],"version":"5.6.3"}
+{"root":["./src/app.tsx","./src/card.tsx","./src/intro.tsx","./src/landing.tsx","./src/mapview.tsx","./src/pages.tsx","./src/geo.ts","./src/labels.ts","./src/main.tsx","./src/types.ts","./src/reactbits/galaxy.tsx","./src/reactbits/radar.tsx","./src/reactbits/topography.tsx"],"version":"5.6.3"}

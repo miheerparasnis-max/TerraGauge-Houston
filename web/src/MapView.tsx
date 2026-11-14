@@ -20,8 +20,8 @@ interface Props {
 
 // OpenFreeMap: free vector basemap, no API key. If it can't be reached, the
 // map still works on a plain background.
-const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
-const FALLBACK: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#E6EBE5" } }] };
+const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
+const FALLBACK: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0A1433" } }] };
 
 async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
   try {
@@ -68,20 +68,22 @@ export function MapView({ cells, sites, sensors, mode, layers, selected, focus, 
       const created = new maplibregl.Map({ container: ref.current, style, center: [-95.4, 29.8], zoom: 9.2, minZoom: 7, maxZoom: 15, attributionControl: { compact: true } });
       created.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
       map.current = m = created;
+      // The dark basemap references a few POI icons it doesn't ship; give them a blank image instead of a console warning.
+      created.on("styleimagemissing", (e) => { if (!created.hasImage(e.id)) created.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) }); });
       created.on("load", () => {
         const m = created;
         const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
         const { cells: c, mode: md } = latest.current;
         m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md) });
         m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": 0.8 } }, firstLabel);
-        m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
-        m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
+        m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#4DA3FF", "line-width": 1, "line-opacity": 0.8 }, layout: { visibility: "none" } }, firstLabel);
+        m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#FFFFFF", "line-width": 3 } });
         m.addSource("gps", { type: "geojson", data: points(sites.gps) });
         m.addSource("ext", { type: "geojson", data: points(sites.ext) });
         m.addSource("wells", { type: "geojson", data: points(sites.wells) });
-        m.addLayer({ id: "wells", type: "circle", source: "wells", paint: { "circle-radius": 4, "circle-color": "#2563A8", "circle-stroke-color": "#fff", "circle-stroke-width": 1.2 } });
-        m.addLayer({ id: "ext", type: "circle", source: "ext", paint: { "circle-radius": 5.5, "circle-color": "#14201F", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
-        m.addLayer({ id: "gps", type: "circle", source: "gps", paint: { "circle-radius": 4, "circle-color": "#fff", "circle-stroke-color": "#14201F", "circle-stroke-width": 1.5 } });
+        m.addLayer({ id: "wells", type: "circle", source: "wells", paint: { "circle-radius": 4, "circle-color": "#2F7DFF", "circle-stroke-color": "#E8F4FF", "circle-stroke-width": 1.2 } });
+        m.addLayer({ id: "ext", type: "circle", source: "ext", paint: { "circle-radius": 5.5, "circle-color": "#F5A23A", "circle-stroke-color": "#050B1F", "circle-stroke-width": 2 } });
+        m.addLayer({ id: "gps", type: "circle", source: "gps", paint: { "circle-radius": 4, "circle-color": "#E8F4FF", "circle-stroke-color": "#050B1F", "circle-stroke-width": 1.5 } });
         m.on("click", (e) => {
           const pointLayers = ["gps", "ext", "wells"].filter((l) => m.getLayoutProperty(l, "visibility") !== "none");
           const site = m.queryRenderedFeatures(e.point, { layers: pointLayers })[0];

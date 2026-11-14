@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Cell, Meta, Mode, Sites } from "./types";
 import { MapView, type Layers } from "./MapView";
 import { Card } from "./Card";
 import { HowWeKnow, SensorPage } from "./Pages";
 import { CONFIDENCE, MODES, PRIORITY, movementColor, num } from "./labels";
+import { Landing } from "./Landing";
 
 type Tab = "map" | "how" | "sensor";
 
@@ -32,7 +33,13 @@ function Legend({ mode, meta }: { mode: Mode; meta: Meta }) {
   );
 }
 
+const atMap = () => window.location.hash === "#map";
+
 export default function App() {
+  const [landing, setLanding] = useState(() => !atMap());
+  const [dashMounted, setDashMounted] = useState(() => atMap());
+  const firstVisit = useRef(!atMap());
+  const appRef = useRef<HTMLDivElement>(null);
   const [cells, setCells] = useState<Cell[] | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [sites, setSites] = useState<Sites | null>(null);
@@ -49,6 +56,23 @@ export default function App() {
       .catch((e: Error) => setError(e.message));
   }, []);
   useEffect(() => { if (tab === "map") window.dispatchEvent(new Event("resize")); }, [tab]);
+  useEffect(() => { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; }, []);
+  useEffect(() => { appRef.current?.toggleAttribute("inert", landing); }, [landing, dashMounted, cells]);
+
+  const warm = useCallback(() => setDashMounted(true), []);
+  const enter = useCallback(() => {
+    setDashMounted(true);
+    setLanding(false);
+    firstVisit.current = false;
+    history.replaceState(null, "", "#map");
+    window.scrollTo(0, 0);
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  }, []);
+  const backToStart = () => {
+    setLanding(true);
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.scrollTo(0, 0);
+  };
 
   const byId = useMemo(() => new Map((cells ?? []).map((c) => [c.id, c])), [cells]);
   const stats = useMemo(() => {
@@ -58,8 +82,10 @@ export default function App() {
     return { measured: measured.length, fast };
   }, [cells]);
 
-  if (error) return <div className="loading">{error}</div>;
-  if (!cells || !meta || !sites || !stats) return <div className="loading">Loading Houston…</div>;
+  const landingView = landing && <Landing meta={meta} sites={sites} stats={stats} playIntro={firstVisit.current} onWarm={warm} onEnter={enter} />;
+  if (!dashMounted && landing) return <>{landingView}</>;
+  if (error) return <>{landingView}<div className={landing ? "app under loading" : "loading"}>{error}</div></>;
+  if (!cells || !meta || !sites || !stats) return <>{landingView}<div className={landing ? "app under loading" : "loading"}>Loading Houston…</div></>;
 
   const cell = selected ? byId.get(selected) ?? null : null;
   const sensorFor = (id: string) => meta.sensors.find((s) => s.id === id);
@@ -69,12 +95,14 @@ export default function App() {
   const years = `${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}`;
 
   return (
-    <div className="app">
+    <>
+    {landingView}
+    <div ref={appRef} className={landing ? "app under" : "app"}>
       <header className="top">
-        <div className="brand">
-          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B8862B" /><path d="M6 19c4-5 7 2 10-3s7 1 10-3" fill="none" stroke="#14201F" strokeWidth="2.6" strokeLinecap="round" /></svg>
-          <div><h1>TerraGauge</h1><p>Where did Houston's ground move, and how sure are we?</p></div>
-        </div>
+        <button className="brand" onClick={backToStart} title="Back to the start">
+          <img src="./logo.png" alt="" width={36} height={36} />
+          <div><h1>TerraGauge <em>Houston</em></h1><p>Where did Houston's ground move, and how sure are we?</p></div>
+        </button>
         <nav aria-label="Pages">
           {([["map", "Map"], ["how", "How we know"], ["sensor", "Our $74 sensor"]] as const).map(([k, name]) => (
             <button key={k} className={tab === k ? "tab on" : "tab"} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>{name}</button>
@@ -109,7 +137,7 @@ export default function App() {
               <p className="fine">{years} satellite record combined with GPS, wells, compaction gauges, and flood zones. Click any square for its full story.</p>
               <button className="answer" onClick={() => setMode("movement")}>
                 <span className="q">Where did the ground move?</span>
-                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares moved down 1 cm a year or more in the {years} record. The darkest purple areas moved down fastest.</span>
+                <span className="a"><strong>{stats.fast.toLocaleString()}</strong> of {stats.measured.toLocaleString()} measured squares moved down 1 cm a year or more in the {years} record. The brightest purple areas moved down fastest.</span>
               </button>
               <button className="answer" onClick={() => setMode("confidence")}>
                 <span className="q">How sure are we?</span>
@@ -136,5 +164,6 @@ export default function App() {
       {tab === "sensor" && <SensorPage />}
       {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026 (Dancing with the SARs). It describes past satellite records only. It does not forecast flooding or assess any property.</footer>}
     </div>
+    </>
   );
 }
