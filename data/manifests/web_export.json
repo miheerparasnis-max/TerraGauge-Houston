@@ -1,7 +1,7 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-14T15:59:13Z",
-  "git_head": "7e2159abe5f741224130b21745acd75288133617",
+  "created_utc": "2026-11-14T20:54:18Z",
+  "git_head": "2865b32c67fdfda00a204fa344742b5d10684525",
   "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
@@ -89,7 +89,7 @@
     },
     {
       "path": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
-      "sha256": "ff49efa8fe5277e4fb56dbdefcdf6bb1cb7999f171bad3fffc6bd83f5f407cc5",
+      "sha256": "684e9f5c17ddbdcf7d256c7ac8446e47fb602c950b8c5f414c925f6266ae247e",
       "tracked": true
     },
     {
@@ -101,17 +101,17 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "fc054510bc39536b4c88cfa80ef27338aa051340862274d1bd8cdb175863f5a1",
+      "sha256": "91517222323d12d015ae1c06422785132f2c27ba181f1de447ccddf221c2aee6",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "e4ab191b9ef32e49254ac239150df395343df6256e82fdd20b67a41f318b467e",
+      "sha256": "d74aeeb7ff010cf944ba9f10b54f784e9455718c5390a27966a4544559ec1b0a",
       "tracked": true
     },
     {
       "path": "web/public/data/sites.json",
-      "sha256": "6ca883c7533d912c4f735f101c8647753f3c6342586ae144c79a785c3b3c84b3",
+      "sha256": "4a686a40b84af575a129080b814463a290019763175dcaae733c3d1164f4572e",
       "tracked": true
     }
   ],

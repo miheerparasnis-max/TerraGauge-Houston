@@ -52,6 +52,7 @@ SENSOR_COUNT = 15             # permanent GPS stations to suggest
 SENSOR_SPACING_KM = 4.0
 NODE_COUNT = 30               # low-cost nodes to suggest
 NODE_SPACING_KM = 3.0
+COVER_KM = 6.0                # every "Add monitoring here" square has a suggested site at most this far away
 NODE_DAILY_SIGMA_MM = 10.0    # planning assumption for a low-cost node until our hardware test measures it
 NODE_MAX_YEARS = 2.0          # only suggest nodes where they could confirm the sinking within this time
 ESTIMATE_RADIUS_KM = 3.0
@@ -494,9 +495,27 @@ def main() -> None:
             nodes.append(c)
         if len(nodes) >= NODE_COUNT:
             break
+    # Every "Add monitoring here" square gets a suggested site within
+    # COVER_KM: where neither a permanent-station site nor a node above is that
+    # close, add low-cost nodes, each placed to cover as many of the remaining
+    # squares as possible (fastest-sinking first among ties).
+    monitor = [c for c in cells if c["act"] == "add_monitoring"]
+    placed = sensors + nodes
+    left = [c for c in monitor if all(distance_km(c["lon"], c["lat"], o["lon"], o["lat"]) > COVER_KM for o in placed)]
+    while left:
+        def covers(c: dict) -> int:
+            return sum(1 for o in left if abs(o["lat"] - c["lat"]) < 0.06 and distance_km(c["lon"], c["lat"], o["lon"], o["lat"]) <= COVER_KM)
+        best = max(left, key=lambda c: (covers(c), -(c["rate"] or 0)))
+        nodes.append({"id": best["id"], "lon": best["lon"], "lat": best["lat"], "area": area.get(best["id"], best["rate"]), "rate": best["rate"], "weeks": (best.get("detect") or {}).get("nodeWeeks"),
+                      "act": best["act"], "zone": best["flood"]["zone"], "est": "estimated" in best["src"], "cover": True})
+        left = [o for o in left if distance_km(best["lon"], best["lat"], o["lon"], o["lat"]) > COVER_KM]
     for rank, n in enumerate(nodes, start=1):
         by_id[n["id"]]["nodeRank"] = rank
-    node_out = [{"rank": i + 1, "id": n["id"], "lon": r(n["lon"], 5), "lat": r(n["lat"], 5), "areaRate": r(n["area"]), "weeks": n["weeks"], "act": n["act"], "zone": n["zone"], "est": n["est"]} for i, n in enumerate(nodes)]
+    sites_all = [("gps", s_["rank"], s_) for s_ in ({"rank": i + 1, **x} for i, x in enumerate(sensors))] + [("node", i + 1, x) for i, x in enumerate(nodes)]
+    for c in monitor:
+        kind, rank, site = min(sites_all, key=lambda k: distance_km(c["lon"], c["lat"], k[2]["lon"], k[2]["lat"]))
+        c["near"] = {"kind": kind, "rank": rank, "km": r(distance_km(c["lon"], c["lat"], site["lon"], site["lat"]))}
+    node_out = [{"rank": i + 1, "id": n["id"], "lon": r(n["lon"], 5), "lat": r(n["lat"], 5), "areaRate": r(n["area"]), "weeks": n["weeks"], "act": n["act"], "zone": n["zone"], "est": n["est"], "cover": bool(n.get("cover"))} for i, n in enumerate(nodes)]
 
     # "Fill the gap" nodes: land squares outside the satellite's coverage whose
     # nearest GPS is far away. Nothing measures the ground there directly, so a

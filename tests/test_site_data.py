@@ -22,6 +22,12 @@ class SiteDataTests(unittest.TestCase):
         cls.cells = [full[c["id"]] for c in cls.slim]
         cls.by_id = {c["id"]: c for c in cls.cells}
 
+    def test_every_add_monitoring_square_has_a_suggested_site_nearby(self):
+        for c in self.cells:
+            if c["act"] == "add_monitoring":
+                self.assertIn("near", c, c["id"])
+                self.assertLessEqual(c["near"]["km"], 6.0, c["id"])
+
     def test_groundwater_changes_are_real_levels(self):
         # USGS's no-data value (-999999 ft) must never show as a water level.
         for c in self.cells:
