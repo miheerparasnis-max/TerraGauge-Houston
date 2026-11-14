@@ -4,6 +4,10 @@ TerraGauge is an evidence-first monitoring-priority backend for Houston ground-m
 
 It does **not** forecast flooding, project future motion, diagnose the cause of motion, or present a weekend GNSS receiver's readings as land motion.
 
+> **SI disclosure:** AI assistance was used for code scaffolding, debugging,
+> and documentation editing. Team members reviewed, tested, and take
+> responsibility for the final implementation and claims.
+
 ## Backend scope
 
 This repository currently contains a dependency-free Python API with:
@@ -295,6 +299,40 @@ python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_man
 ```
 
 A passing report shows only stationary receiver repeatability. It never shows Houston land motion.
+
+### macOS LC29H(BS) bring-up
+
+The LC29H(BS) is a base-station model: its meaningful output is binary RTCM
+raw-observation/correction data, not a consumer-GPS display. Before a real
+session, use an open-sky, stationary antenna and the USB jumper position **A**.
+The standard-library-only helper below can query the receiver, configure a
+reversible 120-second bench Survey-in, and capture a raw log on macOS:
+
+```bash
+python3 scripts/lc29h_macos.py probe --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py audit --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py configure-test --port /dev/cu.usbserial-110
+python3 scripts/lc29h_macos.py capture --port /dev/cu.usbserial-110 \
+  --seconds 240 --output ~/Desktop/terragauge_rtcm_test.bin
+python3 scripts/lc29h_macos.py bench-run --port /dev/cu.usbserial-110 \
+  --survey-seconds 60 --capture-seconds 120 \
+  --output ~/Desktop/terragauge_same_session.bin
+```
+
+`audit` sends only documented read-only LC29H(BS) status queries across the
+standard UART speeds. A real receiver response includes additional fields;
+an exact copy of the command alone is only an echo and does not verify a
+USB-to-module connection.
+
+`bench-run` keeps the port open while it starts a reversible Survey-in and
+enables RTCM, eliminating a host-side port re-open as a possible cause of an
+empty test capture. It does not save receiver configuration to flash.
+
+The bench configuration is intentionally not saved to the receiver. A nonzero
+log only proves that bytes were captured; keep the antenna fixed and use the
+three-session GroundTruth manifest plus RTKLIB/RINEX conversion before making
+any repeatability claim. An empty log is a diagnostic result, not evidence of
+ground movement.
 
 ## Remaining source work
 
