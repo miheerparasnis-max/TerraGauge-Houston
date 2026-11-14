@@ -89,3 +89,26 @@ class GappedSeriesTests(unittest.TestCase):
         self.assertAlmostEqual(result["gap"]["opera_los_velocity_mm_year"], -10.0, delta=0.05)
         self.assertLess(result["gap"]["opera_velocity_se_mm_year"], 0.05)
         self.assertEqual(result["gap"]["opera_links_filled"], [11])
+
+
+class FrameMergeTests(unittest.TestCase):
+    def test_merged_frame_never_moves_the_reference(self):
+        from backend.ingestion.provisional import merge_frames
+
+        def product(ref, sec, ref_value, south_ref_value):
+            cells = [{"cell_id": f"ref{i}", "longitude": -95.0, "latitude": 29.0 + i / 1000, "opera_pair_displacement_mm": ref_value + i if i else None, "opera_valid_fraction": 1, "opera_water_fraction": 0} for i in range(4)]
+            cells += [{"cell_id": f"ov{i}", "longitude": -95.3, "latitude": 29.3, "opera_pair_displacement_mm": 1.0, "opera_valid_fraction": 1, "opera_water_fraction": 0} for i in range(25)]
+            south = [{"cell_id": "ref0", "longitude": -95.0, "latitude": 29.0, "opera_pair_displacement_mm": south_ref_value, "opera_valid_fraction": 1, "opera_water_fraction": 0}]
+            south += [{"cell_id": f"ov{i}", "longitude": -95.3, "latitude": 29.3, "opera_pair_displacement_mm": 1.0, "opera_valid_fraction": 1, "opera_water_fraction": 0} for i in range(25)]
+            south += [{"cell_id": "far", "longitude": -95.5, "latitude": 29.2, "opera_pair_displacement_mm": -4.0, "opera_valid_fraction": 1, "opera_water_fraction": 0}]
+            return {"parameters": {"reference_date": ref, "secondary_date": sec}, "cells": cells}, {"parameters": {"reference_date": ref, "secondary_date": sec}, "cells": south}
+
+        dates = ["2017-01-01", "2018-01-01", "2019-01-01", "2020-01-01"]
+        plain, merged = [], []
+        for a, b in zip(dates, dates[1:]):
+            p, s = product(a, b, 0.0, 50.0)   # the south frame puts a wild value in a reference square F38238 lacks
+            plain.append(p); merged.append(merge_frames(p, s)[0])
+        ref = {"ref0", "ref1", "ref2", "ref3"}
+        self.assertEqual(opera_series(plain, reference_cell_ids=ref)["reference_offsets_mm"], opera_series(merged, reference_cell_ids=ref)["reference_offsets_mm"])
+        far = next(c for c in opera_series(merged, reference_cell_ids=ref)["cells"] if c["cell_id"] == "far")
+        self.assertAlmostEqual(far["opera_los_velocity_mm_year"], -6.0, delta=0.01)

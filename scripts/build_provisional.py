@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from backend.decision import classify_cell  # noqa: E402
 from backend.ingestion.houston import build_houston_evidence  # noqa: E402
-from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, opera_series, region_cell_ids  # noqa: E402
+from backend.ingestion.provisional import chain_sum, compare_opera_gps, deramp_pair, merge_frames, opera_series, region_cell_ids  # noqa: E402
 from backend.model import Thresholds  # noqa: E402
 from backend.provenance import ProvenanceLog  # noqa: E402
 from backend.publish_guard import assert_publishable  # noqa: E402
@@ -125,6 +125,22 @@ def main() -> None:
         report[key] = {"reference_median_mm": evidence["reference_median_mm"], "reference_scatter_mm": evidence["reference_scatter_mm"], "reference_cells": evidence["reference_cell_count"], "labels": summarize(evidence)}
 
     operas = [load(path) for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json"))]
+    # South Houston (D-044): the neighbouring frame F38239 fills squares F38238
+    # lacks. Each product is aligned on the overlap band; merged rows carry
+    # "frame" and never enter the reference median, so the datum is F38238's.
+    south = {}
+    for path in sorted((DERIVED / "opera_f38239").glob("opera_disp_f38239_*_pair_cells.json")):
+        artifact = load(path)
+        south[(artifact["parameters"]["reference_date"], artifact["parameters"]["secondary_date"])] = artifact
+    merges = []
+    # Only squares F38238 never measures are taken from F38239, so no square's
+    # time series mixes frames.
+    primary_ever = {c["cell_id"] for a in operas for c in a["cells"] if c.get("opera_pair_displacement_mm") is not None}
+    for k, artifact in enumerate(operas):
+        key = (artifact["parameters"]["reference_date"], artifact["parameters"]["secondary_date"])
+        if key in south:
+            operas[k], stats = merge_frames(artifact, south[key], primary_ever=primary_ever)
+            merges.append({"dates": list(key), **stats})
     opera_reference = region_cell_ids(stations_by_id, reference_ids, operas[0]["cells"], radius_km)
     velocity = opera_series(operas, reference_cell_ids=opera_reference)
     velocity["reference_method"] = report["reference"]["method"]
@@ -134,7 +150,7 @@ def main() -> None:
     save(OUT / f"opera_houston_los_velocity_{window}.json", velocity)
     comparison = compare_opera_gps(velocity, stations, exclude_station_ids=set(reference_ids))
     save(OUT / "opera_vs_houstonnet_comparison.json", comparison)
-    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "window": [velocity["dates"][0], velocity["dates"][-1]], "reference_cells": len(velocity.get("reference_cell_ids") or []), "gps_comparison": comparison["stats"],
+    report["opera"] = {"cells": len(velocity["cells"]), "products": velocity["product_count"], "window": [velocity["dates"][0], velocity["dates"][-1]], "south_frame": {"frame": "F38239", "products_merged": sum(1 for m in merges if m["added"]), "per_product": merges}, "reference_cells": len(velocity.get("reference_cell_ids") or []), "gps_comparison": comparison["stats"],
                        "window_check": window_check(operas, opera_reference, stations, reference_ids, WINDOW_CHECK_ENDS)}
     save(OUT / "build_report.json", report)
     for path in (value for value in common.values() if isinstance(value, Path)):

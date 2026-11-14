@@ -342,6 +342,26 @@ That entry exists only on `reyansh/website-and-fixes`, and its number collides w
 
 *Repository owner's position (2026-11-14). To be settled with the teammate.*
 
+### D-044: South frame F38239 added with the datum fixed; full study-box grid (2026-11-14)
+- **South frame.** The 29 F38239 products from the teammate branch, with local paths replaced by granule names, are merged with two fixes:
+  1. **Datum.** Merged rows never enter the reference median, so the datum stays F38238's. A test fails without this fix.
+  2. **No mixed squares.** Only squares F38238 never measures are taken from F38239, so no square's time series mixes frames.
+- **Datum verified.** Against the previous build, the 102 stations matched to the same square changed by exactly 0.0 mm/yr. Four stations were rematched to a nearer new square (NASA, PA21, PA24, PA41).
+- **Effect.**
+  - OPERA squares 6,437 → 8,060; 1,306 measured squares now lie south of 29.55° N.
+  - F38239 has no 2025-09-23 → 2026-03-22 product (NASA CMR, checked 2026-11-11). So 844 of the 855 OPERA squares south of 29.5° N are gapped: lower confidence, no chart.
+- **GPS agreement** (131 stations): r 0.775, median |d| 1.08 mm/yr, bias −0.25 mm/yr. The 25 newly comparable stations agree less well: r 0.43, median |d| 1.66 mm/yr, bias −1.09 mm/yr. 11 of them are campaign PAM stations. This is stated, not hidden.
+- **Full grid.** Every 1 km square in the study box is now drawn: 13,522 squares, including some just outside the box from earlier builds. A square with no reading says why:
+  - "Not enough reliable satellite data here" (3,576);
+  - "Not measured at this resolution (gridding gap)" (about 1,690);
+  - "Outside the satellite product's coverage" (about 120).
+
+  None is filled or labelled.
+- **Counts.** urgent 1,153, high 911, watch 2,472, stable 3,595, no data 5,386, check 5.
+- **Not taken from the teammate branch:** filling stripes from neighbours, labels on interpolated squares, and the forecast (D-043).
+
+*Delegated (2026-11-14: "whatever you think is excellent, go ahead").*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.

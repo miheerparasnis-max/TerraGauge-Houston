@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-14T16:01:53Z",
-  "git_head": "ff1953289010a296eef50cda0e52537f5b099f3a",
-  "git_worktree_clean": true,
+  "created_utc": "2026-11-14T16:24:54Z",
+  "git_head": "f7c276dd00c146827e00a76db64993e126fa309a",
+  "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
     {
@@ -176,18 +176,163 @@
       "tracked": true
     },
     {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20160712_20161109_pair_cells.json",
+      "sha256": "856cf484c6c01a90539aff5e799371c5b866cfca7404ae94e2162108ca8a68d6",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20161109_20170213_pair_cells.json",
+      "sha256": "dd61e1ee96d569074ffcc62d37e5a33c3c81160615156ff1afcba2ca7024bedf",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20170213_20170514_pair_cells.json",
+      "sha256": "f760bf78bde9fdf32826b05c00bdc8d7e1306b2901e99dce31a850baf1f510dc",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20170514_20170812_pair_cells.json",
+      "sha256": "4ecf74ccc137e43b5327179873c97adf452ee2961221d6d0e72f2a3ef5f978be",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20170812_20171110_pair_cells.json",
+      "sha256": "6aa9d7a6a5393f1e0bd5a1fa996c85d470c11ebb28c60d3dd7029bdbb2ae92f3",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20171110_20180208_pair_cells.json",
+      "sha256": "73a84dd7206424cd535f92c154324f3be6ea019a5ec3844311b6f19a8d7a017e",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20180208_20180515_pair_cells.json",
+      "sha256": "b25bef97a30b9ca65e9c40e7ed67fd27d590c4a68a7b86d4ce7f9b3d672f1b3d",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20180515_20180813_pair_cells.json",
+      "sha256": "5334361017d06387c2c29714620033f64a1d25191ab18fef20c53f6c70538cc4",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20180813_20181111_pair_cells.json",
+      "sha256": "060be5db40ccfb8ee740f0d7a94db9753d443875a0ed56b7228e43702e150be6",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20181111_20190209_pair_cells.json",
+      "sha256": "991d436a918bc0ee7706889efd0f8dfaadf88f7489e6f1719b73db02fbe5f428",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20190209_20190510_pair_cells.json",
+      "sha256": "0297dd003a391720a072e744ec67775c564936f23323bd68772289085db02122",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20190510_20190808_pair_cells.json",
+      "sha256": "921e0021aaa04ae7055c8d5926ec5dd0e8063c82ffe718081fc9922d9c2cb8ba",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20190808_20191106_pair_cells.json",
+      "sha256": "6838c727da3b0bc331197fc72a989af3c04df2d0e5cf488c51a5e6af65cb92a7",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20191106_20200204_pair_cells.json",
+      "sha256": "7f65f7599241b725568b80902b6d6bc3fe86e8daeeeb42b95864add2063c0a93",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20200204_20200504_pair_cells.json",
+      "sha256": "1a3ea3f908cb1d3fb5dd598d4f749e1cbd71b2ec340d30409893018fea637d8b",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20200504_20200802_pair_cells.json",
+      "sha256": "ea90faec74e31eca12a851981d05ad47d54267c59bb5bf4feef2e832ff665a11",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20200802_20201031_pair_cells.json",
+      "sha256": "d9e1275565b11fc6bd889ae20bc91a389232885e8c69da33e27b77bd9df67c00",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20201031_20210204_pair_cells.json",
+      "sha256": "151ec3f26ecfcfaf35bb8b7daa443c0beeff2597e761a85e2fad2aa4354e755e",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20210204_20210505_pair_cells.json",
+      "sha256": "50ff081e0fb9cad397886920ced64ef122d3c46760aa91f36f5b3e63d39e1cb8",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20210505_20210803_pair_cells.json",
+      "sha256": "2391474e0b6ac90a043fa44ecc7f589a458606e3d74c5e03da113e7ce5bfe66a",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20210803_20211101_pair_cells.json",
+      "sha256": "cd019cbd15ba4b7ac0575f9ae3e2569cac8e3dcc85f637528a65208267d5cf82",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20211101_20220319_pair_cells.json",
+      "sha256": "1a25f853b6517079f33f900c4cd8e6385328fd9d097162a6a40846d668fc98d5",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20220319_20220927_pair_cells.json",
+      "sha256": "ed0cc0c6569525e9731595e1debf3ab165eaad83264dbd22d8999b2a8735defa",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20220927_20230407_pair_cells.json",
+      "sha256": "ab2921eff2e23643a4f6adbda28f83e732299f15f783f8010f9eff9bf299f963",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20230407_20231004_pair_cells.json",
+      "sha256": "12e4dcec15e2176bccc36792e73d9cbd5ad77c99902984f272ae9b6a285f9f5a",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20231004_20240401_pair_cells.json",
+      "sha256": "33572f110559d5ce8dd90e77932ba99971382fc29953db7c8bf67f96986cd811",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20240401_20240928_pair_cells.json",
+      "sha256": "f66a2c824e13f2993b28ee678a8a4fa5c90566444b04a0928e837d0aad0bbc81",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20240928_20250327_pair_cells.json",
+      "sha256": "41d20bca642746e041436a5d05a4c96331ccc44e82b0f9cee6fedefe3276bd8b",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/opera_f38239/opera_disp_f38239_20250327_20250923_pair_cells.json",
+      "sha256": "e1c6d2b908db985c04ff514c53f4be3a40ef4a3633fc1dd2ed18807e17a85444",
+      "tracked": true
+    },
+    {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "c6e63019c86df9aab2f8a1dc2b045ecfa9be2878100824352ed03caa3477c831",
+      "sha256": "3a785d4c73ec98e459294d50ee5f206808371abb7696d1f77e839b8e2251496c",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20260322.json",
-      "sha256": "e926d64d4ae1012fbca3f7b6c3f308a3a38cd95868a9c030270ed15afd56a235",
+      "sha256": "11fc32479003204c2203c810bfcfc0a13cc5f6b46fbbe0f487482155479b817c",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "ad05fc34a2e2a6dd8704837772609545e78ac89bf36865807f93f11379a25f4a",
+      "sha256": "415ec125cd9b435b8758a5e258c4916c0b0582971e3caba929f268059b7edc4b",
       "tracked": true
     },
     {
@@ -221,12 +366,12 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "f2738500c45d87774d966a5b916c08a2650d1f4e23ff11d85522b3ed8f82c82d",
+      "sha256": "0c0523f7e82c357f37f13b6536ee117e103b4d62e4e2283ca053c11a4593dec4",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "062d0d6ae73345f61a881dab60d165ec14c1c68eabeec2cf8d344728cc08dd5b",
+      "sha256": "6f64edf59246b94b3d5d8b3d0d2519ee8f8440b6ac0f3168a9c4be34cce708a7",
       "tracked": true
     },
     {

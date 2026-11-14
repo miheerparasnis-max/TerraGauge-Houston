@@ -153,7 +153,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
     lookups, offsets = [], []
     for product in chain:
         lookup = {cell["cell_id"]: cell for cell in product["cells"]}
-        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and (c.get("opera_water_fraction") or 0) <= water_max and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox))]
+        reference = [float(c["opera_pair_displacement_mm"]) for c in product["cells"] if c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min and (c.get("opera_water_fraction") or 0) <= water_max and ((c["cell_id"] in reference_cell_ids) if reference_cell_ids is not None else _in_bbox(c, reference_bbox)) and not c.get("frame")]  # a merged neighbouring frame never sets the datum (D-044)
         if len(reference) < 3:
             raise ValueError(f"reference patch has fewer than three valid OPERA cells in product starting {product['parameters']['reference_date']}")
         lookups.append(lookup); offsets.append(median(reference))
@@ -337,3 +337,36 @@ def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], in
         "stats": stats,
         "stations": rows,
     }
+
+def merge_frames(primary: dict[str, Any], secondary: dict[str, Any], valid_min: float = 0.5, min_overlap: int = 20, primary_ever: set[str] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Add a neighbouring OPERA frame's cells to a product of the same dates.
+
+    Both products image the same Sentinel-1 passes, but each frame has its
+    own reference, so the secondary frame is shifted by the median difference
+    over the squares both frames measure well (their overlap band). Only
+    squares the primary frame lacks are added. Returns (merged, stats).
+    """
+    if (primary["parameters"]["reference_date"], primary["parameters"]["secondary_date"]) != (secondary["parameters"]["reference_date"], secondary["parameters"]["secondary_date"]):
+        raise ValueError("products cover different dates")
+    good = lambda c: c.get("opera_pair_displacement_mm") is not None and (c.get("opera_valid_fraction") or 0) >= valid_min  # noqa: E731
+    p = {c["cell_id"]: c for c in primary["cells"]}
+    diffs = [p[c["cell_id"]]["opera_pair_displacement_mm"] - c["opera_pair_displacement_mm"] for c in secondary["cells"] if good(c) and c["cell_id"] in p and good(p[c["cell_id"]])]
+    if len(diffs) < min_overlap:
+        return primary, {"overlap": len(diffs), "added": 0, "offset_mm": None}
+    offset = median(diffs)
+    added = []
+    for c in secondary["cells"]:
+        mine = p.get(c["cell_id"])
+        if mine is not None and mine.get("opera_pair_displacement_mm") is not None:
+            continue
+        if primary_ever is not None and c["cell_id"] in primary_ever:
+            continue  # D-044: never mix frames inside one square's time series
+        row = dict(c)
+        if row.get("opera_pair_displacement_mm") is not None:
+            row["opera_pair_displacement_mm"] = row["opera_pair_displacement_mm"] + offset
+        row["frame"] = "F38239"
+        added.append(row)
+    ids = {c["cell_id"] for c in added}
+    merged = {**primary, "cells": [c for c in primary["cells"] if c["cell_id"] not in ids] + added}
+    spread = 1.4826 * median(abs(d - offset) for d in diffs)
+    return merged, {"overlap": len(diffs), "added": len(added), "offset_mm": round(offset, 2), "overlap_spread_mm": round(spread, 2)}

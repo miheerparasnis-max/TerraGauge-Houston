@@ -99,8 +99,16 @@ def main() -> None:
     # the square's centre exactly as fema_nfhl_houston_cell_context does.
     pair_ids = {row["cell_id"] for row in pair["cells"]}
     extra = [c for cid, c in opera_cells.items() if cid not in pair_ids]
+    # Every other 1 km square in the study box is drawn too, with no reading and
+    # the reason (D-044), so absence is shown rather than hidden.
+    from scripts.build_grid import OVERLAY, ZoneLookup, grid_ids, lonlat
+    known = pair_ids | {c["cell_id"] for c in extra}
+    for i, j in grid_ids():
+        cid = f"epsg3857-1km-{i}-{j}"
+        if cid not in known:
+            lon_c, lat_c = lonlat((i + 0.5) * 1000, (j + 0.5) * 1000)
+            extra.append({"cell_id": cid, "longitude": lon_c, "latitude": lat_c})
     if extra:
-        from scripts.build_grid import OVERLAY, ZoneLookup
         lookup = ZoneLookup(get(OVERLAY)["features"])
         for c in extra:
             zone, sub, sfha = lookup.zone(float(c["longitude"]), float(c["latitude"]))
@@ -109,8 +117,13 @@ def main() -> None:
     # Squares that no OPERA product ever assigned a pixel block to: the ~990 m
     # blocks skip about a fifth of the ~870 m (on the ground) map squares.
     opera_seen = set()
-    for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json")):
+    for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json")) + sorted((DERIVED / "opera_f38239").glob("opera_disp_f38239_*_pair_cells.json")):
         opera_seen |= {c["cell_id"] for c in get(path)["cells"]}
+
+    def gridding_gap(cid: str) -> bool:
+        """No OPERA block landed here, but at least two side neighbours got one."""
+        i, j = (int(v) for v in cid.rsplit("km-", 1)[1].rsplit("-", 1))
+        return sum(f"epsg3857-1km-{i + a}-{j + b}" in opera_seen for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))) >= 2
     nasa = {}
     for name in ("nasadem", "dswx", "dist"):
         path = LAYERS / f"{name}_houston_cells.json"
@@ -183,9 +196,12 @@ def main() -> None:
             diff = check_id = check_km = None
             level, conf_reasons, significant = None, ["No satellite reading passed the quality checks here, and no GPS station is inside the square."], False
             pri, pri_reason = priority(rate_vertical=None, significant=False, level=None, flood_zone_sfha=sfha, record=record_text)
-            if cid not in opera_seen:
+            if cid not in opera_seen and gridding_gap(cid):
                 level, conf_reasons = None, ["Not measured at this resolution: the satellite product's ~990 m pixel blocks skip some 1 km map squares. This is a gridding gap, not a sign that the ground here is stable."]
                 pri_reason = "Not measured at this resolution (gridding gap); see the squares around it."
+            elif cid not in opera_seen:
+                level, conf_reasons = None, ["Outside the area the satellite product covers, and no GPS station is inside the square."]
+                pri_reason = "Outside the satellite product's coverage."
 
         needs_sensor = pri in ("urgent", "high", "watch") and cover_km > thresholds.gps_nearby_km
         counts["priority"][pri] = counts["priority"].get(pri, 0) + 1
