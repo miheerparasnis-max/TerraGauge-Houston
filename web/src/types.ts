@@ -21,7 +21,7 @@ export interface Cell {
   flood: { zone: string | null; sub: string | null; sfha: boolean };
   well: { km: number; dd: number | null } | null;
   ext: { km: number; c: number | null } | null;
-  nisar: { d: number | null; ok: boolean };
+  nisar: { d: number | null; ok: boolean } | null;   // null: outside the processed NISAR footprint
   nasadem?: { elevation_m?: number };
   dswx?: { water_fraction?: number };
   dist?: { disturbed_fraction?: number };

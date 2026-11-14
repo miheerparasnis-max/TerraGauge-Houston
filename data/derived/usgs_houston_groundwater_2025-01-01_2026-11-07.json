@@ -1,6 +1,6 @@
 {
   "artifact_type": "usgs_groundwater_daily_summary",
-  "source_file": "/private/tmp/terragauge-usgs-gw-daily.json",
+  "source_file": "/private/tmp/claude-502/-Users-aaronqin-TerraGauge-Houston/0747c3b4-9495-45e4-a4cd-dec056422f92/scratchpad/usgs/gw.json",
   "sign_convention": "Positive depth_change_ft means water was deeper below land surface at the end of the retrieved window.",
   "limitations": [
     "This is local groundwater evidence, not a causal subsidence finding.",
@@ -23,11 +23,11 @@
         "depth_below_land_surface": 46.93
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 48.54
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 48.26
       },
-      "depth_change_ft": 1.6099999999999994,
-      "observation_count": 658,
+      "depth_change_ft": 1.3299999999999983,
+      "observation_count": 659,
       "source_status": "source_derived"
     },
     {
@@ -45,11 +45,11 @@
         "depth_below_land_surface": 46.51
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 47.56
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 47.63
       },
-      "depth_change_ft": 1.0500000000000043,
-      "observation_count": 658,
+      "depth_change_ft": 1.1200000000000045,
+      "observation_count": 659,
       "source_status": "source_derived"
     },
     {
@@ -67,11 +67,11 @@
         "depth_below_land_surface": 46.73
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 47.9
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 47.85
       },
-      "depth_change_ft": 1.1700000000000017,
-      "observation_count": 657,
+      "depth_change_ft": 1.1200000000000045,
+      "observation_count": 659,
       "source_status": "source_derived"
     },
     {
@@ -89,11 +89,11 @@
         "depth_below_land_surface": 134.18
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
+        "time": "2026-11-07T00:00:00.000",
         "depth_below_land_surface": 127.71
       },
       "depth_change_ft": -6.470000000000013,
-      "observation_count": 674,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -111,11 +111,11 @@
         "depth_below_land_surface": 134.16
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
+        "time": "2026-11-07T00:00:00.000",
         "depth_below_land_surface": 127.7
       },
       "depth_change_ft": -6.459999999999994,
-      "observation_count": 674,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -133,11 +133,11 @@
         "depth_below_land_surface": 134.17
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
+        "time": "2026-11-07T00:00:00.000",
         "depth_below_land_surface": 127.7
       },
       "depth_change_ft": -6.469999999999985,
-      "observation_count": 674,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -155,11 +155,11 @@
         "depth_below_land_surface": 97.71
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
+        "time": "2026-11-07T00:00:00.000",
         "depth_below_land_surface": 100.61
       },
       "depth_change_ft": 2.9000000000000057,
-      "observation_count": 643,
+      "observation_count": 644,
       "source_status": "source_derived"
     },
     {
@@ -177,11 +177,11 @@
         "depth_below_land_surface": 97.7
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 100.6
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 100.61
       },
-      "depth_change_ft": 2.8999999999999915,
-      "observation_count": 643,
+      "depth_change_ft": 2.9099999999999966,
+      "observation_count": 644,
       "source_status": "source_derived"
     },
     {
@@ -199,11 +199,11 @@
         "depth_below_land_surface": 97.71
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 100.6
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 100.61
       },
-      "depth_change_ft": 2.8900000000000006,
-      "observation_count": 642,
+      "depth_change_ft": 2.9000000000000057,
+      "observation_count": 644,
       "source_status": "source_derived"
     },
     {
@@ -243,11 +243,11 @@
         "depth_below_land_surface": 265.24
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 267.12
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 267.22
       },
-      "depth_change_ft": 1.8799999999999955,
-      "observation_count": 586,
+      "depth_change_ft": 1.9800000000000182,
+      "observation_count": 588,
       "source_status": "source_derived"
     },
     {
@@ -265,11 +265,11 @@
         "depth_below_land_surface": 265.16
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 267.01
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 266.6
       },
-      "depth_change_ft": 1.849999999999966,
-      "observation_count": 586,
+      "depth_change_ft": 1.4399999999999977,
+      "observation_count": 588,
       "source_status": "source_derived"
     },
     {
@@ -287,11 +287,11 @@
         "depth_below_land_surface": 265.19
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 267.05
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 266.97
       },
-      "depth_change_ft": 1.8600000000000136,
-      "observation_count": 586,
+      "depth_change_ft": 1.7800000000000296,
+      "observation_count": 588,
       "source_status": "source_derived"
     },
     {
@@ -309,11 +309,11 @@
         "depth_below_land_surface": 107.63
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 110.06
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 110.07
       },
-      "depth_change_ft": 2.430000000000007,
-      "observation_count": 666,
+      "depth_change_ft": 2.4399999999999977,
+      "observation_count": 667,
       "source_status": "source_derived"
     },
     {
@@ -331,11 +331,11 @@
         "depth_below_land_surface": 107.5
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 109.93
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 109.99
       },
-      "depth_change_ft": 2.430000000000007,
-      "observation_count": 666,
+      "depth_change_ft": 2.489999999999995,
+      "observation_count": 667,
       "source_status": "source_derived"
     },
     {
@@ -353,11 +353,11 @@
         "depth_below_land_surface": 107.56
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 109.96
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 110.03
       },
-      "depth_change_ft": 2.3999999999999915,
-      "observation_count": 665,
+      "depth_change_ft": 2.469999999999999,
+      "observation_count": 667,
       "source_status": "source_derived"
     },
     {
@@ -375,11 +375,11 @@
         "depth_below_land_surface": 107.71
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 111.49
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 111.5
       },
-      "depth_change_ft": 3.780000000000001,
-      "observation_count": 675,
+      "depth_change_ft": 3.7900000000000063,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -397,11 +397,11 @@
         "depth_below_land_surface": 107.7
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 111.48
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 111.49
       },
-      "depth_change_ft": 3.780000000000001,
-      "observation_count": 675,
+      "depth_change_ft": 3.789999999999992,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -419,11 +419,11 @@
         "depth_below_land_surface": 107.7
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 111.48
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 111.49
       },
-      "depth_change_ft": 3.780000000000001,
-      "observation_count": 674,
+      "depth_change_ft": 3.789999999999992,
+      "observation_count": 676,
       "source_status": "source_derived"
     },
     {
@@ -441,11 +441,11 @@
         "depth_below_land_surface": 13.55
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 15.84
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 16.09
       },
-      "depth_change_ft": 2.289999999999999,
-      "observation_count": 652,
+      "depth_change_ft": 2.539999999999999,
+      "observation_count": 653,
       "source_status": "source_derived"
     },
     {
@@ -463,11 +463,11 @@
         "depth_below_land_surface": 13.03
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 15.26
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 15.29
       },
-      "depth_change_ft": 2.2300000000000004,
-      "observation_count": 652,
+      "depth_change_ft": 2.26,
+      "observation_count": 653,
       "source_status": "source_derived"
     },
     {
@@ -485,11 +485,11 @@
         "depth_below_land_surface": 13.35
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 15.5
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 15.66
       },
-      "depth_change_ft": 2.1500000000000004,
-      "observation_count": 651,
+      "depth_change_ft": 2.3100000000000005,
+      "observation_count": 653,
       "source_status": "source_derived"
     },
     {
@@ -507,11 +507,11 @@
         "depth_below_land_surface": 382.71
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 370.06
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 370.18
       },
-      "depth_change_ft": -12.649999999999977,
-      "observation_count": 662,
+      "depth_change_ft": -12.529999999999973,
+      "observation_count": 663,
       "source_status": "source_derived"
     },
     {
@@ -529,11 +529,11 @@
         "depth_below_land_surface": 382.68
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 369.95
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 370.08
       },
-      "depth_change_ft": -12.730000000000018,
-      "observation_count": 662,
+      "depth_change_ft": -12.600000000000023,
+      "observation_count": 663,
       "source_status": "source_derived"
     },
     {
@@ -551,11 +551,11 @@
         "depth_below_land_surface": 382.7
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 369.86
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 370.11
       },
-      "depth_change_ft": -12.839999999999975,
-      "observation_count": 661,
+      "depth_change_ft": -12.589999999999975,
+      "observation_count": 663,
       "source_status": "source_derived"
     },
     {
@@ -573,11 +573,11 @@
         "depth_below_land_surface": 153.09
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 151.66
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 151.79
       },
-      "depth_change_ft": -1.4300000000000068,
-      "observation_count": 615,
+      "depth_change_ft": -1.3000000000000114,
+      "observation_count": 616,
       "source_status": "source_derived"
     },
     {
@@ -595,11 +595,11 @@
         "depth_below_land_surface": 152.85
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": 151.52
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 151.63
       },
-      "depth_change_ft": -1.329999999999984,
-      "observation_count": 615,
+      "depth_change_ft": -1.2199999999999989,
+      "observation_count": 616,
       "source_status": "source_derived"
     },
     {
@@ -617,11 +617,11 @@
         "depth_below_land_surface": 153.0
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 151.55
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 151.7
       },
-      "depth_change_ft": -1.4499999999999886,
-      "observation_count": 614,
+      "depth_change_ft": -1.3000000000000114,
+      "observation_count": 616,
       "source_status": "source_derived"
     },
     {
@@ -749,11 +749,11 @@
         "depth_below_land_surface": 96.78
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 102.65
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 102.74
       },
-      "depth_change_ft": 5.8700000000000045,
-      "observation_count": 554,
+      "depth_change_ft": 5.959999999999994,
+      "observation_count": 556,
       "source_status": "source_derived"
     },
     {
@@ -771,11 +771,11 @@
         "depth_below_land_surface": 96.7
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 102.55
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 102.65
       },
-      "depth_change_ft": 5.849999999999994,
-      "observation_count": 554,
+      "depth_change_ft": 5.950000000000003,
+      "observation_count": 556,
       "source_status": "source_derived"
     },
     {
@@ -793,11 +793,11 @@
         "depth_below_land_surface": 96.73
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 102.54
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 102.69
       },
-      "depth_change_ft": 5.810000000000002,
-      "observation_count": 554,
+      "depth_change_ft": 5.959999999999994,
+      "observation_count": 556,
       "source_status": "source_derived"
     },
     {
@@ -815,11 +815,11 @@
         "depth_below_land_surface": 177.6
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 182.63
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 182.72
       },
-      "depth_change_ft": 5.030000000000001,
-      "observation_count": 519,
+      "depth_change_ft": 5.1200000000000045,
+      "observation_count": 521,
       "source_status": "source_derived"
     },
     {
@@ -837,11 +837,11 @@
         "depth_below_land_surface": 177.43
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": 182.54
+        "time": "2026-11-07T00:00:00.000",
+        "depth_below_land_surface": 182.63
       },
-      "depth_change_ft": 5.109999999999985,
-      "observation_count": 519,
+      "depth_change_ft": 5.199999999999989,
+      "observation_count": 521,
       "source_status": "source_derived"
     },
     {
@@ -859,11 +859,11 @@
         "depth_below_land_surface": 152.08
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": -999999.0
+        "time": "2026-08-18T00:00:00.000",
+        "depth_below_land_surface": 144.03
       },
-      "depth_change_ft": -1000151.08,
-      "observation_count": 673,
+      "depth_change_ft": -8.050000000000011,
+      "observation_count": 593,
       "source_status": "source_derived"
     },
     {
@@ -881,11 +881,11 @@
         "depth_below_land_surface": 151.82
       },
       "last_observation": {
-        "time": "2026-11-06T00:00:00.000",
-        "depth_below_land_surface": -999999.0
+        "time": "2026-08-18T00:00:00.000",
+        "depth_below_land_surface": 143.83
       },
-      "depth_change_ft": -1000150.82,
-      "observation_count": 673,
+      "depth_change_ft": -7.989999999999981,
+      "observation_count": 593,
       "source_status": "source_derived"
     },
     {
@@ -903,11 +903,11 @@
         "depth_below_land_surface": 151.91
       },
       "last_observation": {
-        "time": "2026-11-05T00:00:00.000",
-        "depth_below_land_surface": -999999.0
+        "time": "2026-08-18T00:00:00.000",
+        "depth_below_land_surface": 143.97
       },
-      "depth_change_ft": -1000150.91,
-      "observation_count": 672,
+      "depth_change_ft": -7.939999999999998,
+      "observation_count": 593,
       "source_status": "source_derived"
     }
   ]

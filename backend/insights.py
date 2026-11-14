@@ -36,13 +36,14 @@ def vertical_rate(los_mm_year: float, incidence_deg: float = INCIDENCE_DEG) -> f
     return los_mm_year / cos(radians(incidence_deg))
 
 
-def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_year: float | None, neighbor_difference_mm_year: float | None = None) -> tuple[str, list[str]]:
+def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_year: float | None, neighbor_difference_mm_year: float | None = None, missing_dates: int = 0, total_dates: int | None = None) -> tuple[str, list[str]]:
     """High / Medium / Low confidence in a cell's rate, with plain reasons.
 
     Points: precise fit (+2 if standard error <= 2.5 mm/yr, +1 if <= 5);
     nearby GPS agrees within 3 mm/yr (+1) or disagrees by more than 5 (-1);
     very jumpy record (residual scatter > 18 mm) (-1);
-    differs from the median of squares within 3 km by more than 10 mm/yr (-1).
+    differs from the median of squares within 3 km by more than 10 mm/yr (-1);
+    record missing any satellite date (-1, and never High: D-042).
     High >= 3, Medium = 2, Low <= 1.
     """
     score, reasons = 0, []
@@ -67,7 +68,13 @@ def confidence(*, se_vertical: float, residual_sd_mm: float, gps_difference_mm_y
             score -= 1; reasons.append(f"It differs from the squares around it by {abs(neighbor_difference_mm_year):.0f} mm/yr, which can mean a local glitch.")
         elif abs(neighbor_difference_mm_year) <= 4.0:
             reasons.append("It matches the squares around it.")
+    if missing_dates:
+        score -= 1
+        of = f" of {total_dates}" if total_dates else ""
+        reasons.append(f"The satellite record is missing {missing_dates}{of} dates here; the rate uses only the dates it has, which agreed less well with GPS in testing.")
     level = "high" if score >= 3 else "medium" if score == 2 else "low"
+    if missing_dates and level == "high":
+        level = "medium"
     return level, reasons
 
 

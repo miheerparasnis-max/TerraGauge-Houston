@@ -88,9 +88,29 @@ def main() -> None:
     stations = [s for s in all_stations if not is_deep_seated(s["station_id"])]
     extensometers = get(DERIVED / "usgs_houston_extensometer_compaction_2023.json")["stations"]
     wells = get(DERIVED / "usgs_houston_groundwater_2025-01-01_2026-11-07.json")["series"]
+    # USGS marks missing days with -999999 ft; a change that size is a no-data
+    # value, never a water level (the ingestion skips it too). Show it as unknown.
+    clean_dd = lambda v: None if v is None or abs(float(v)) > 1000 else v  # noqa: E731
     flood = {row["cell_id"]: row for row in get(DERIVED / "fema_nfhl_houston_cell_context_2026-11-07.json")["cells"]}
     inventory = get(INVENTORY)
     opera_cells = {row["cell_id"]: row for row in opera["cells"]}
+    # D-042: the map used to hold only the NISAR evidence footprint, which hid
+    # measured OPERA squares outside it. Add them, with the FEMA zone sampled at
+    # the square's centre exactly as fema_nfhl_houston_cell_context does.
+    pair_ids = {row["cell_id"] for row in pair["cells"]}
+    extra = [c for cid, c in opera_cells.items() if cid not in pair_ids]
+    if extra:
+        from scripts.build_grid import OVERLAY, ZoneLookup
+        lookup = ZoneLookup(get(OVERLAY)["features"])
+        for c in extra:
+            zone, sub, sfha = lookup.zone(float(c["longitude"]), float(c["latitude"]))
+            flood[c["cell_id"]] = {"cell_id": c["cell_id"], "flood_zone": zone, "zone_subtype": sub, "flood_exposed": sfha if zone else None}
+    rows = pair["cells"] + [{"cell_id": c["cell_id"], "longitude": c["longitude"], "latitude": c["latitude"], "evidence": {}, "outside_nisar": True} for c in extra]
+    # Squares that no OPERA product ever assigned a pixel block to: the ~990 m
+    # blocks skip about a fifth of the ~870 m (on the ground) map squares.
+    opera_seen = set()
+    for path in sorted(DERIVED.glob("opera_disp_houston_*_pair_cells.json")):
+        opera_seen |= {c["cell_id"] for c in get(path)["cells"]}
     nasa = {}
     for name in ("nasadem", "dswx", "dist"):
         path = LAYERS / f"{name}_houston_cells.json"
@@ -119,7 +139,7 @@ def main() -> None:
     active = [s for s in stations if (s.get("end_decimal_year") or 0) >= 2022]
     cells, rows_for_plan = [], []
     counts = {"priority": {}, "confidence": {}}
-    for row in pair["cells"]:
+    for row in rows:
         cid, lon, lat = row["cell_id"], float(row["longitude"]), float(row["latitude"])
         ev = row["evidence"]
         op = opera_cells.get(cid)
@@ -151,7 +171,7 @@ def main() -> None:
             if op:
                 diff, check_id, check_km = gps_difference(lon, lat, vertical_rate(op["opera_los_velocity_mm_year"]), stations)
                 area = neighbors.get(cid)
-                level, conf_reasons = confidence(se_vertical=vertical_rate(op["opera_velocity_se_mm_year"]), residual_sd_mm=op["opera_residual_sd_mm"], gps_difference_mm_year=diff, neighbor_difference_mm_year=(vertical_rate(op["opera_los_velocity_mm_year"]) - area) if area is not None else None)
+                level, conf_reasons = confidence(se_vertical=vertical_rate(op["opera_velocity_se_mm_year"]), residual_sd_mm=op["opera_residual_sd_mm"], gps_difference_mm_year=diff, missing_dates=len(op.get("opera_links_filled") or []), total_dates=opera["product_count"], neighbor_difference_mm_year=(vertical_rate(op["opera_los_velocity_mm_year"]) - area) if area is not None else None)
                 if sources == ["satellite", "gps"] and level != "high":
                     level = "high"; conf_reasons = conf_reasons + ["A GPS station sits inside this square, so its precise reading is blended in."]
             else:
@@ -163,6 +183,9 @@ def main() -> None:
             diff = check_id = check_km = None
             level, conf_reasons, significant = None, ["No satellite reading passed the quality checks here, and no GPS station is inside the square."], False
             pri, pri_reason = priority(rate_vertical=None, significant=False, level=None, flood_zone_sfha=sfha, record=record_text)
+            if cid not in opera_seen:
+                level, conf_reasons = None, ["Not measured at this resolution: the satellite product's ~990 m pixel blocks skip some 1 km map squares. This is a gridding gap, not a sign that the ground here is stable."]
+                pri_reason = "Not measured at this resolution (gridding gap); see the squares around it."
 
         needs_sensor = pri in ("urgent", "high", "watch") and cover_km > thresholds.gps_nearby_km
         counts["priority"][pri] = counts["priority"].get(pri, 0) + 1
@@ -173,13 +196,13 @@ def main() -> None:
             "rate": r(rate), "se": r(se), "src": sources, "sig": significant,
             "conf": level, "confWhy": conf_reasons,
             "pri": pri, "priWhy": pri_reason, "needsSensor": needs_sensor,
-            "series": op["opera_series_mm"] if op else None,
+            "series": op["opera_series_mm"] if op and not op.get("opera_links_filled") else None,  # a bridged gap is not drawn as data (D-042)
             "gps": {"id": cover["station_id"], "km": r(cover_km, 1), "up": display_gps_rate(cover["up_mm_year"])[0], "flag": display_gps_rate(cover["up_mm_year"])[1], "y0": r(cover.get("start_decimal_year"), 0), "y1": r(cover.get("end_decimal_year"), 0)},
             "check": {"id": check_id, "km": r(check_km, 1), "diff": r(diff)} if check_id else None,
             "flood": {"zone": f.get("flood_zone"), "sub": f.get("zone_subtype"), "sfha": sfha},
-            "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(ev.get("groundwater_depth_change_ft"), 2)} if ev.get("usgs_site_id") else None,
+            "well": {"km": r(ev.get("usgs_distance_km")), "dd": r(clean_dd(ev.get("groundwater_depth_change_ft")), 2)} if ev.get("usgs_site_id") else None,
             "ext": {"km": r(ev.get("extensometer_distance_km")), "c": r(ev.get("cumulative_compaction_change_ft"), 2)} if ev.get("nearest_extensometer_station") else None,
-            "nisar": {"d": r(row.get("pair_los_displacement_mm")), "ok": row["in_main_connected_component"] and (row.get("coherence_median") or 0) >= thresholds.coherence_min and (row.get("valid_fraction") or 0) >= thresholds.valid_fraction_min},
+            "nisar": None if row.get("outside_nisar") else {"d": r(row.get("pair_los_displacement_mm")), "ok": row["in_main_connected_component"] and (row.get("coherence_median") or 0) >= thresholds.coherence_min and (row.get("valid_fraction") or 0) >= thresholds.valid_fraction_min},
         }
         for name, layer in nasa.items():
             value = layer["cells"].get(cid)
@@ -234,7 +257,7 @@ def main() -> None:
     sites = {
         "gps": [{"id": s["station_id"], "lon": s["longitude"], "lat": s["latitude"], "up": display_gps_rate(s["up_mm_year"])[0], "flag": display_gps_rate(s["up_mm_year"])[1], "deepAnchorM": DEEP_SEATED_GNSS.get(s["station_id"], {}).get("anchor_depth_m"), "y0": s["start_decimal_year"], "y1": s["end_decimal_year"]} for s in all_stations],
         "ext": [{"id": s["station_id"], "name": s.get("station_name"), "lon": s["longitude"], "lat": s["latitude"], "c": s.get("cumulative_compaction_change"), "d0": s["first_observation"]["date"], "d1": s["last_observation"]["date"]} for s in extensometers],
-        "wells": [{"id": s["site_id"], "name": s.get("site_name"), "lon": s["longitude"], "lat": s["latitude"], "dd": r(s.get("depth_change_ft"), 2), "t0": s["first_observation"]["time"][:10], "t1": s["last_observation"]["time"][:10]} for s in wells],
+        "wells": [{"id": s["site_id"], "name": s.get("site_name"), "lon": s["longitude"], "lat": s["latitude"], "dd": r(clean_dd(s.get("depth_change_ft")), 2), "t0": s["first_observation"]["time"][:10], "t1": s["last_observation"]["time"][:10]} for s in wells],
     }
     OUT.mkdir(parents=True, exist_ok=True)
     for stale in ("ledger.json",):

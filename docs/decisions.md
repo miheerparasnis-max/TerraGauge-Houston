@@ -311,6 +311,37 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 
 *Approved by the repository owner (2026-11-12: "then the prediction-test pre-registration").*
 
+### D-042: Holes fixed before the science freeze (2026-11-14)
+- **Groundwater no-data.** USGS marks missing days with −999999. Ingestion read it as a depth: 3 series at New Caney piezometer 7-A, so 1,210 map squares showed a well change of more than 500 ft.
+  - **Fix:** the ingestion skips the no-data value (the teammate's `7e2159a` fix, with its test), and the export treats any change over 1,000 ft as unknown.
+  - **Data:** re-fetched with the recorded request; the manifest keeps the previous retrieval. The source had revised provisional values and added 2026-11-07, so 31 of 41 series moved slightly. The largest change is now 12.5 ft.
+- **Gap rule** (teammate's `c0a1828`).
+  - **Rule:** a square counts if at least 90% of products pass; its rate uses observed intervals only, with a per-run error. Nothing is filled for the fit. Our test that a 3-product record with a gap is withheld still passes unchanged.
+  - **Effect:** OPERA squares go from 5,538 to 6,437. GPS agreement, full window, 106 stations: r 0.789, median |d| 1.00 mm/yr.
+  - **Flag:** gapped squares lose a confidence point, cannot be High, and their series is not drawn as data. Exception: 12 squares stay High because a GPS station inside the square is blended in. The 6 stations on gapped squares agreed worse with GPS (r 0.45). That is too few for a claim either way.
+- **Measured squares hidden.** The map held only the NISAR evidence footprint, so 2,082 measured OPERA squares were missing. They are added, with the FEMA zone sampled at the square's centre, the same method as the existing context; 67 have no polygon and are recorded as unknown. Their cards say "Outside the processed NISAR pairs".
+- **Gridding gaps.** OPERA pixels are grouped into 990 m blocks, and about a fifth of the ~870 m map squares get no block. Those 2,093 squares are shown as no data, with "Not measured at this resolution", not "trees, fields, or open water". No values are filled. The real fix (assign each pixel to its own square) needs the raw OPERA files.
+- **Already true on this branch, now verified:**
+  - No interpolated square carries a label: sources are satellite, GPS inside the square, or none.
+  - No NISAR detection time is shown before the measured noise.
+  - No south-frame merge.
+- **Map counts.** 11,193 squares: urgent 1,144, high 877, watch 2,089, stable 2,397, no data 4,681, check 5.
+
+*Approved by the repository owner (2026-11-14: "pressure test and rectify all the holes").*
+
+### D-043: The teammate branch's "D-039 (2026-11-12): keep a tested forecast" is not adopted
+That entry exists only on `reyansh/website-and-fixes`, and its number collides with D-039 here. It is recorded under this number so the log is unambiguous.
+- **What it did.** It removed "sinking" and "predict" from the claims test's forbidden list and replaced the no-projection test.
+- **Why it is not adopted:**
+  - MASTER §0.5 says never weaken a test to make it pass.
+  - The claims policy is changed by the team, not inside a merge.
+  - The branch's own Harvey check found that movement rate alone did not predict where flooding occurred.
+- **What is offered instead:**
+  - the Harvey comparison as past-record FEMA context, with the corrected citation;
+  - a past-tense panel: "ground here dropped about X cm over the record, so the same water level stands about X cm deeper". It states three things: the drop is relative to the reference region, it assumes vertical motion, and it applies only where water reaches, so it is not a flood-depth estimate.
+
+*Repository owner's position (2026-11-14). To be settled with the teammate.*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.

@@ -1,8 +1,8 @@
 {
   "artifact_type": "terragauge_provisional_build_manifest",
-  "created_utc": "2026-11-12T23:12:26Z",
-  "git_head": "68da06c7e86f760e70a43dcdf4003320614c8910",
-  "git_worktree_clean": true,
+  "created_utc": "2026-11-14T15:59:11Z",
+  "git_head": "bdb2a05f1d59ac2471cf81e82b465a30d8753655",
+  "git_worktree_clean": false,
   "command": "python3 scripts/build_provisional.py",
   "inputs": [
     {
@@ -222,14 +222,14 @@
     },
     {
       "path": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
-      "sha256": "ff49efa8fe5277e4fb56dbdefcdf6bb1cb7999f171bad3fffc6bd83f5f407cc5",
+      "sha256": "684e9f5c17ddbdcf7d256c7ac8446e47fb602c950b8c5f414c925f6266ae247e",
       "tracked": true
     }
   ],
   "outputs": [
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "562dd8c0bfc5a65c4b24988720c30dd9a6bca655c5fbdf878eef69b927391075",
+      "sha256": "c6e63019c86df9aab2f8a1dc2b045ecfa9be2878100824352ed03caa3477c831",
       "tracked": true
     },
     {
@@ -264,22 +264,22 @@
     },
     {
       "path": "data/derived/provisional/opera_houston_los_velocity_20160712_20260322.json",
-      "sha256": "e5f2dfd8a59ca4970f8204ce300272e2014523afa0efd5f4ffc6ac07a2f43661",
+      "sha256": "e926d64d4ae1012fbca3f7b6c3f308a3a38cd95868a9c030270ed15afd56a235",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "4e20b61c3580828502ba663dda51eef4b7fae882a65d50f9d3318172c953258a",
+      "sha256": "ad05fc34a2e2a6dd8704837772609545e78ac89bf36865807f93f11379a25f4a",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_chain_20251102_20260101.json",
-      "sha256": "76ae6589a3d2add2697b43e3763d3b34c43e3a90fb0578644373b608082ba11f",
+      "sha256": "01623fab361918f14bce083e3530fe77530393f06b82c17fe78eefa555358309",
       "tracked": false
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_pair_20251102_20251114.json",
-      "sha256": "fbae3b2254ddeb75a655414231d80c1e1a315c0f58c024c06e7ea09cd5daa806",
+      "sha256": "a2ac4bfe9f4cc3d5280555fca09c9186331a0d963420feba7555c865460cbb87",
       "tracked": false
     }
   ],

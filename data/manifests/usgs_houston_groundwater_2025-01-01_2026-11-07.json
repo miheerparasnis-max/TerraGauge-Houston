@@ -3,9 +3,19 @@
   "request": "https://waterservices.usgs.gov/nwis/dv/?format=json&bBox=-95.95,29.4,-94.8,30.2&parameterCd=72019&siteType=GW&siteStatus=all&startDT=2025-01-01&endDT=2026-11-07",
   "parameter_code": "72019",
   "parameter_name": "Depth to water level, ft below land surface",
-  "retrieved_utc": "2026-11-07T04:42:00Z",
-  "raw_response_sha256": "1abc945bfa0dcaabb753a08d24605f156690535b397025c04f917c61a02a09b7",
+  "retrieved_utc": "2026-11-14T15:56:36Z",
+  "raw_response_sha256": "977727e4a834f9ff35263dfa499b636a1ed4d70f97ac2b9df328d53eca467e0f",
   "derived_artifact": "data/derived/usgs_houston_groundwater_2025-01-01_2026-11-07.json",
-  "study_bounds_wgs84": [-95.95, 29.4, -94.8, 30.2],
-  "interpretation_limit": "The artifact reports changes in measured depth below land surface. It is contextual evidence and does not establish that groundwater changes caused surface motion."
+  "study_bounds_wgs84": [
+    -95.95,
+    29.4,
+    -94.8,
+    30.2
+  ],
+  "interpretation_limit": "The artifact reports changes in measured depth below land surface. It is contextual evidence and does not establish that groundwater changes caused surface motion.",
+  "previous_retrieval": {
+    "retrieved_utc": "2026-11-07T04:42:00Z",
+    "raw_response_sha256": "1abc945bfa0dcaabb753a08d24605f156690535b397025c04f917c61a02a09b7"
+  },
+  "refetch_reason": "2026-11-14: re-fetched with the same request to drop USGS no-data values (-999999) that the earlier ingestion read as depths (New Caney piezometer 7-A, 3 series). The source revised provisional values and added 2026-11-07, so 31 of 41 series changed slightly."
 }

@@ -133,7 +133,7 @@ def _decimal_year(value: str) -> float:
     return day.year + (day - start).days / ((date(day.year + 1, 1, 1) - start).days)
 
 
-def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None, cell_valid_min: float = 0.25, min_link_fraction: float = 0.75) -> dict[str, Any]:
+def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, float, float, float] | list[float] | None = None, valid_min: float = 0.5, water_max: float = 0.5, reference_cell_ids: set[str] | None = None, cell_valid_min: float = 0.25, min_link_fraction: float = 0.9) -> dict[str, Any]:
     """Chain OPERA products, re-reference each, and fit LOS velocity per cell."""
     by_reference: dict[str, list[dict[str, Any]]] = {}
     for artifact in artifacts:
@@ -172,21 +172,59 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             good = m is not None and m.get("opera_pair_displacement_mm") is not None and (m.get("opera_valid_fraction") or 0) >= cell_valid_min and (m.get("opera_water_fraction") or 0) <= water_max
             links.append(float(m["opera_pair_displacement_mm"]) - offset if good else None)
         valid = [i for i, d in enumerate(links) if d is not None]
-        # A time-series rate must be based on observed intervals.  Do not fill
-        # missing links with a cell's own fitted rate: that is circular and can
-        # manufacture a smooth-looking velocity where the data are incomplete.
-        if len(valid) != len(links):
+        # A rate must come from observed intervals. Squares missing more than
+        # 10% of the chain are withheld; for the rest the rate uses only the
+        # intervals that were observed (total observed displacement over
+        # total observed time), and any gap in the displayed series is
+        # bridged and flagged in opera_links_filled.
+        if len(valid) < max(3, min_link_fraction * len(links)):
             continue
-        series = [0.0]
-        for d in links:
-            series.append(series[-1] + d)  # type: ignore[operator]
-        mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
-        sxx = sum((t - mean_t) ** 2 for t in years)
-        slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
-        intercept = mean_d - slope * mean_t
-        residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
-        residual_sd = sqrt(sum(x * x for x in residuals) / (len(series) - 2))
-        se = residual_sd / sqrt(sxx)
+        if len(valid) == len(links):
+            series = [0.0]
+            for d in links:
+                series.append(series[-1] + d)  # type: ignore[operator]
+            mean_t = sum(years) / len(years); mean_d = sum(series) / len(series)
+            sxx = sum((t - mean_t) ** 2 for t in years)
+            slope = sum((t - mean_t) * (d - mean_d) for t, d in zip(years, series)) / sxx
+            intercept = mean_d - slope * mean_t
+            residuals = [d - (intercept + slope * t) for t, d in zip(years, series)]
+            residual_sd = sqrt(sum(x * x for x in residuals) / (len(series) - 2))
+            se = residual_sd / sqrt(sxx)
+            filled: list[int] = []
+        else:
+            # Each unbroken run of observed links is a segment of the
+            # cumulative series with an unknown starting level (no gap is
+            # filled for the fit).
+            segments: list[list[tuple[float, float]]] = []
+            current: list[tuple[float, float]] = [(years[0], 0.0)]
+            for i, d in enumerate(links):
+                if d is None:
+                    if len(current) > 1:
+                        segments.append(current)
+                    current = [(years[i + 1], 0.0)]
+                else:
+                    current.append((years[i + 1], current[-1][1] + d))
+            if len(current) > 1:
+                segments.append(current)
+            sxx = 0.0
+            for seg in segments:
+                mt = sum(t for t, _ in seg) / len(seg)
+                sxx += sum((t - mt) ** 2 for t, _ in seg)
+            # Rate: total observed displacement over total observed time (stable
+            # over the full baseline). Uncertainty: scatter about that rate
+            # within the segments, comparable with complete records.
+            slope = sum(links[i] for i in valid) / sum(durations[i] for i in valid)  # type: ignore[misc]
+            rss, n_points = 0.0, 0
+            for seg in segments:
+                mt = sum(t for t, _ in seg) / len(seg); md = sum(v for _, v in seg) / len(seg)
+                rss += sum((v - md - slope * (t - mt)) ** 2 for t, v in seg)
+                n_points += len(seg)
+            residual_sd = sqrt(rss / max(n_points - len(segments) - 1, 1))
+            se = residual_sd / sqrt(sxx) if sxx > 0 else residual_sd
+            series = [0.0]
+            filled = [i for i, d in enumerate(links) if d is None]
+            for i, d in enumerate(links):
+                series.append(series[-1] + (d if d is not None else slope * durations[i]))
         cells.append({
             "cell_id": cid, "longitude": cell["longitude"], "latitude": cell["latitude"],
             "opera_los_velocity_mm_year": slope,
@@ -195,7 +233,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "opera_cumulative_los_mm": series[-1],
             "opera_series_mm": [round(value, 2) for value in series],
             "opera_links_used": len(valid),
-            "opera_links_filled": [],
+            "opera_links_filled": filled,
         })
     return {
         "artifact_type": "opera_houston_los_velocity_provisional",
@@ -210,7 +248,7 @@ def opera_series(artifacts: list[dict[str, Any]], reference_bbox: tuple[float, f
             "LOS velocity, not vertical subsidence. Positive = toward the satellite.",
             "Standard error assumes independent residuals; real uncertainty is larger (temporal correlation, seasonal clay motion).",
             "The reference patch is provisional and unreviewed; a moving reference biases every velocity.",
-            "A cell is included only if it passes the valid-pixel (>= 25%) and water checks in every product in the chosen chain; incomplete time series are withheld rather than imputed.",
+            "A cell is included only if it passes the valid-pixel (>= 25%) and water checks in at least 90% of the products in the chain; its rate uses only observed intervals, and any bridged gap is flagged in opera_links_filled.",
             PROVISIONAL_NOTE,
         ],
         "cells": cells,
