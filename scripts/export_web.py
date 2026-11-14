@@ -80,6 +80,49 @@ def r(value, digits=1):
     return None if value is None else round(float(value), digits)
 
 
+GROUNDTRUTH_RAW = ROOT / "data" / "raw" / "groundtruth"
+GROUNDTRUTH_MANIFEST = ROOT / "data" / "groundtruth_session_manifest.json"
+GROUNDTRUTH_REPORT = DERIVED / "groundtruth" / "groundtruth_report.json"
+
+
+def groundtruth_meta() -> dict:
+    """Status of our fixed-antenna GroundTruth sessions for the Hardware page.
+
+    Stages: "none" (nothing recorded), "recorded" (raw logs exist, not yet solved
+    against NOAA NETP), "processed" (heights solved, report not passing), "passed"
+    (three or more good sessions). Only each session's height relative to the
+    sessions' average leaves this script: never the absolute height or location.
+    This is the receiver's own repeatability, never land motion.
+    """
+    recorded = []
+    for log in sorted(GROUNDTRUTH_RAW.glob("session*.rtcm3")):
+        start = log.with_suffix(".start.txt")
+        if log.stat().st_size > 0 and start.is_file():
+            recorded.append({"id": log.stem, "start": start.read_text(encoding="utf-8").split()[2]})
+    out: dict = {"status": "recorded" if recorded else "none", "recorded": len(recorded), "processed": 0,
+                 "days": len({x["start"][:10] for x in recorded}), "sessions": [], "pass": False, "scatterMm": None}
+    if GROUNDTRUTH_MANIFEST.is_file():
+        solved = [s for s in load(GROUNDTRUTH_MANIFEST)["sessions"] if isinstance(s.get("static_solution_height_mm"), (int, float))]
+        if solved:
+            mean = sum(s["static_solution_height_mm"] for s in solved) / len(solved)
+            out["sessions"] = [{
+                "id": s["session_id"], "window": s.get("window_utc"), "hours": s.get("session_hours"),
+                "offsetMm": r(s["static_solution_height_mm"] - mean), "quality": s.get("solution", {}).get("quality"),
+                "fixedShare": s.get("solution", {}).get("fixed_epoch_share"), "sigmaMm": s.get("solution", {}).get("sigma_3d_mm"),
+            } for s in solved]
+            out["processed"] = len(solved)
+            out["recorded"] = max(out["recorded"], len(solved))
+            out["days"] = len({(s.get("window_utc") or ["?"])[0][:10] for s in solved}) or out["days"]
+            out["status"] = "processed"
+    if GROUNDTRUTH_REPORT.is_file() and out["processed"]:
+        report = load(GROUNDTRUTH_REPORT)
+        out["pass"] = bool(report.get("pass"))
+        out["scatterMm"] = r(report.get("vertical_session_scatter_mm"))
+        if out["pass"]:
+            out["status"] = "passed"
+    return out
+
+
 def robust_sd(values: list[float]) -> float:
     center = median(values)
     return 1.4826 * median(abs(v - center) for v in values)
@@ -659,6 +702,7 @@ def main() -> None:
         "hardware": {"node_daily_sigma_mm": NODE_DAILY_SIGMA_MM, "node_max_years": NODE_MAX_YEARS, "node_spacing_km": NODE_SPACING_KM, "gps_daily_sigma_mm": GPS_DAILY_SIGMA_MM,
                      "node_weeks_10": r((passes_to_detect(-10, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_10": r((passes_to_detect(-10, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0),
                      "node_weeks_5": r((passes_to_detect(-5, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) - 1) / 7, 0), "gps_weeks_5": r((passes_to_detect(-5, GPS_DAILY_SIGMA_MM, 1) - 1) / 7, 0)},
+        "groundtruth": groundtruth_meta(),
         "nasaLayers": {k: v["meta"].get("source") for k, v in nasa.items()},
         "provenance": {"manifest": relative(MANIFEST)},
         "stations": {"total": len(all_stations), "deepSeated": sorted(s["station_id"] for s in all_stations if is_deep_seated(s["station_id"])), "rateWithheld": sorted(s["station_id"] for s in all_stations if display_gps_rate(s.get("up_mm_year"))[1])},

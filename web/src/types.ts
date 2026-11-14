@@ -89,6 +89,12 @@ export interface Meta {
   sensors: SensorSite[];
   nodes: NodeSite[];
   estimates: { count: number; radius_km: number; min_neighbors: number; median_error_mm_year: number; p80_error_mm_year: number; tested: number };
+  /** Our fixed-antenna sensor test: the receiver's own repeatability, never land motion. Heights are relative to the sessions' average. */
+  groundtruth?: {
+    status: "none" | "recorded" | "processed" | "passed";
+    recorded: number; processed: number; days: number; pass: boolean; scatterMm: number | null;
+    sessions: { id: string; window: [string, string] | null; hours: number | null; offsetMm: number | null; quality: string | null; fixedShare: number | null; sigmaMm: number | null }[];
+  };
   hardware: { node_daily_sigma_mm: number; node_max_years: number; node_spacing_km: number; gps_daily_sigma_mm: number; node_weeks_10: number; gps_weeks_10: number; node_weeks_5: number; gps_weeks_5: number };
   nasaLayers: Record<string, string>;
 }

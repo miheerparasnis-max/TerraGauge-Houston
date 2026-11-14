@@ -203,9 +203,46 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
 
 const rateUncertainty = (sigma: number, days: number, n: number) => (sigma / (days / 365.25)) * Math.sqrt(12 / (n * (n * n - 1)));
 
+const utcTime = (iso: string) => iso.slice(11, 16);
+
+/** Live status of our fixed-antenna test, from meta.groundtruth (scripts/export_web.py). */
+function GroundTruthStatus({ gt }: { gt: Meta["groundtruth"] }) {
+  const note = "The sensor measures its own wobble with the antenna standing still, not Houston's sinking.";
+  if (!gt || gt.status === "none") {
+    return <div className="status-box"><p><strong>Status: no recordings yet.</strong> We report a result only with three good sessions checked against NOAA's NETP reference station. {note}</p></div>;
+  }
+  if (gt.status === "recorded") {
+    return <div className="status-box"><p><strong>Status: {gt.recorded} session{gt.recorded === 1 ? "" : "s"} recorded, waiting on NOAA.</strong> Each two-hour recording is checked against NOAA's NETP reference station in Houston. NOAA posts that station's data a few hours after each day ends, so the results aren't in yet. {note}</p></div>;
+  }
+  return (
+    <>
+      <div className="status-box">
+        {gt.pass && gt.scatterMm !== null
+          ? <p><strong>Result: between sessions, the sensor's height varied by {num(gt.scatterMm)} mm</strong> (standard deviation of {gt.processed} sessions). {note} The planning guess above stays in place until the team reviews this result.</p>
+          : <p><strong>Status: {gt.processed} of {gt.recorded} sessions solved.</strong> A result needs at least three good sessions checked against NOAA's NETP reference station. {note}</p>}
+        {gt.days === 1 && <p className="small">All sessions were recorded on the same day, so this shows how steady the sensor is over a few hours. Sessions on different days would show its day-to-day steadiness, which is what tracking sinking depends on.</p>}
+      </div>
+      <table className="table">
+        <thead><tr><th>Session</th><th>Time (UTC)</th><th>Length</th><th>Height vs. average</th><th>Solution quality</th></tr></thead>
+        <tbody>{gt.sessions.map((x) => (
+          <tr key={x.id}>
+            <td>{x.id.replace("session", "")}</td>
+            <td>{x.window ? `${x.window[0].slice(0, 10)}, ${utcTime(x.window[0])}–${utcTime(x.window[1])}` : "—"}</td>
+            <td>{x.hours === null ? "—" : `${num(x.hours)} h`}</td>
+            <td>{x.offsetMm === null ? "—" : `${x.offsetMm > 0 ? "+" : ""}${num(x.offsetMm)} mm`}</td>
+            <td>{x.quality === "fixed" ? "Precise" : x.quality === "float" ? "Rough" : "—"}{x.fixedShare !== null ? ` (precise for ${Math.round(x.fixedShare * 100)}% of the session)` : ""}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </>
+  );
+}
+
 export function HardwarePage({ meta, onShow }: { meta: Meta; onShow: (id: string) => void }) {
   const hw = meta.hardware;
-  const [heights, setHeights] = useState("");
+  const gt = meta.groundtruth;
+  const ours = gt && gt.processed >= 3 ? gt.sessions.map((x) => x.offsetMm ?? 0).join(", ") : "";
+  const [heights, setHeights] = useState(ours);
   const [rate, setRate] = useState(10);
   const [gap, setGap] = useState(1);
   const values = heights.split(/[\s,]+/).filter(Boolean).map(Number).filter(Number.isFinite);
@@ -265,10 +302,10 @@ export function HardwarePage({ meta, onShow }: { meta: Meta; onShow: (id: string
       <ol className="site-list">{meta.gaps.map((g) => <li key={g.id}><button className="link" onClick={() => onShow(g.id)}>{num(g.gpsKm)} km from the nearest GPS</button> <small>, flood zone {g.zone ?? "not mapped"}{g.sfha ? " (high risk)" : ""}</small></li>)}</ol>
 
       <h3>Our hackathon test</h3>
-      <p>During the event we test the basic sensor ourselves: the antenna is fixed to a metal sheet in a backyard and never moved, so any change in its readings is pure noise. That measured noise replaces the {hw.node_daily_sigma_mm} mm planning guess above.</p>
-      <div className="status-box"><p><strong>Status: no recordings yet.</strong> We report a result only with three good sessions checked against NOAA's NETP reference station. The sensor measures its own wobble, not Houston's sinking.</p></div>
+      <p>During the event we test the basic sensor ourselves: the antenna is fixed to a metal sheet in a backyard and never moved, so any change in its readings is pure noise. Once that noise is measured, we compare it with the {hw.node_daily_sigma_mm} mm planning guess above.</p>
+      <GroundTruthStatus gt={gt} />
       <h4>Try the calculator</h4>
-      <label className="field">Heights from each session, in mm<input value={heights} onChange={(e) => setHeights(e.target.value)} placeholder="for example 11.2, 8.9, 10.4" inputMode="decimal" /></label>
+      <label className="field">Heights from each session, in mm{ours ? " (filled in with our sessions, relative to their average)" : ""}<input value={heights} onChange={(e) => setHeights(e.target.value)} placeholder="for example 11.2, 8.9, 10.4" inputMode="decimal" /></label>
       <div className="field-row">
         <label className="field">Sinking to detect, mm a year<input type="number" min={1} value={rate} onChange={(e) => setRate(Number(e.target.value))} /></label>
         <label className="field">Days between sessions<input type="number" min={1} value={gap} onChange={(e) => setGap(Number(e.target.value))} /></label>
