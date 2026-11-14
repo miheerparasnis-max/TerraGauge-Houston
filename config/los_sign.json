@@ -1,0 +1,13 @@
+{
+  "amendment": "D-049 (2026-11-14), recorded and committed before the prediction test was scored",
+  "nisar": {
+    "positive_means": "away_from_satellite",
+    "verified_from": "ISCE3 (the NISAR science processor) cxx/isce3/signal/Crossmul.cpp, develop branch, retrieved 2026-11-14: interferogram = refSlc * conj(secSlc); the flattening term uses phase = 4*pi*range_offset/wavelength and is applied conjugated. With ISCE3's SLC phase convention exp(-j*4*pi*R/wavelength) (measured in isce3-benchmark PR #56), interferogram phase = 4*pi*(R_secondary - R_reference)/wavelength, so positive phase = range increase = motion away from the satellite. Our pair_los_displacement_mm = unwrappedPhase * wavelength / (4*pi), with no sign change, so positive = away.",
+    "not_stated_in": ["NASA SDS Product Specification L2 GUNW, JPL D-102272 Rev E", "NISAR Data Product Format Document v1.2.1", "ASF NISAR Data User Guide (GUNW page)"]
+  },
+  "opera": {
+    "positive_means": "toward_satellite",
+    "verified_from": "OPERA DISP-S1 Product Specification, section 4.2, Table 4-2: '/displacement ... Positive values indicate apparent motion towards the platform.' Agrees with the empirical GPS check (fact-check row 4)."
+  },
+  "implied_rho_sign": "negative: the predictor (positive = toward) and the target (positive = away) use opposite conventions"
+}

@@ -408,3 +408,12 @@ Reyansh merged `chore/audit-baseline-2026-11-10` (Aaron's science fixes and "scu
 - **Finding.** The specification does not state the sign of `unwrappedPhase`. Its only attributes are units (radians), the fill value, grid mapping and summary statistics. It also does not say which way the interferogram is formed (reference × conj(secondary) or the reverse). The NISAR Data Product Format Document v1.2.1 and the ASF NISAR user guide do not state it either.
 - **Effect.** The prediction test (D-041) stays blocked. `scripts/score_prediction.py` has run everything allowed before scoring: 22-pair chain, 1,287 squares, power 0.115. The correlation has not been computed.
 - **Ways to unblock, for the team to decide before anyone scores:** an amendment that accepts the sign from the processor's source code (ISCE3) or from an empirical GPS check, as was done for OPERA (fact-check row 4). Either way, it must be logged before the score is computed.
+
+### D-049: Amendment to D-041, the line-of-sight signs come from the processor code and the OPERA spec (2026-11-14)
+- **Why.** D-048 found that no NISAR product document states the phase sign, so the test was blocked.
+- **Amendment.** The NISAR sign comes from ISCE3, the processor that makes GUNW: it forms the interferogram as reference × conj(secondary). With ISCE3's SLC convention, positive phase means range increase, which is motion away from the satellite. The OPERA sign comes from its Product Specification (Table 4-2): positive means toward the platform. Details are in `config/los_sign.json`.
+- **Implied sign of ρ.** Negative, because the two products use opposite conventions. The pre-registered prediction is unchanged: squares OPERA saw moving away will move away in NISAR.
+- **Blindness.** Recorded and committed before the correlation was computed. Only the registered pre-score steps had run: chain assembly, square selection, and the power simulation, which uses the target's spread but not its relation to the predictor.
+- **Not changed.** Every other rule, threshold and seed in `config/prediction_test.json`, whose hash is checked by the scorer.
+
+*Approved by the repository owner (2026-11-14: "i want to unblock it with another source").*
