@@ -10,3 +10,9 @@ web/dist/
 # Regenerable provisional intermediates (scripts/build_provisional.py)
 data/derived/provisional/nisar_gunw_houston_*_deramped.json
 data/derived/provisional/terragauge_houston_evidence_*.json
+
+# GroundTruth: RINEX, solutions and configs contain the antenna location (privacy)
+data/derived/groundtruth/*.obs
+data/derived/groundtruth/*.pos
+data/derived/groundtruth/*.conf
+data/derived/groundtruth/*.stat

@@ -609,7 +609,7 @@ def main() -> None:
             "tests": hz_all["tests"],
             "drought": {"epochs": ["2018-08-13", "2023-10-04"], "high_mm": r(typical - q10), "medium_mm": r(typical - q30)},
             "bend": {"high": bend_hi, "medium": bend_mid},
-            "flood": {"basis": "measured drop since the first satellite date; flood depths are not forecast (D-040)"},
+            "flood": {"basis": "measured drop since the first satellite date; flood depths are not forecast (D-046)"},
             "harvey": {k: harvey.get(k) for k in ("source", "areas", "squares", "by_class", "flooded_area_outside_high_risk_pct", "by_sinking", "high_water_marks", "depth_by_class")} if harvey else None,
         }
 

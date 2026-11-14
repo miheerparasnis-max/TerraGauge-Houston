@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 WEB_DATA = ROOT / "web" / "public" / "data"
 
 # MASTER G2 search list, plus the "NISAR can't" spelling of "NISAR cannot".
-# Decision D-039 (docs/decisions.md): plain "sinking" and the word "predict"
+# Decision D-045 (docs/decisions.md): plain "sinking" and the word "predict"
 # are allowed (the site is for the public, and it says plainly what it cannot
-# predict); the overclaims below stay forbidden. D-040: the ground-sinking
+# predict); the overclaims below stay forbidden. D-046: the ground-sinking
 # forecast stays, but flood depths are never forecast; the flood view shows
 # only the measured drop.
 FORBIDDEN = [
@@ -19,7 +19,7 @@ FORBIDDEN = [
     r"\bour node measured\b", r"\bdefinitely\b", r"\bproves\b", r"\bNISAR (cannot|can['’]t)\b",
     r"\bannual subsidence rate\b", r"\bworks everywhere\b", r"\bfirst ever\b", r"\bAI predicted\b",
 ]
-# D-040: no forecast flood depths ("floods 5 cm deeper by 2031", "the same
+# D-046: no forecast flood depths ("floods 5 cm deeper by 2031", "the same
 # flood would be about ... deeper", ocean-rise add-ons).
 FLOOD_FORECAST = [
     r"deeper by (\{year\}|20\d\d)", r"flood would be (about )?\S* ?\S* ?cm deeper",
@@ -50,7 +50,7 @@ class ClaimsPolicyTests(unittest.TestCase):
         self.assertFalse(hits("until the team approves the reference"))
 
     def test_forecast_is_tested_and_bounded(self):
-        """D-039: a forecast may appear only as a tested trend with ranges,
+        """D-045: a forecast may appear only as a tested trend with ranges,
         and never beyond the horizon the walk-forward tests covered."""
         meta = json.loads((WEB_DATA / "meta.json").read_text(encoding="utf-8"))
         f = meta.get("forecast")

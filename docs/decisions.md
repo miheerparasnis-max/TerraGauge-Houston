@@ -265,6 +265,103 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 
 *Approved by the repository owner (2026-11-11 instruction).*
 
+### D-039: Teammate branch `reyansh/website-and-fixes` audited; D-032 superseded
+- **Correction to D-032.** The branch received 16 commits (`2d44a42..1705aad`) after the D-032 check. The "4% better" is its forecast benchmark: 1.50 cm against 1.56 cm typical error, 3.8% lower. `5c0513c` came from a different teammate.
+- **Take:**
+  - The 11 OPERA F38238 products through 2026-03-22. Under our rules they give r 0.660 → 0.800, median |d| 1.68 → 1.00 mm/yr, bias +0.34 → −0.01 mm/yr, n 106 → 102.
+  - The F38239 south frame, after two fixes: reference offsets from the primary frame only; no fill for the missing 2025-09-23 → 2026-03-22 product.
+  - The UI shell (search, shareable links, tour, phone layout, detail tiles), the full 1 km grid with no-reading reasons, and the sampler and error-message fixes.
+- **Drop:** forecasts and ML (MASTER §20, §10); flood-depth projections; the drought claim, which fails a placebo test; labels on interpolated squares (MASTER §0.6); labels that use historic GPS for disagreement (MASTER §5.2); detectability numbers from an unregistered σ, white-noise GPS, or an assumed node σ; the deep-seated reference; about 80 G2 phrases.
+- **Pre-registration:** V3 is registered over 2016–2021. Using 2016–2026 for V3 would be a logged deviation, reported with both results.
+- **How:** port, not merge (16 conflicting files). Full evidence: `docs/audit/2026-11-11-teammate-branch-audit.md`.
+
+*Delegated (the 2026-11-11 instruction: "audit through and determine what's good and what's bad").*
+
+### D-040: OPERA record extended to 2026-03-22 (11 F38238 products from the teammate branch)
+- **What changed.** The provisional OPERA chain now runs 2016-07-12 → 2026-03-22 (30 products), up from 2016-07-12 → 2021-05-05 (19 products). The `source_file` field of all 31 OPERA pair files now holds the granule file name, not a local home-directory path.
+- **Like-for-like check.** All windows are scored on the same 102 stations, with the region A reference and deep-seated stations excluded. Units are mm/yr LOS; source is `build_report.json → opera.window_check`.
+
+  | Window end | r | Median \|d\| | Bias |
+  |---|---|---|---|
+  | 2021-05-05 | 0.749 | 1.58 | +0.36 |
+  | 2024-04-01 | 0.807 | 1.30 | −0.69 |
+  | **2026-03-22** | **0.800** | **1.00** | **−0.01** |
+
+- **The earlier figure.** The 0.660 previously published used 106 stations. Four of them have no complete record in the longer chain. The like-for-like gain is 0.749 → 0.800, not 0.660 → 0.800.
+- **Nothing tuned.** The reference region, radius, and station exclusions were pre-registered (`1c84d17`, amendment A1 `051ca6c`) before any of these runs. The comparison function is unchanged.
+- **Time match.** The compared GPS rates span a median of 2012.3 → 2023.9, so no radar window matches them exactly. The 2016 → 2024-04 window, the closest match, gives r 0.807.
+- **Cost.**
+  - Squares with a complete record fall from 6,491 to 5,538, because every product must pass.
+  - Priority counts shift, because longer fits have smaller errors: urgent 391 → 807, high 118 → 604, watch 1,148 → 981, stable 2,813 → 1,490, no data 4,639 → 5,229.
+- **Pre-registration.** V3 is registered over 2016–2021 and is not changed by this decision. If the 2016–2026 record is ever used as V3, that is a deviation and both results are reported. V2 (F38238 products inside the NISAR window) is unaffected.
+
+*Approved by the repository owner (2026-11-12: "commit the audit and D-039, then step 2 (with the check in point 3)").*
+
+### D-041: OPERA → NISAR prediction test pre-registered, commit `6f8a5a5`
+- **Rules.** `docs/preregistration/2026-11-12-opera-nisar-prediction.md` and `config/prediction_test.json`.
+- **Frozen predictor.** `data/derived/prediction/opera_predictor_20160712_20250923.json`: 5,538 squares, 29 products, ending before the test window.
+- **Blindness.** The test uses NISAR pairs from 2026-01-01 onward, none of which had been downloaded when this was registered. The five previewed pairs are excluded and disclosed.
+- **Blocking.** The test does not run until the NISAR GUNW sign convention is read from the product (F-4) and at least 6 test pairs are processed.
+- **Effect on the critical path.** The test depends on the same items as the headline:
+  - downloading and processing the 22 new granules (T1.4/B1), which also gives the sign convention, corrections, geometry, and the measured noise for the confirmation-time headline;
+  - the organizers' written answer on pre-event work (G1);
+  - the HGSD and Fort Bend emails.
+
+  No confirmation-time number goes on the site until the noise is measured.
+
+*Approved by the repository owner (2026-11-12: "then the prediction-test pre-registration").*
+
+### D-042: Holes fixed before the science freeze (2026-11-14)
+- **Groundwater no-data.** USGS marks missing days with −999999. Ingestion read it as a depth: 3 series at New Caney piezometer 7-A, so 1,210 map squares showed a well change of more than 500 ft.
+  - **Fix:** the ingestion skips the no-data value (the teammate's `7e2159a` fix, with its test), and the export treats any change over 1,000 ft as unknown.
+  - **Data:** re-fetched with the recorded request; the manifest keeps the previous retrieval. The source had revised provisional values and added 2026-11-07, so 31 of 41 series moved slightly. The largest change is now 12.5 ft.
+- **Gap rule** (teammate's `c0a1828`).
+  - **Rule:** a square counts if at least 90% of products pass; its rate uses observed intervals only, with a per-run error. Nothing is filled for the fit. Our test that a 3-product record with a gap is withheld still passes unchanged.
+  - **Effect:** OPERA squares go from 5,538 to 6,437. GPS agreement, full window, 106 stations: r 0.789, median |d| 1.00 mm/yr.
+  - **Flag:** gapped squares lose a confidence point, cannot be High, and their series is not drawn as data. Exception: 12 squares stay High because a GPS station inside the square is blended in. The 6 stations on gapped squares agreed worse with GPS (r 0.45). That is too few for a claim either way.
+- **Measured squares hidden.** The map held only the NISAR evidence footprint, so 2,082 measured OPERA squares were missing. They are added, with the FEMA zone sampled at the square's centre, the same method as the existing context; 67 have no polygon and are recorded as unknown. Their cards say "Outside the processed NISAR pairs".
+- **Gridding gaps.** OPERA pixels are grouped into 990 m blocks, and about a fifth of the ~870 m map squares get no block. Those 2,093 squares are shown as no data, with "Not measured at this resolution", not "trees, fields, or open water". No values are filled. The real fix (assign each pixel to its own square) needs the raw OPERA files.
+- **Already true on this branch, now verified:**
+  - No interpolated square carries a label: sources are satellite, GPS inside the square, or none.
+  - No NISAR detection time is shown before the measured noise.
+  - No south-frame merge.
+- **Map counts.** 11,193 squares: urgent 1,144, high 877, watch 2,089, stable 2,397, no data 4,681, check 5.
+
+*Approved by the repository owner (2026-11-14: "pressure test and rectify all the holes").*
+
+### D-043: The teammate branch's "D-039 (2026-11-12): keep a tested forecast" is not adopted
+That entry exists only on `reyansh/website-and-fixes`, and its number collides with D-039 here. It is recorded under this number so the log is unambiguous.
+- **What it did.** It removed "sinking" and "predict" from the claims test's forbidden list and replaced the no-projection test.
+- **Why it is not adopted:**
+  - MASTER §0.5 says never weaken a test to make it pass.
+  - The claims policy is changed by the team, not inside a merge.
+  - The branch's own Harvey check found that movement rate alone did not predict where flooding occurred.
+- **What is offered instead:**
+  - the Harvey comparison as past-record FEMA context, with the corrected citation;
+  - a past-tense panel: "ground here dropped about X cm over the record, so the same water level stands about X cm deeper". It states three things: the drop is relative to the reference region, it assumes vertical motion, and it applies only where water reaches, so it is not a flood-depth estimate.
+
+*Repository owner's position (2026-11-14). To be settled with the teammate.*
+
+### D-044: South frame F38239 added with the datum fixed; full study-box grid (2026-11-14)
+- **South frame.** The 29 F38239 products from the teammate branch, with local paths replaced by granule names, are merged with two fixes:
+  1. **Datum.** Merged rows never enter the reference median, so the datum stays F38238's. A test fails without this fix.
+  2. **No mixed squares.** Only squares F38238 never measures are taken from F38239, so no square's time series mixes frames.
+- **Datum verified.** Against the previous build, the 102 stations matched to the same square changed by exactly 0.0 mm/yr. Four stations were rematched to a nearer new square (NASA, PA21, PA24, PA41).
+- **Effect.**
+  - OPERA squares 6,437 → 8,060; 1,306 measured squares now lie south of 29.55° N.
+  - F38239 has no 2025-09-23 → 2026-03-22 product (NASA CMR, checked 2026-11-11). So 844 of the 855 OPERA squares south of 29.5° N are gapped: lower confidence, no chart.
+- **GPS agreement** (131 stations): r 0.775, median |d| 1.08 mm/yr, bias −0.25 mm/yr. The 25 newly comparable stations agree less well: r 0.43, median |d| 1.66 mm/yr, bias −1.09 mm/yr. 11 of them are campaign PAM stations. This is stated, not hidden.
+- **Full grid.** Every 1 km square in the study box is now drawn: 13,522 squares, including some just outside the box from earlier builds. A square with no reading says why:
+  - "Not enough reliable satellite data here" (3,576);
+  - "Not measured at this resolution (gridding gap)" (about 1,690);
+  - "Outside the satellite product's coverage" (about 120).
+
+  None is filled or labelled.
+- **Counts.** urgent 1,153, high 911, watch 2,472, stable 3,595, no data 5,386, check 5.
+- **Not taken from the teammate branch:** filling stripes from neighbours, labels on interpolated squares, and the forecast (D-043).
+
+*Delegated (2026-11-14: "whatever you think is excellent, go ahead").*
+
 ## Open: these need a person
 
 - **G1:** the organizers' written answer on pre-event work. Draft question: `docs/rules/pre-event-work.md`. Due Nov 12.
@@ -275,7 +372,7 @@ The repository owner asked for a push before the UI pivot if the teammate's chan
 - **G4:** team roster and registrations, in `docs/team.md`.
 
 
-## D-039 (2026-11-12): keep a tested forecast; plain wording
+### D-045 (was the teammate branch's D-039, 2026-11-12): keep a tested forecast; plain wording
 
 Decided by Reyansh after merging the audit branch. The no-projection rule
 (W-2) predates the walk-forward benchmark. The site keeps a forecast only in
@@ -289,7 +386,7 @@ branch unchanged: the pre-registered reference region (DEN2, TMCC), exclusion
 of deep-seated GNSS stations, withheld implausible GPS rates, provenance
 manifests and the publish guard.
 
-## D-040 (2026-11-14): no forecast flood depths; flood view uses the measured drop
+### D-046 (2026-11-14): no forecast flood depths; flood view uses the measured drop
 
 Raised by Aaron, decided by Reyansh. The Harvey check (backend/hazards.py
 harvey_check) found that sinking speed did not predict where Harvey flooded,
@@ -302,3 +399,6 @@ ground-sinking forecast itself (D-039: tested, bounded, 80% ranges) stays on
 the cards and the Future view. tests/test_claims_policy.py now fails on
 forecast flood-depth wording.
 
+
+### D-047 (2026-11-14): branches merged; renumbering
+Reyansh merged `chore/audit-baseline-2026-11-10` (Aaron's science fixes and "scuffed ui") into `reyansh/website-and-fixes`. Reyansh's D-039 and D-040 are renumbered D-045 and D-046 so they don't clash with Aaron's. Decided by Reyansh: the site keeps the tested ground-sinking forecast (D-045, the position D-043 records as not adopted) but never forecasts flood depths (D-046, Aaron's request). Where the two pipelines conflicted, this branch's export, grid and south-frame merge were kept; Aaron's USGS groundwater re-download, prediction pre-registration, GroundTruth processing and landing page were taken.

@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "registered": "2026-11-12",
+  "document": "docs/preregistration/2026-11-12-opera-nisar-prediction.md",
+  "predictor": {
+    "source": "OPERA DISP-S1 F38238 chain, region A reference (config/preregistration.json)",
+    "start": "2016-07-12",
+    "end": "2025-09-23",
+    "quantity": "opera_los_velocity_mm_year",
+    "frozen_file": "data/derived/prediction/opera_predictor_20160712_20250923.json"
+  },
+  "target": {
+    "source": "NISAR GUNW track 062 frame 016, ramp-removed consecutive pairs, region A reference",
+    "window_start": "2026-01-01",
+    "window_rule": "longest contiguous chain of consecutive pairs starting 2026-01-01 that is processed when the scorer runs",
+    "min_pairs": 6,
+    "quantity": "cumulative LOS displacement (mm) over the chain",
+    "previewed_pairs_excluded": ["20251102_20251114", "20251114_20251126", "20251126_20251208", "20251208_20251220", "20251220_20260101"]
+  },
+  "cells": {
+    "require_nisar_quality_gate": true,
+    "require_complete_opera_predictor": true,
+    "max_opera_water_fraction": 0.5,
+    "exclude_reference_region_cells": true
+  },
+  "primary_metric": "spearman_rho_cell_level",
+  "inference": {
+    "method": "block_median_permutation",
+    "block_cells": 10,
+    "min_cells_per_block": 10,
+    "permutations": 10000,
+    "alpha": 0.05,
+    "seed": 20261112
+  },
+  "secondary_metric": {
+    "name": "decile_median_difference_mm",
+    "definition": "median target in the predictor's most-negative decile minus median target in its most-positive decile"
+  },
+  "power": {
+    "simulations": 1000,
+    "noise_sigma": "1.4826 * MAD of the target over test cells (an upper bound: it includes any real signal)",
+    "spatial_component": "block-level share of target variance, from the same field",
+    "must_run_before_scoring": true
+  },
+  "pass_rule": "rho has the sign implied by both products' verified LOS conventions AND block-permutation p < alpha",
+  "blocking_conditions": [
+    "NISAR GUNW LOS sign convention not verified from the product (plan F-4)",
+    "fewer than min_pairs pairs after window_start"
+  ],
+  "null_wording": "Not detected at the current NISAR record length. This does not mean the ground stopped moving."
+}

@@ -13,7 +13,7 @@ ground does to a hazard if it comes:
   Tested: hotspots in 2016-2021 stayed hotspots in 2021-2026.
 * flood    - FEMA's flood zone gives the yearly odds of a big flood; the
   satellite-measured drop since 2016 gives how much deeper the same flood
-  already stands. Flood depths are never forecast (D-040).
+  already stands. Flood depths are never forecast (D-046).
 """
 from __future__ import annotations
 
