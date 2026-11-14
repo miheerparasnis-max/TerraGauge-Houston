@@ -16,23 +16,23 @@ export const HAZARDS: { key: Hazard; name: string; question: string }[] = [
 
 export type FloodClass = "1pct" | "0.2pct" | "levee" | "minimal";
 export const FLOOD: Record<FloodClass | "deeper", { name: string; color: string; meaning: string }> = {
-  deeper: { name: "High-risk zone, already deeper", color: "#0B3C6E", meaning: "FEMA 1-in-100-year flood zone where the ground has measurably dropped at least 3 cm since 2016, so the same flood now stands at least that much deeper." },
-  "1pct": { name: "High-risk flood zone", color: "#4A86C5", meaning: "FEMA 1-in-100-year flood zone: a 1% chance of a flood this big every year, about 26% over 30 years." },
-  "0.2pct": { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "FEMA 1-in-500-year zone (0.2% a year), or protected by a levee." },
-  levee: { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "Protected by a levee; floods if the levee is overtopped or fails." },
-  minimal: { name: "Low flood risk", color: "#EEF1EC", meaning: "Outside FEMA's mapped flood zones. Harvey still flooded many such areas." },
+  deeper: { name: "High-risk zone, already deeper", color: "#6FB4F0", meaning: "FEMA 1-in-100-year flood zone where the ground has measurably dropped at least 3 cm since 2016, so the same flood now stands at least that much deeper." },
+  "1pct": { name: "High-risk flood zone", color: "#3A79B8", meaning: "FEMA 1-in-100-year flood zone: a 1% chance of a flood this big every year, about 26% over 30 years." },
+  "0.2pct": { name: "Moderate-risk zone", color: "#2C5682", meaning: "FEMA 1-in-500-year zone (0.2% a year), or protected by a levee." },
+  levee: { name: "Moderate-risk zone", color: "#2C5682", meaning: "Protected by a levee; floods if the levee is overtopped or fails." },
+  minimal: { name: "Low flood risk", color: "#273349", meaning: "Outside FEMA's mapped flood zones. Harvey still flooded many such areas." },
 };
 
 export const DROUGHT: Record<Level, { name: string; color: string; meaning: string }> = {
-  high: { name: "Drought hotspot", color: "#8A3B12", meaning: "Among the 10% of squares that dropped most in the 2018 and 2023 droughts." },
-  medium: { name: "Drought sensitive", color: "#D99A4E", meaning: "Dropped more than most squares in those droughts (next 20%)." },
-  low: { name: "Normal", color: "#F1ECE2", meaning: "Typical drought response." },
+  high: { name: "Drought hotspot", color: "#D9874A", meaning: "Among the 10% of squares that dropped most in the 2018 and 2023 droughts." },
+  medium: { name: "Drought sensitive", color: "#B59563", meaning: "Dropped more than most squares in those droughts (next 20%)." },
+  low: { name: "Normal", color: "#2E3B52", meaning: "Typical drought response." },
 };
 
 export const BEND: Record<Level, { name: string; color: string; meaning: string }> = {
-  high: { name: "Sharp bending", color: "#B3261E", meaning: "Sinking speed changes by 10 mm a year or more within 1 km." },
-  medium: { name: "Some bending", color: "#E8A33D", meaning: "Sinking speed changes by 5–10 mm a year within 1 km." },
-  low: { name: "Even", color: "#EEF1EC", meaning: "The ground sinks evenly here." },
+  high: { name: "Sharp bending", color: "#E0705A", meaning: "Sinking speed changes by 10 mm a year or more within 1 km." },
+  medium: { name: "Some bending", color: "#D8AE62", meaning: "Sinking speed changes by 5–10 mm a year within 1 km." },
+  low: { name: "Even", color: "#2E3B52", meaning: "The ground sinks evenly here." },
 };
 
 export function floodClass(cell: Cell): FloodClass | null {
@@ -60,35 +60,43 @@ export const chanceOver = (annual: number, years: number) => 1 - Math.pow(1 - an
 
 /** The plan's action labels. Order = rule order (first match wins). */
 export const ACTION: Record<Action, { name: string; color: string; meaning: string; why: string }> = {
-  investigate_first: { name: "Investigate first", color: "#7A1F3D", meaning: "Clearly sinking in a FEMA high-risk flood zone, and a nearby GPS station confirms it.", why: "Land that sinks in a flood zone gets closer to the water that floods it, so the same storm can flood it deeper over time, and drainage and levees designed for the old ground level work less well. Because GPS confirms it, flood planners and the Subsidence District can act on this with confidence." },
-  add_monitoring: { name: "Add monitoring here", color: "#B8862B", meaning: "Clearly sinking in a FEMA high-risk flood zone, but no GPS station within 2 km to confirm it. The numbered pins are the top sites.", why: "Same flood concern as Investigate first, but only the satellite sees it. A sensor here turns a satellite reading into proof before anyone spends money on drainage or flood fixes." },
-  review_disagreement: { name: "Review disagreement", color: "#2F6FB0", meaning: "The satellite and a GPS station within 2 km disagree by more than 5 mm a year.", why: "When two measurements disagree, one of them is missing something: a GPS station that has shifted, local construction, or a radar glitch. Checking these keeps bad numbers out of flood and planning decisions." },
-  observe: { name: "Observe", color: "#D9C7E8", meaning: "Clearly sinking, but outside FEMA's high-risk flood zone.", why: "Sinking outside today's flood zones still strains pipes, roads, and foundations, and flood maps are drawn on today's ground level. Keep watching so these areas aren't a surprise later." },
-  no_clear_motion: { name: "No clear motion", color: "#EEF1EC", meaning: "No sinking beyond what our measurements can tell apart from noise.", why: "Knowing where the ground is stable is useful too: it tells the city where it doesn't need to spend limited monitoring money." },
-  insufficient_data: { name: "No measurement", color: "rgba(120,130,126,0.16)", meaning: "Open water, outside the satellite's coverage, or too far from measured squares to estimate.", why: "We'd rather show a gap than guess. Where nothing measures the ground, the white diamonds mark low-cost sensor sites that would give the first reading." },
+  investigate_first: { name: "Investigate first", color: "#E0705A", meaning: "Clearly sinking in a FEMA high-risk flood zone, and a nearby GPS station confirms it.", why: "Land that sinks in a flood zone gets closer to the water that floods it, so the same storm can flood it deeper over time, and drainage and levees designed for the old ground level work less well. Because GPS confirms it, flood planners and the Subsidence District can act on this with confidence." },
+  add_monitoring: { name: "Add monitoring here", color: "#E9B35F", meaning: "Clearly sinking in a FEMA high-risk flood zone, but no GPS station within 2 km to confirm it. The numbered pins are the top sites.", why: "Same flood concern as Investigate first, but only the satellite sees it. A sensor here turns a satellite reading into proof before anyone spends money on drainage or flood fixes." },
+  review_disagreement: { name: "Review disagreement", color: "#A98BD8", meaning: "The satellite and a GPS station within 2 km disagree by more than 5 mm a year.", why: "When two measurements disagree, one of them is missing something: a GPS station that has shifted, local construction, or a radar glitch. Checking these keeps bad numbers out of flood and planning decisions." },
+  observe: { name: "Observe", color: "#9C8A68", meaning: "Clearly sinking, but outside FEMA's high-risk flood zone.", why: "Sinking outside today's flood zones still strains pipes, roads, and foundations, and flood maps are drawn on today's ground level. Keep watching so these areas aren't a surprise later." },
+  no_clear_motion: { name: "No clear motion", color: "#2E3B52", meaning: "No sinking beyond what our measurements can tell apart from noise.", why: "Knowing where the ground is stable is useful too: it tells the city where it doesn't need to spend limited monitoring money." },
+  insufficient_data: { name: "No measurement", color: "rgba(150,170,200,0.10)", meaning: "Open water, outside the satellite's coverage, or too far from measured squares to estimate.", why: "We'd rather show a gap than guess. Where nothing measures the ground, the white diamonds mark low-cost sensor sites that would give the first reading." },
 };
 
 export const CONFIDENCE: Record<Confidence, { name: string; color: string; meaning: string }> = {
-  high: { name: "High", color: "#1F5F5B", meaning: "Steady satellite record, confirmed by a nearby GPS station." },
-  medium: { name: "Medium", color: "#7FA8A0", meaning: "Steady satellite record, but no GPS station close enough to confirm it." },
-  low: { name: "Low", color: "#DCE5E1", meaning: "Noisy record, it doesn't match the squares around it, or a GPS station disagrees." },
+  high: { name: "High", color: "#8FD3B6", meaning: "Steady satellite record, confirmed by a nearby GPS station." },
+  medium: { name: "Medium", color: "#4E8F86", meaning: "Steady satellite record, but no GPS station close enough to confirm it." },
+  low: { name: "Low", color: "#334560", meaning: "Noisy record, it doesn't match the squares around it, or a GPS station disagrees." },
 };
 
 export const NO_MEASUREMENT = ACTION.insufficient_data.color;
 /** Estimated squares in views that need a direct satellite record (drought, bending). */
-export const NOT_DIRECT = "rgba(150,160,156,0.30)";
+export const NOT_DIRECT = "rgba(150,170,200,0.16)";
 
-const NEUTRAL = [236, 239, 233];
-const SINK = [74, 25, 120];
-const RISE = [20, 110, 112];
+// Tuned for the dark basemap: still ground sits close to the night background;
+// sinking warms through sand and clay to a deep rust, rising cools to sea-green.
+const NEUTRAL = [46, 59, 82];
+const SAND = [226, 190, 122];
+const CLAY = [214, 116, 78];
+const RUST = [178, 62, 58];
+const RISE = [110, 196, 176];
 
-/** Violet = sinking, teal = rising. `span` is the value that gets full color. */
+const mix = (a: number[], b: number[], k: number) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+
+/** Warm = sinking, sea-green = rising. `span` is the value that gets full color. */
 export function movementColor(value: number | null, span = 25): string {
   if (value === null || Number.isNaN(value)) return NO_MEASUREMENT;
   const t = Math.max(-1, Math.min(1, value / span));
-  const end = t < 0 ? SINK : RISE;
   const k = Math.pow(Math.abs(t), 0.75);
-  const c = NEUTRAL.map((n, i) => Math.round(n + (end[i] - n) * k));
+  const c = t >= 0 ? mix(NEUTRAL, RISE, k)
+    : k < 0.4 ? mix(NEUTRAL, SAND, k / 0.4)
+    : k < 0.75 ? mix(SAND, CLAY, (k - 0.4) / 0.35)
+    : mix(CLAY, RUST, (k - 0.75) / 0.25);
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 

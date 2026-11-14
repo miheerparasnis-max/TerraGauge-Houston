@@ -5,6 +5,7 @@ import Radar from "./reactbits/Radar";
 import { Intro, HOUSTON } from "./Intro";
 import type { Meta, Sites } from "./types";
 import { CONFIDENCE, num } from "./labels";
+import { Marquee } from "./Marquee";
 
 const TAU = Math.PI * 2;
 const CYAN = "#19E6D9";
@@ -36,6 +37,8 @@ const MAX = TOTAL - 1; // furthest scroll, in screens
 const LEN = Object.fromEntries(SECTIONS) as Record<SectionId, number>;
 
 const WORD = "TERRAGAUGE";
+/** Evidence hexagon corner radius, as a share of the radar scope's radius. */
+const HEX_R = 0.94;
 const AGREE_MM = 2;
 
 export interface Stats { measured: number; fast: number }
@@ -173,13 +176,15 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
   const sources = useMemo(() => {
     if (!meta) return [];
     const a = meta.nisarArchive;
+    const month = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+    // NISAR leads: it is the mission this challenge is built around, and the card the evidence beat opens on.
     return [
-      { short: "OPERA", name: "NASA JPL OPERA · Sentinel-1 radar", what: `How much each 1 km square moved, every few months, ${years}.`, use: "The main movement measurement." },
-      { short: "GPS", name: "HoustonNet GPS", what: `${meta.stations.total} stations that measure movement very precisely at single points.`, use: `Checks the satellite. The ${meta.stations.deepSeated.length} antennas on deep extensometer anchors are left out: they track the anchor, not the land surface.` },
-      { short: "NISAR", name: "NASA/ISRO NISAR", what: `The newest radar satellite, ${a.first.slice(0, 7)} to ${a.last.slice(0, 7)}.`, use: `A quality check so far: ${a.processedPairs} of ${a.pairs} pairs processed. Its 12-day pairs are still mostly noise, so they don't color the map.` },
-      { short: "Wells", name: "USGS groundwater wells", what: "Whether water levels have dropped.", use: "Context in each square's evidence." },
-      { short: "Extensometers", name: "USGS extensometers", what: "How much soil has squeezed underground.", use: "Context in each square's evidence." },
-      { short: "FEMA", name: "FEMA flood zones", what: "Official high-risk flood areas.", use: "Raise priority for squares that moved down. A square with no matching zone is unknown, not safe." },
+      { short: "NISAR", name: "NISAR, NASA and India's new radar satellite", what: `Images Houston every 12 days. We have all ${a.processedPairs} of its image pairs from ${month(a.first)} to ${month(a.last)}.`, use: "Checks the map, and tells each square how long NISAR needs to confirm its sinking." },
+      { short: "GPS", name: "HoustonNet GPS stations", what: `${meta.stations.total} stations that measure their own height to the millimeter.`, use: "The ground truth we check the satellite against." },
+      { short: "Flood zones", name: "FEMA flood zones", what: "The official high-risk flood areas.", use: "Sinking inside a flood zone moves a square up the priority list." },
+      { short: "Wells", name: "USGS groundwater wells", what: "Whether underground water levels have dropped.", use: "Background in every square's evidence." },
+      { short: "Soil gauges", name: "USGS soil compaction gauges", what: "How much the clay underground has squeezed.", use: "Background in every square's evidence." },
+      { short: "Radar history", name: `NASA satellite radar, ${years}`, what: "How much every square moved, every few months for ten years.", use: "The long record that the map's movement is built from." },
     ].map((src, i, all) => ({ ...src, bearing: (i / all.length) * TAU + TAU / (all.length * 2) }));
   }, [meta, years]);
 
@@ -192,6 +197,7 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
   geo.current = { cx, cy, radarSure, radarSources, heroOn: radarHero > 0.01, blips, sources };
   const activeRef = useRef(0);
   const heldUntil = useRef(0); // a clicked source label holds the readout for a few seconds
+  const sourcesShown = useRef(false);
   const pickSource = (i: number) => { activeRef.current = i; heldUntil.current = performance.now() + 9000; setActiveSource(i); };
 
   const onSweep = useCallback((sweep: number, intro: number) => {
@@ -216,7 +222,15 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
         if (el) el.style.setProperty("--f", Math.exp(-gapBehind(sweep, b.bearing) * 1.3).toFixed(3));
       });
     }
+    if (g.radarSources <= 0.01) sourcesShown.current = false;
     if (g.radarSources > 0.01 && g.sources.length) {
+      if (!sourcesShown.current) {
+        // Always open on NISAR, then let the sweep take over.
+        sourcesShown.current = true;
+        activeRef.current = 0;
+        heldUntil.current = performance.now() + 4500;
+        setActiveSource(0);
+      }
       let best = 0, bestGap = TAU;
       g.sources.forEach((src, i) => {
         const gap = gapBehind(sweep, src.bearing);
@@ -268,6 +282,24 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
 
         {/* Data sources around the scope (beat 4) */}
         <div className="scope" style={{ ...scopeBox, opacity: radarSources * (1 - ramp(s, START.portal - 0.4, START.portal + 0.1)), visibility: radarSources > 0.01 ? undefined : "hidden" }} role="group" aria-label="Data sources">
+          {/* Evidence hexagon: one corner per dataset, spokes to the square they all describe at the centre. */}
+          <svg className="hexmap" viewBox="-1 -1 2 2" aria-hidden="true">
+            {(() => {
+              const v = sources.map((x) => [Math.sin(x.bearing) * HEX_R, -Math.cos(x.bearing) * HEX_R] as const);
+              const pts = v.map(([x, y]) => `${x.toFixed(4)},${y.toFixed(4)}`).join(" ");
+              return (
+                <>
+                  <polygon points={pts} className="hex-fill" />
+                  <polygon points={v.map(([x, y]) => `${(x * 0.5).toFixed(4)},${(y * 0.5).toFixed(4)}`).join(" ")} className="hex-inner" />
+                  {v.map(([x, y], i) => <line key={`s${i}`} x1={0} y1={0} x2={x} y2={y} className={i === activeSource ? "hex-spoke on" : "hex-spoke"} />)}
+                  {activeSource >= 0 && v[activeSource] && (
+                    <polygon className="hex-wedge" points={`0,0 ${v[(activeSource + v.length - 1) % v.length].map((n) => (n * 0.5).toFixed(4)).join(",")} ${v[activeSource].map((n) => n.toFixed(4)).join(",")} ${v[(activeSource + 1) % v.length].map((n) => (n * 0.5).toFixed(4)).join(",")}`} />
+                  )}
+                  {v.map(([x, y], i) => <circle key={`d${i}`} cx={x} cy={y} r={i === activeSource ? 0.03 : 0.018} className={i === activeSource ? "hex-dot on" : "hex-dot"} />)}
+                </>
+              );
+            })()}
+          </svg>
           {sources.map((x, i) => (
             <button key={x.short} ref={(el) => { srcRefs.current[i] = el; }} className={i === activeSource ? "src on" : "src"} onClick={() => pickSource(i)} aria-pressed={i === activeSource} tabIndex={radarSources > 0.5 ? 0 : -1} style={{ left: `${50 + Math.sin(x.bearing) * 50 * (wide ? 1.13 : 1.02)}%`, top: `${50 - Math.cos(x.bearing) * 50 * (wide ? 1.13 : 1.1)}%`, transform: wide ? undefined : `translate(${-50 - 50 * Math.sin(x.bearing)}%, -50%)` }}>
               <i />{x.short}
@@ -301,7 +333,7 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
           <img className="hero-logo" src="./logo.png" alt="" />
           <div className="hero-copy">
             <p className="tagline">Where did Houston's ground move, and how sure are we?</p>
-            <p className="hero-sub">Past ground motion from NASA satellite radar, checked against GPS, wells and flood zones, one 1 km square at a time.</p>
+            <p className="hero-sub">Ten years of NASA satellite radar, checked by NISAR and by GPS on the ground, one square kilometer at a time.</p>
             <div className="hero-cta">
               <button className="cta" onClick={toStory}>Start the story</button>
               <button className="ghost" onClick={onEnter}>Skip to the map</button>
@@ -316,8 +348,8 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
           <article className="glass" style={panelStyle(s, "move")}>
             <p className="kicker">01 · Movement</p>
             <h2 id="b-move">Where did the ground move?</h2>
-            <p className="big"><strong>{stats ? stats.fast.toLocaleString() : "—"}</strong><span>of {stats ? stats.measured.toLocaleString() : "—"} measured 1 km squares moved down 1 cm a year or more in the {years} satellite record.</span></p>
-            <p>Each square is measured relative to a reference region, from {meta?.record.products ?? "—"} NASA OPERA radar snapshots, {years}. Where trees, fields or water hide the ground, the square says so instead of guessing from its neighbors.</p>
+            <p className="big"><strong>{stats ? stats.fast.toLocaleString() : "—"}</strong><span>of {stats ? stats.measured.toLocaleString() : "—"} squares sank 1 cm a year or more, {years}.</span></p>
+            <p>Every square kilometer is measured from {meta?.record.products ?? "—"} NASA satellite radar snapshots. Where water covers the ground or nothing measures it, the square says so instead of guessing.</p>
           </article>
         </div>
       </section>
@@ -327,16 +359,16 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
           <article className="glass" style={panelStyle(s, "sure")}>
             <p className="kicker">02 · Confidence</p>
             <h2 id="b-sure">How sure are we?</h2>
-            <p>We checked the satellite against {meta?.validation.stations ?? "—"} GPS stations it was never calibrated on. Each blip on the scope is one of them, drawn where it sits around Houston.</p>
+            <p>We checked the satellite against {meta?.validation.stations ?? "—"} GPS stations it never saw. Each dot on the scope is one of them, drawn where it sits around Houston.</p>
             <div className="duo">
-              <p className="big"><strong>{meta ? meta.validation.r.toFixed(2) : "—"}</strong><span>correlation with GPS</span></p>
-              <p className="big"><strong>{meta ? num(meta.validation.typical_diff_mm_year) : "—"}</strong><span>mm a year typical (median) difference</span></p>
+              <p className="big"><strong>{meta ? num(meta.validation.typical_diff_mm_year) : "—"}</strong><span>mm a year: how far apart they typically are</span></p>
+              <p className="big"><strong>{meta ? `${Math.round(meta.validation.r * 100)}%` : "—"}</strong><span>how closely they rise and fall together</span></p>
             </div>
             <ul className="keyline">
               <li><i className="k-agree" />{agree} stations agree within {AGREE_MM} mm a year</li>
               <li><i className="k-differ" />{blips.length - agree} differ by more</li>
             </ul>
-            <p className="fine">Every square gets its own confidence level: {CONFIDENCE.high.name.toLowerCase()} where a nearby GPS station confirms it.</p>
+            <p className="fine">Every square gets its own confidence level: {CONFIDENCE.high.name.toLowerCase()} where a GPS station nearby confirms it.</p>
           </article>
         </div>
       </section>
@@ -346,15 +378,15 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
           <article className="glass" style={panelStyle(s, "first")}>
             <p className="kicker">03 · Priority</p>
             <h2 id="b-first">Where should we look first?</h2>
-            <p className="big"><strong>{meta ? (meta.counts.priority.urgent ?? 0).toLocaleString() : "—"}</strong><span>urgent squares: moved down at least 1 cm a year, or 5 mm a year inside a FEMA high-risk flood zone, clearly above noise.</span></p>
+            <p className="big"><strong>{meta ? ((meta.counts.action.investigate_first ?? 0) + (meta.counts.action.add_monitoring ?? 0)).toLocaleString() : "—"}</strong><span>squares clearly sinking inside a FEMA high-risk flood zone.</span></p>
             {meta && (
               <ol className="mini-sites">
                 {meta.sensors.slice(0, 3).map((x) => (
-                  <li key={x.id}><span className="rank">{x.rank}</span><span><b>Area moved down about {num(Math.abs(x.areaRate / 10))} cm a year</b><small>{num(x.gpsKm)} km from the nearest GPS{x.sfha ? ", high-risk flood zone" : ""}</small></span></li>
+                  <li key={x.id}><span className="rank">{x.rank}</span><span><b>Area sinking {num(Math.abs(x.areaRate / 10))} cm a year</b><small>{num(x.gpsKm)} km from the nearest GPS, in a high-risk flood zone</small></span></li>
                 ))}
               </ol>
             )}
-            <p className="fine">The top {meta?.sensors.length ?? "—"} places where a new GPS sensor would add the most evidence.</p>
+            <p className="fine">The top {meta?.sensors.length ?? "—"} places where a new GPS station would help most.</p>
           </article>
         </div>
       </section>
@@ -380,7 +412,7 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
         <div className="hold" style={{ height: H }}>
           <div className="portal-copy" style={{ opacity: win(s, START.portal - 0.6, START.portal - 0.1, START.portal + 0.05, START.portal + 0.3) }}>
             <p className="kicker">05 · The map</p>
-            <h2 id="b-portal">Every square, its evidence, and what's missing</h2>
+            <Marquee as="h2" id="b-portal" text="Every square, its evidence, and what's missing" />
             <button className="cta" onClick={toPortalEnd}>Open the map</button>
           </div>
         </div>

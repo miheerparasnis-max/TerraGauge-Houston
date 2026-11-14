@@ -16,6 +16,8 @@ const STYLE: StyleSpecification = {
 };
 
 const easeInOut = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2;
+/** Length of the combined spin-and-dive. */
+const SPIN_ZOOM_MS = 3400;
 
 /** Zoom at which the globe is about `share` of the shorter screen side across (globe diameter = 512·2^z / π px). */
 const fitZoom = (share: number) => Math.log2((share * Math.min(window.innerWidth, window.innerHeight) * Math.PI) / 512);
@@ -51,8 +53,8 @@ export function Intro({ skip, onDone }: Props) {
       m = new maplibregl.Map({
         container: ref.current,
         style: STYLE,
-        center: [-28, 18],
-        zoom: fitZoom(0.42),
+        center: [-20, 18],
+        zoom: fitZoom(0.5),
         interactive: false,
         attributionControl: false,
         fadeDuration: 0,
@@ -64,22 +66,21 @@ export function Intro({ skip, onDone }: Props) {
     map.current = m;
     const timers: number[] = [];
     // Never hold the visitor on a blank screen if tiles are slow.
-    timers.push(window.setTimeout(finish, 14000));
+    timers.push(window.setTimeout(finish, 9000));
     let started = false;
     const start = () => {
       if (started || done.current) return;
       started = true;
-      m.easeTo({ center: [HOUSTON[0] + 6, HOUSTON[1] - 2], zoom: fitZoom(0.62), duration: 3600, easing: easeInOut });
-      m.once("moveend", () => {
-        if (done.current) return;
-        m.flyTo({ center: HOUSTON, zoom: 5.4, duration: 2800, curve: 1.2, essential: true }); // Black Marble is a 500 m composite: stop before it turns blocky
-        m.once("moveend", finish);
-      });
+      // One move: the globe turns from the Atlantic to Houston while the camera
+      // zooms in, both on the same clock, so the spin and the dive happen together.
+      // Black Marble is a 500 m composite: stop at zoom 5.4, before it turns blocky.
+      m.easeTo({ center: HOUSTON, zoom: 5.4, duration: SPIN_ZOOM_MS, easing: easeInOut, essential: true });
+      m.once("moveend", finish);
     };
     m.once("load", () => {
-      // Give the first tiles a moment so the globe isn't blank, but don't wait forever.
+      // Give the first tiles a moment so the globe isn't blank, but don't wait long.
       m.once("idle", start);
-      timers.push(window.setTimeout(start, 1600));
+      timers.push(window.setTimeout(start, 900));
     });
     m.on("error", () => { /* tile hiccups are fine; the timeout above still ends the intro */ });
     return () => { timers.forEach(clearTimeout); m.remove(); map.current = null; };
@@ -96,7 +97,7 @@ export function Intro({ skip, onDone }: Props) {
   return (
     <div className="intro-globe" aria-hidden="true">
       <div ref={ref} className="intro-map" />
-      <p className="intro-credit">Night lights: NASA Black Marble (VIIRS) via NASA GIBS</p>
+      <p className="intro-credit">Earth at night: NASA Black Marble</p>
     </div>
   );
 }

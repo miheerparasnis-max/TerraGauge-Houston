@@ -637,7 +637,7 @@ def main() -> None:
     nisar_archive = {
         "passes": chain_report["date_count"], "pairs": chain_report["pair_count"],
         "first": chain_report["first_date"], "last": chain_report["last_date"],
-        "processedPairs": sum(1 for granule in inventory["granules"] if granule.get("in_repo")),
+        "processedPairs": sum(1 for granule in inventory["granules"] if granule.get("in_repo") or (ROOT / "data" / "derived" / f"nisar_gunw_houston_{granule['reference_date'].replace('-', '')}_{granule['secondary_date'].replace('-', '')}_pair_cells.json").is_file()),
         "retrieved": inventory["retrieved_utc"][:10], "inventory": relative(INVENTORY),
     }
     meta = {

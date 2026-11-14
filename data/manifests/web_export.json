@@ -1,7 +1,7 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-14T20:54:18Z",
-  "git_head": "2865b32c67fdfda00a204fa344742b5d10684525",
+  "created_utc": "2026-11-14T21:27:30Z",
+  "git_head": "384644a04b576c261e1155400e9e80b6410e5a32",
   "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
@@ -106,7 +106,7 @@
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "d74aeeb7ff010cf944ba9f10b54f784e9455718c5390a27966a4544559ec1b0a",
+      "sha256": "f6cc3f042f9a9ce76b57bcc4d515b383b2d281dce3459f3846e69c3e7cab1b73",
       "tracked": true
     },
     {

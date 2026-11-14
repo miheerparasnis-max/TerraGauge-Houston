@@ -24,8 +24,8 @@ interface Props {
 
 // OpenFreeMap: free vector basemap, no API key. If it can't be reached, the
 // map still works on a plain background.
-const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
-const FALLBACK: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#E6EBE5" } }] };
+const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
+const FALLBACK: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0A1430" } }] };
 
 async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
   try {
@@ -93,21 +93,23 @@ export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, 
       const created = new maplibregl.Map({ container: ref.current, style, center: [-95.4, 29.8], zoom: 9.2, minZoom: 7, maxZoom: 15, attributionControl: { compact: true } });
       created.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
       map.current = m = created;
+      // The dark basemap references a few icons it doesn't ship; give them a blank image instead of a console warning.
+      created.on("styleimagemissing", (e) => { if (!created.hasImage(e.id)) created.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) }); });
       created.on("load", () => {
         const m = created;
         const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
         const { cells: c, mode: md, year: y, meta: mt } = latest.current;
         m.addSource("cells", { type: "geojson", data: cellsGeoJSON(c, md, y, mt) });
         m.addLayer({ id: "cells", type: "fill", source: "cells", paint: { "fill-color": ["get", "fill"], "fill-opacity": ["get", "op"] } }, firstLabel);
-        m.addLayer({ id: "grid", type: "line", source: "cells", minzoom: 10.5, paint: { "line-color": "#14201F", "line-opacity": ["interpolate", ["linear"], ["zoom"], 10.5, 0, 12, 0.14], "line-width": 0.6 } }, firstLabel);
-        m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#2563A8", "line-width": 1, "line-opacity": 0.7 }, layout: { visibility: "none" } }, firstLabel);
-        m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#14201F", "line-width": 3 } });
+        m.addLayer({ id: "grid", type: "line", source: "cells", minzoom: 10.5, paint: { "line-color": "#C9DCF5", "line-opacity": ["interpolate", ["linear"], ["zoom"], 10.5, 0, 12, 0.12], "line-width": 0.6 } }, firstLabel);
+        m.addLayer({ id: "flood", type: "line", source: "cells", filter: ["==", ["get", "sfha"], true], paint: { "line-color": "#6FB4F0", "line-width": 1, "line-opacity": 0.8 }, layout: { visibility: "none" } }, firstLabel);
+        m.addLayer({ id: "selected", type: "line", source: "cells", filter: ["==", ["get", "id"], ""], paint: { "line-color": "#FFFFFF", "line-width": 3 } });
         m.addSource("gps", { type: "geojson", data: points(sites.gps) });
         m.addSource("ext", { type: "geojson", data: points(sites.ext) });
         m.addSource("wells", { type: "geojson", data: points(sites.wells) });
-        m.addLayer({ id: "wells", type: "circle", source: "wells", paint: { "circle-radius": 4, "circle-color": "#2563A8", "circle-stroke-color": "#fff", "circle-stroke-width": 1.2 } });
-        m.addLayer({ id: "ext", type: "circle", source: "ext", paint: { "circle-radius": 5.5, "circle-color": "#14201F", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
-        m.addLayer({ id: "gps", type: "circle", source: "gps", paint: { "circle-radius": 4, "circle-color": "#fff", "circle-stroke-color": "#14201F", "circle-stroke-width": 1.5 } });
+        m.addLayer({ id: "wells", type: "circle", source: "wells", paint: { "circle-radius": 4, "circle-color": "#6FB4F0", "circle-stroke-color": "#0A1430", "circle-stroke-width": 1.2 } });
+        m.addLayer({ id: "ext", type: "circle", source: "ext", paint: { "circle-radius": 5.5, "circle-color": "#E9B35F", "circle-stroke-color": "#0A1430", "circle-stroke-width": 2 } });
+        m.addLayer({ id: "gps", type: "circle", source: "gps", paint: { "circle-radius": 4, "circle-color": "#EAF2FF", "circle-stroke-color": "#0A1430", "circle-stroke-width": 1.5 } });
         m.on("click", (e) => {
           const pointLayers = ["gps", "ext", "wells"].filter((l) => m.getLayoutProperty(l, "visibility") !== "none");
           const site = m.queryRenderedFeatures(e.point, { layers: pointLayers })[0];
@@ -116,7 +118,7 @@ export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, 
             const html = site.layer.id === "gps"
               ? `<b>GPS station ${p.id}</b><br>${p.up === null || p.up === undefined || p.up === "null" ? "Rate withheld: the source value is implausible" : `Moved ${Number(p.up).toFixed(1)} mm a year (up is positive)`}<br>${Number(p.y0).toFixed(0)} to ${Number(p.y1).toFixed(0)}, HoustonNet${Number(p.deepAnchorM) > 0 ? `<br><i>Mounted on a borehole anchor ${Number(p.deepAnchorM)} m deep, so it tracks deep ground, not the surface. Not used to check or blend satellite readings.</i>` : ""}`
               : site.layer.id === "ext"
-              ? `<b>${p.name}</b><br>Extensometer: measures soil squeezing underground<br>${Number(p.c).toFixed(2)} ft since ${p.d0}`
+              ? `<b>${p.name}</b><br>Soil compaction gauge: measures clay squeezing underground<br>${Number(p.c).toFixed(2)} ft since ${p.d0}`
               : `<b>${p.name}</b><br>Groundwater well, USGS<br>${p.dd === null ? "No change recorded" : `Water ${Number(p.dd) >= 0 ? `${Number(p.dd).toFixed(1)} ft deeper` : `${(-Number(p.dd)).toFixed(1)} ft shallower`}`}, ${p.t0} to ${p.t1}`;
             new maplibregl.Popup({ maxWidth: "260px" }).setLngLat(e.lngLat).setHTML(html).addTo(m);
             return;
@@ -193,15 +195,15 @@ export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, 
     if (layers.gaps) for (const g of gaps) {
       const el = document.createElement("button");
       el.className = "node-pin gap-pin";
-      el.setAttribute("aria-label", `Fill-the-gap node site ${g.rank}`);
-      el.title = `Fill-the-gap node site ${g.rank}: nothing measures this ground yet`;
+      el.setAttribute("aria-label", `Sensor site ${g.rank} where nothing measures yet`);
+      el.title = `Sensor site ${g.rank}: nothing measures this ground yet`;
       add(el, g.id, g.lon, g.lat);
     }
     if (layers.nodes) for (const n of nodes) {
       const el = document.createElement("button");
       el.className = "node-pin";
-      el.setAttribute("aria-label", `Suggested low-cost node ${n.rank}`);
-      el.title = `Low-cost node site ${n.rank}`;
+      el.setAttribute("aria-label", `Suggested low-cost sensor ${n.rank}`);
+      el.title = `Low-cost sensor site ${n.rank}`;
       add(el, n.id, n.lon, n.lat);
     }
     if (layers.sensors) for (const s of sensors) {

@@ -43,17 +43,20 @@ export interface Cell {
   tl?: number[];                // time-lapse: ground change since 2016 (mm) at each satellite date
   /** cells.json carries only map fields; the rest arrive from details/<tile>.json when a square is opened. */
   detailed?: boolean;
+  near?: { kind: "gps" | "node"; rank: number; km: number };
   hz?: { drop: number; dl: Level; bend: number | null; bl: Level | null; filled?: boolean };
 }
 
 export interface SensorSite { rank: number; id: string; lon: number; lat: number; areaRate: number; rate: number; gpsKm: number; conf: Confidence | null; zone: string | null; weeks: number | null }
 export interface GapSite { rank: number; id: string; lon: number; lat: number; gpsKm: number; zone: string | null; sfha: boolean; rate: number | null }
-export interface NodeSite { rank: number; id: string; lon: number; lat: number; areaRate: number; weeks: number; act: Action; zone: string | null; est: boolean }
+export interface NodeSite { rank: number; id: string; lon: number; lat: number; areaRate: number; weeks: number; act: Action; zone: string | null; est: boolean; cover?: boolean }
 
 interface Score { median_abs_error: number; mean_abs_error: number; correlation: number | null; fast_median_abs_error: number | null }
 
 export interface Meta {
   status: string;
+  nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number };
+  stations: { total: number; deepSeated: string[]; rateWithheld: string[] };
   record: { start: string; end: string; dates: string[]; products: number };
   thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number; disagree_mm_year: number; sensor_spacing_km: number; incidence_deg: number; gps_daily_sigma_mm: number };
   counts: { action: Record<string, number>; confidence: Record<string, number> };
