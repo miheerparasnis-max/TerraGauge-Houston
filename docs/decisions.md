@@ -402,3 +402,9 @@ forecast flood-depth wording.
 
 ### D-047 (2026-11-14): branches merged; renumbering
 Reyansh merged `chore/audit-baseline-2026-11-10` (Aaron's science fixes and "scuffed ui") into `reyansh/website-and-fixes`. Reyansh's D-039 and D-040 are renumbered D-045 and D-046 so they don't clash with Aaron's. Decided by Reyansh: the site keeps the tested ground-sinking forecast (D-045, the position D-043 records as not adopted) but never forecasts flood depths (D-046, Aaron's request). Where the two pipelines conflicted, this branch's export, grid and south-frame merge were kept; Aaron's USGS groundwater re-download, prediction pre-registration, GroundTruth processing and landing page were taken.
+
+### D-048: F-4 checked against the official GUNW specification (2026-11-14)
+- **Source.** NASA SDS Product Specification L2 GUNW, JPL D-102272 Rev E (8 Nov 2024), saved at `docs/specs/`.
+- **Finding.** The specification does not state the sign of `unwrappedPhase`. Its only attributes are units (radians), the fill value, grid mapping and summary statistics. It also does not say which way the interferogram is formed (reference × conj(secondary) or the reverse). The NISAR Data Product Format Document v1.2.1 and the ASF NISAR user guide do not state it either.
+- **Effect.** The prediction test (D-041) stays blocked. `scripts/score_prediction.py` has run everything allowed before scoring: 22-pair chain, 1,287 squares, power 0.115. The correlation has not been computed.
+- **Ways to unblock, for the team to decide before anyone scores:** an amendment that accepts the sign from the processor's source code (ISCE3) or from an empirical GPS check, as was done for OPERA (fact-check row 4). Either way, it must be logged before the score is computed.
