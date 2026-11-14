@@ -4,6 +4,10 @@ TerraGauge is an evidence-first monitoring-priority backend for Houston ground-m
 
 It does **not** forecast flooding, diagnose the cause of motion, or claim that a weekend GNSS receiver measured subsidence.
 
+> **SI disclosure:** AI assistance was used for code scaffolding, debugging,
+> and documentation editing. Team members reviewed, tested, and take
+> responsibility for the final implementation and claims.
+
 ## Backend scope
 
 This repository currently contains a dependency-free Python API with:
