@@ -9,14 +9,14 @@ export const MODES: { key: Mode; name: string; question: string }[] = [
 ];
 
 export const HAZARDS: { key: Hazard; name: string; question: string }[] = [
-  { key: "flood", name: "Flood", question: "If a big flood came, how much deeper would sinking make it?" },
+  { key: "flood", name: "Flood", question: "Where has sinking already made floods deeper?" },
   { key: "drought", name: "Drought", question: "Where would the next drought crack foundations and pipes?" },
   { key: "bending", name: "Ground bending", question: "Where is the ground bending, and maybe faulting?" },
 ];
 
 export type FloodClass = "1pct" | "0.2pct" | "levee" | "minimal";
 export const FLOOD: Record<FloodClass | "deeper", { name: string; color: string; meaning: string }> = {
-  deeper: { name: "High-risk zone, getting deeper", color: "#0B3C6E", meaning: "FEMA 1-in-100-year flood zone, and sinking (plus ocean rise on the coast) makes the same flood at least 3 cm deeper by the chosen year." },
+  deeper: { name: "High-risk zone, already deeper", color: "#0B3C6E", meaning: "FEMA 1-in-100-year flood zone where the ground has measurably dropped at least 3 cm since 2016, so the same flood now stands at least that much deeper." },
   "1pct": { name: "High-risk flood zone", color: "#4A86C5", meaning: "FEMA 1-in-100-year flood zone: a 1% chance of a flood this big every year, about 26% over 30 years." },
   "0.2pct": { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "FEMA 1-in-500-year zone (0.2% a year), or protected by a levee." },
   levee: { name: "Moderate-risk zone", color: "#A9CBEA", meaning: "Protected by a levee; floods if the levee is overtopped or fails." },
@@ -42,16 +42,18 @@ export function floodClass(cell: Cell): FloodClass | null {
   return null;
 }
 
-/** How much deeper the same flood gets by `year`: forecast sinking + ocean rise on the coast (cm). */
-export function floodExtra(cell: Cell, year: number, meta: Meta) {
+/** How much deeper the same flood already is because the ground here dropped
+ *  since the satellite record began (measured, not forecast; cm). Only for
+ *  squares the satellite measures (or fills from touching measured squares)
+ *  and whose sinking is clear of noise. */
+export function floodExtra(cell: Cell, meta: Meta) {
   const cls = floodClass(cell);
-  const v = cell.future?.by[String(year)];
-  const sink = v ? Math.max(0, -v.c) : null;
-  const elev = cell.elev ?? cell.nasadem?.elevation_m;
-  const coastal = cell.flood.zone === "VE" || cell.flood.zone === "V" || (cls === "1pct" && elev !== undefined && elev < (meta.hazards?.flood.coastal_elevation_m ?? 3));
-  const base = meta.forecast ? Number(meta.forecast.base.slice(0, 4)) + (Number(meta.forecast.base.slice(5, 7)) - 1) / 12 : 2026.2;
-  const ocean = coastal ? ((meta.hazards?.flood.ocean_rise_mm_year ?? 10) * (year - base)) / 10 : 0;
-  return { cls, sink, ocean, coastal, total: sink === null ? null : sink + ocean };
+  const dates = meta.timelapse?.dates;
+  const yr = (d: string) => Number(d.slice(0, 4)) + (Number(d.slice(5, 7)) - 1) / 12;
+  const span = dates && dates.length > 1 ? yr(dates[dates.length - 1]) - yr(dates[0]) : 9.7;
+  const measured = cell.rate !== null && (!cell.src.includes("estimated") || !!cell.adj);
+  const sink = !measured ? null : cell.sig && cell.rate! < 0 ? (-cell.rate! * span) / 10 : 0;
+  return { cls, sink, total: sink, since: dates ? dates[0].slice(0, 4) : "2016" };
 }
 
 export const chanceOver = (annual: number, years: number) => 1 - Math.pow(1 - annual, years);
@@ -93,7 +95,7 @@ export function movementColor(value: number | null, span = 25): string {
 export function cellColor(cell: Cell, mode: ColorBy, year: number, meta?: Meta): string {
   if (mode === "history") return cell.tl ? movementColor(cell.tl[year] / 10, 20) : NO_MEASUREMENT;
   if (mode === "flood") {
-    const f = meta ? floodExtra(cell, year, meta) : null;
+    const f = meta ? floodExtra(cell, meta) : null;
     if (!f || !f.cls) return NO_MEASUREMENT;
     return f.cls === "1pct" && (f.total ?? 0) >= 3 ? FLOOD.deeper.color : FLOOD[f.cls].color;
   }
@@ -127,10 +129,10 @@ export function duration(months: number | null): string {
 export function cellSummary(cell: Cell, mode: ColorBy, year: number, meta: Meta): string {
   if (mode === "history") return cell.tl ? `${num(cell.tl[year] / 10)} cm since July 2016` : "No measurement";
   if (mode === "flood") {
-    const f = floodExtra(cell, year, meta);
+    const f = floodExtra(cell, meta);
     if (!f.cls) return "No flood zone data";
     const base = FLOOD[f.cls === "1pct" && (f.total ?? 0) >= 3 ? "deeper" : f.cls].name;
-    return f.total !== null && f.total > 0.5 ? `${base}: floods ${num(f.total)} cm deeper by ${year}` : base;
+    return f.total !== null && f.total > 0.5 ? `${base}: floods ${num(f.total)} cm deeper than in ${f.since}` : base;
   }
   if (cell.act === "insufficient_data" || cell.rate === null) return "No measurement";
   const est = cell.src.includes("estimated") ? " (estimated)" : "";

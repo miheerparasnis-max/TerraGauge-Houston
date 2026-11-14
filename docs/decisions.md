@@ -288,3 +288,17 @@ public copy; the other G2 overclaims stay forbidden. Adopted from the audit
 branch unchanged: the pre-registered reference region (DEN2, TMCC), exclusion
 of deep-seated GNSS stations, withheld implausible GPS rates, provenance
 manifests and the publish guard.
+
+## D-040 (2026-11-14): no forecast flood depths; flood view uses the measured drop
+
+Raised by Aaron, decided by Reyansh. The Harvey check (backend/hazards.py
+harvey_check) found that sinking speed did not predict where Harvey flooded,
+so a "this flood gets X cm deeper by 2031" forecast invites a judge to see a
+contradiction with our own data. The flood view and each card's flood line now
+show only what was measured: the satellite drop since 2016 (rate x record
+length, only where the sinking is clear of noise), stated as "the same flood
+now stands about X cm deeper". The ocean-rise add-on is removed. The
+ground-sinking forecast itself (D-039: tested, bounded, 80% ranges) stays on
+the cards and the Future view. tests/test_claims_policy.py now fails on
+forecast flood-depth wording.
+

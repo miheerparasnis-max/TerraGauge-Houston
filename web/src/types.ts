@@ -64,7 +64,7 @@ export interface Meta {
     tests: { drought: { flagged_median_drop_mm: number; others_median_drop_mm: number; flagged_share_in_worst10_pct: number; auc: number; cells: number }; bending: { r: number; hotspot_later_median: number; others_later_median: number; cells: number } };
     drought: { epochs: string[]; high_mm: number; medium_mm: number };
     bend: { high: number; medium: number };
-    flood: { ocean_rise_mm_year: number; coastal_elevation_m: number };
+    flood: { basis: string };
     harvey: null | {
       source: string; areas?: string[]; mapped_bbox?: number[]; squares: number; flooded_area_outside_high_risk_pct: number; high_water_marks: number;
       by_class: Record<"1pct" | "0.2pct" | "minimal", { squares: number; flooded_pct: number; mean_flooded_share_pct: number } | null>;

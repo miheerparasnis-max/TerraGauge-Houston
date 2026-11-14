@@ -194,7 +194,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
 
 /** What the measured ground does to floods, droughts and bending here. */
 function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number }) {
-  const fl = floodExtra(cell, year, meta);
+  const fl = floodExtra(cell, meta);
   const hz = cell.hz;
   if (!fl.cls && !hz) return null;
   const odds = fl.cls === "1pct" ? 0.01 : fl.cls === "0.2pct" || fl.cls === "levee" ? 0.002 : 0;
@@ -208,8 +208,8 @@ function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number })
             ? <>A flood this big has about a <b>{odds * 100}% chance each year</b> here ({pct(chanceOver(odds, 5))} over 5 years, {pct(chanceOver(odds, 30))} over a 30-year mortgage). </>
             : <>FEMA rates this area as low flood risk, though Hurricane Harvey flooded many areas like it. </>}
             {fl.total !== null && fl.total > 0.5
-              ? <>By {year} the same flood would be about <b>{num(fl.total)} cm deeper</b>{fl.ocean > 0 ? <> ({num(fl.sink)} cm from the ground sinking, {num(fl.ocean)} cm from ocean rise)</> : <>, because the ground here is forecast to sink that much</>}.</>
-              : fl.total !== null ? <>The ground here isn't forecast to sink much, so floods shouldn't get deeper by {year}.</> : null}
+              ? <>The ground here has dropped about <b>{num(fl.total)} cm</b> since {fl.since}, so the same flood now stands about {num(fl.total)} cm deeper than it would have then.</>
+              : fl.total !== null ? <>The ground here hasn't clearly dropped since {fl.since}, so floods here aren't deeper because of sinking.</> : null}
           </p>
           {cell.harvey && <p className="harvey">{cell.harvey.wet > 0
             ? <>In <b>Hurricane Harvey</b> (2017), about {Math.round(cell.harvey.wet * 100)}% of this square flooded{cell.harvey.ft !== null ? <>, on average {num(cell.harvey.ft)} ft deep where it was wet</> : null} (USGS flood maps).</>
@@ -232,7 +232,7 @@ function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number })
           <p>The sinking speed changes by <b>{num(hz.bend)} mm a year</b> between this square and the next one over. {hz.bl === "high" ? "Uneven sinking like this bends pipes, roads and slabs, and in Houston it often marks one of the city's slowly slipping faults." : hz.bl === "medium" ? "Some uneven sinking; worth watching for cracks in roads and pipes." : "The ground sinks evenly here, which is easier on buildings and pipes."}</p>
         </div>
       )}
-      <p className="fine">These don't predict when a storm or drought comes, only what the moving ground does when one does. Flood odds are FEMA's; depth changes are our forecast.</p>
+      <p className="fine">These don't predict when a storm or drought comes, only what the moving ground does when one does. Flood odds are FEMA's; how much the ground dropped is measured by satellite.</p>
     </Section>
   );
 }

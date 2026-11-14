@@ -12,8 +12,8 @@ ground does to a hazard if it comes:
   bends; that strains pipes, roads and slabs and can mark a slipping fault.
   Tested: hotspots in 2016-2021 stayed hotspots in 2021-2026.
 * flood    - FEMA's flood zone gives the yearly odds of a big flood; the
-  forecast sinking (plus ocean rise on the coast) gives how much deeper the
-  same flood gets.
+  satellite-measured drop since 2016 gives how much deeper the same flood
+  already stands. Flood depths are never forecast (D-040).
 """
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from typing import Any
 
 INCIDENCE_DEG = 38.0
 DROUGHT_EPOCHS = ("2018-08-13", "2023-10-04")   # end of the 2018 and 2023 Texas droughts
-OCEAN_RISE_MM_YEAR = 10.0   # Gulf rise at Galveston today (Liu et al. 2020 fit: 1.1 mm/yr + 0.27 mm/yr^2 since 1992)
 
 # FEMA zone -> chance of a flood at least that big in any one year
 ZONE_ODDS = {"1pct": 0.01, "0.2pct": 0.002, "levee": 0.002, "minimal": 0.0}

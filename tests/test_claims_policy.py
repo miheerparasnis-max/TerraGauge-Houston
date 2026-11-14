@@ -11,23 +11,38 @@ WEB_DATA = ROOT / "web" / "public" / "data"
 # MASTER G2 search list, plus the "NISAR can't" spelling of "NISAR cannot".
 # Decision D-039 (docs/decisions.md): plain "sinking" and the word "predict"
 # are allowed (the site is for the public, and it says plainly what it cannot
-# predict); the overclaims below stay forbidden.
+# predict); the overclaims below stay forbidden. D-040: the ground-sinking
+# forecast stays, but flood depths are never forecast; the flood view shows
+# only the measured drop.
 FORBIDDEN = [
     r"\bwill flood\b", r"\bcaused by\b", r"\bcaused the\b", r"\bmeasured subsidence\b",
     r"\bour node measured\b", r"\bdefinitely\b", r"\bproves\b", r"\bNISAR (cannot|can['’]t)\b",
     r"\bannual subsidence rate\b", r"\bworks everywhere\b", r"\bfirst ever\b", r"\bAI predicted\b",
 ]
+# D-040: no forecast flood depths ("floods 5 cm deeper by 2031", "the same
+# flood would be about ... deeper", ocean-rise add-ons).
+FLOOD_FORECAST = [
+    r"deeper by (\{year\}|20\d\d)", r"flood would be (about )?\S* ?\S* ?cm deeper",
+    r"floods? (will|would) (get|be) deeper", r"forecast (to sink|sinking)[^.]*deeper", r"ocean rise",
+]
 PUBLISHED = sorted((ROOT / "web" / "src").glob("*.ts*")) + sorted(WEB_DATA.glob("*.json")) + [ROOT / "README.md"]
 
 
-def hits(text):
-    return [m.group(0) for pattern in FORBIDDEN for m in re.finditer(pattern, text, flags=re.IGNORECASE)]
+def hits(text, patterns=FORBIDDEN):
+    return [m.group(0) for pattern in patterns for m in re.finditer(pattern, text, flags=re.IGNORECASE)]
 
 
 class ClaimsPolicyTests(unittest.TestCase):
     def test_published_copy_has_no_forbidden_phrases(self):
         found = {str(path.relative_to(ROOT)): hits(path.read_text(encoding="utf-8")) for path in PUBLISHED}
         self.assertEqual({k: v for k, v in found.items() if v}, {})
+
+    def test_no_forecast_flood_depths(self):
+        found = {str(path.relative_to(ROOT)): hits(path.read_text(encoding="utf-8"), FLOOD_FORECAST) for path in PUBLISHED}
+        self.assertEqual({k: v for k, v in found.items() if v}, {})
+        self.assertTrue(hits("By 2031 the same flood would be about 4 cm deeper", FLOOD_FORECAST))
+        self.assertTrue(hits("floods 4 cm deeper by {year}", FLOOD_FORECAST))
+        self.assertFalse(hits("the same flood now stands about 4 cm deeper than it would have then", FLOOD_FORECAST))
 
     def test_detector_catches_known_phrases(self):
         self.assertTrue(hits("This proves the ground will flood"))

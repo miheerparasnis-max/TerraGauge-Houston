@@ -38,7 +38,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
     if (mode !== "hazards") return m;
     const add = (k: string) => m.set(k, (m.get(k) ?? 0) + 1);
     for (const c of cells) {
-      if (hazard === "flood") { const f = floodExtra(c, year, meta); if (f.cls) add(f.cls === "1pct" && (f.total ?? 0) >= 3 ? "deeper" : f.cls === "levee" ? "0.2pct" : f.cls); }
+      if (hazard === "flood") { const f = floodExtra(c, meta); if (f.cls) add(f.cls === "1pct" && (f.total ?? 0) >= 3 ? "deeper" : f.cls === "levee" ? "0.2pct" : f.cls); }
       else if (c.hz && c.act !== "insufficient_data") { const v = hazard === "drought" ? c.hz.dl : c.hz.bl; if (v) add(v); }
     }
     return m;
@@ -62,7 +62,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
     const keys = hazard === "flood" ? ["deeper", "1pct", "0.2pct", "minimal"] : ["high", "medium", "low"];
     const t = meta.hazards?.tests;
     const note = hazard === "flood"
-      ? <>FEMA's flood zones give the odds of a big flood. Our forecast gives how much the ground sinks by {year}, which makes the same flood that much deeper. Coastal squares also get about 1 cm a year of Gulf rise.{meta.hazards?.harvey?.by_class["1pct"] && meta.hazards.harvey.by_class.minimal ? <> Checked against Hurricane Harvey: in northeast Houston, {num(meta.hazards.harvey.by_class["1pct"].mean_flooded_share_pct, 0)}% of high-risk squares' area flooded, versus {num(meta.hazards.harvey.by_class.minimal.mean_flooded_share_pct, 0)}% of low-risk squares'.</> : null}</>
+      ? <>FEMA's flood zones give the odds of a big flood. The satellite measured how much the ground has dropped since 2016, and the same flood now stands that much deeper. This is measured, not forecast.{meta.hazards?.harvey?.by_class["1pct"] && meta.hazards.harvey.by_class.minimal ? <> Checked against Hurricane Harvey: in northeast Houston, {num(meta.hazards.harvey.by_class["1pct"].mean_flooded_share_pct, 0)}% of high-risk squares' area flooded, versus {num(meta.hazards.harvey.by_class.minimal.mean_flooded_share_pct, 0)}% of low-risk squares'.</> : null}</>
       : hazard === "drought" && t ? <>Tested: using only data from before 2023, the squares flagged from the 2018 drought dropped a median {num(t.drought.flagged_median_drop_mm, 0)} mm in the 2023 drought, versus {num(t.drought.others_median_drop_mm, 0)} mm for the rest.</>
       : t ? <>Tested: the sharpest-bending squares in 2016–2021 were still bending about {num(t.bending.hotspot_later_median / t.bending.others_later_median, 0)}× more than the rest in 2021–2026.</> : undefined;
     const items: Key[] = keys.map((k) => ({ key: k, ...table[k], n: counts.get(k) ?? 0 }));
@@ -222,7 +222,7 @@ export default function App() {
   const fc = meta.forecast;
   const lastYear = fc ? fc.years[fc.years.length - 1] : 2031;
   const question = mode === "hazards" ? HAZARDS.find((h) => h.key === hazard)!.question : MODES.find((m) => m.key === mode)!.question;
-  const showYear = (mode === "future" || (mode === "hazards" && hazard === "flood")) && fc;
+  const showYear = mode === "future" && fc;
   const goMode = (m: Mode, h?: Hazard) => { setMode(m); if (h) setHazard(h); setSheet(false); };
   const shareUrl = () => writeHash({ tab, mode, hazard, year, cell: selected });
   const test5 = fc?.benchmark.table.find((t) => t.method === fc.method)?.by_horizon_cm[String(Math.round(fc.tested_horizon_years))];
