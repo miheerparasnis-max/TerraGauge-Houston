@@ -1,0 +1,17 @@
+{
+  "artifact": "NISAR_L2_PR_GUNW_029_062_A_016_030_4000_SH_20260829T114324_20260829T114402_20260910T114327_20260910T114402_P05023_N_F_J_001.h5",
+  "collection": "NISAR_L2_GUNW_PROVISIONAL_V1",
+  "download_endpoint": "https://nisar.asf.earthdatacloud.nasa.gov/NISAR/NISAR_L2_GUNW_PROVISIONAL_V1/NISAR_L2_PR_GUNW_029_062_A_016_030_4000_SH_20260829T114324_20260829T114402_20260910T114327_20260910T114402_P05023_N_F_J_001/NISAR_L2_PR_GUNW_029_062_A_016_030_4000_SH_20260829T114324_20260829T114402_20260910T114327_20260910T114402_P05023_N_F_J_001.h5",
+  "md5_archive": "2965ee519218b340647cd1a816a8b1c0",
+  "sha256": "3a96ed1188c6f115dacd0cc2ba73e76c6afe6869aa45f45c27e8a3bced0fec45",
+  "retrieved_utc": "2026-11-14T16:55:09+00:00",
+  "derived_artifact": "data/derived/nisar_gunw_houston_20260829_20260910_pair_cells.json",
+  "integrity_report": "data/derived/nisar_gunw_houston_20260829_20260910_pair_cells_integrity_report.json",
+  "study_bounds_wgs84": [
+    -95.95,
+    29.4,
+    -94.8,
+    30.2
+  ],
+  "scientific_limit": "One 12-day (or 24-day) pairwise line-of-sight displacement observation. Not a velocity or a subsidence diagnosis."
+}

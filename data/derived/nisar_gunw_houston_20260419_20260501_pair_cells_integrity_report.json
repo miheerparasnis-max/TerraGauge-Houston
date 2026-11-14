@@ -1,0 +1,20 @@
+{
+  "artifact_type": "terragauge_nisar_pair_integrity_report",
+  "input_artifact": "/Users/reyanshmaheshwari/Downloads/TerraGauge-Houston/data/derived/nisar_gunw_houston_20260419_20260501_pair_cells.json",
+  "pass": true,
+  "finding_count": 0,
+  "findings": [],
+  "cell_count": 9145,
+  "main_connected_component_cell_count": 5484,
+  "correction_flag_count": 4,
+  "applied_corrections": {
+    "contract": "terragauge-applied-corrections-v1",
+    "ionosphere_applied": null,
+    "ionosphere_source": null,
+    "troposphere_applied": null,
+    "troposphere_source": null,
+    "tide_applied": null,
+    "tide_source": null
+  },
+  "claim": "Structural validation only; passing does not establish ground motion, a stable reference region, or a temporal rate."
+}
