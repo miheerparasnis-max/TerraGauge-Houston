@@ -179,7 +179,7 @@ export function Landing({ meta, sites, stats, playIntro, onWarm, onEnter }: Prop
     const month = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
     // NISAR leads: it is the mission this challenge is built around, and the card the evidence beat opens on.
     return [
-      { short: "NISAR", name: "NISAR, NASA and India's new radar satellite", what: `Images Houston every 12 days. We have all ${a.processedPairs} of its image pairs from ${month(a.first)} to ${month(a.last)}.`, use: "Checks the map, and tells each square how long NISAR needs to confirm its sinking." },
+      { short: "NISAR", name: "NISAR, NASA and India's new radar satellite", what: `Images Houston every 12 days. We have all ${a.processedPairs} of its image pairs from ${month(a.first)} to ${month(a.last)}.`, use: meta.predictionTest?.verdict === "pass" ? "We wrote down a prediction before its 2026 data existed: NISAR would see the same sinking pattern. It did." : "Checks the map, and tells each square how long NISAR needs to confirm its sinking." },
       { short: "GPS", name: "HoustonNet GPS stations", what: `${meta.stations.total} stations that measure their own height to the millimeter.`, use: "The ground truth we check the satellite against." },
       { short: "Flood zones", name: "FEMA flood zones", what: "The official high-risk flood areas.", use: "Sinking inside a flood zone moves a square up the priority list." },
       { short: "Wells", name: "USGS groundwater wells", what: "Whether underground water levels have dropped.", use: "Background in every square's evidence." },

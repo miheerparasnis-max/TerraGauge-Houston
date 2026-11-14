@@ -1,7 +1,7 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-14T21:27:30Z",
-  "git_head": "384644a04b576c261e1155400e9e80b6410e5a32",
+  "created_utc": "2026-11-14T22:07:05Z",
+  "git_head": "2d9843e99d1dc600719ac57f14d790d9e3300a1e",
   "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
@@ -23,6 +23,11 @@
     {
       "path": "data/derived/nasa_layers/nasadem_houston_cells.json",
       "sha256": "6333e3228a4403cc48471005c1cbce7010c54915d9376447e8aee5fa252f37f9",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/prediction/prediction_test_result.json",
+      "sha256": "56dc7131518b69be3377461a761f93649f9d73a54e5abc4e4c7b2f0addea5cfd",
       "tracked": true
     },
     {
@@ -106,7 +111,7 @@
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "f6cc3f042f9a9ce76b57bcc4d515b383b2d281dce3459f3846e69c3e7cab1b73",
+      "sha256": "89754eefa73fc20b56fdcd4765bd414f61e77c316e7620c0ab42a4112ef395fd",
       "tracked": true
     },
     {

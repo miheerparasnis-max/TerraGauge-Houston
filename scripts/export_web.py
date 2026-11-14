@@ -713,6 +713,12 @@ def main() -> None:
     for key, rows in tiles.items():
         (details_dir / f"{key}.json").write_text(json.dumps(rows, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     meta["timelapse"] = {"dates": dates}
+    # Pre-registered OPERA -> NISAR prediction test (D-041, D-048): status as scored.
+    pt = DERIVED / "prediction" / "prediction_test_result.json"
+    if pt.is_file():
+        res = load(pt)
+        meta["predictionTest"] = {"status": res["status"], "pairs": res["target_chain"]["pairs"], "first": res["target_chain"]["first"], "last": res["target_chain"]["last"],
+                                  "squares": res["squares"]["used"], "power": res["power"]["power"], "verdict": res.get("verdict"), "result": res.get("result")}
     (OUT / "cells.json").write_text(json.dumps(slim, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "meta.json").write_text(json.dumps(meta, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     (OUT / "sites.json").write_text(json.dumps(sites, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")

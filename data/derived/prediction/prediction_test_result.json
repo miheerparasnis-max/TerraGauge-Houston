@@ -3,10 +3,8 @@
  "config": "config/prediction_test.json",
  "predictor": "data/derived/prediction/opera_predictor_20160712_20250923.json",
  "predictor_sha256": "3da45699f8cf7efa8766df48bb0a6991ef62d12bcf77098f2b59d6f6a3033d2b",
- "blocking": [
-  "NISAR GUNW LOS sign convention not verified from the product (plan F-4); config/los_sign.json needs both products' 'positive_means' and 'verified_from' (the HDF5 attribute or specification section that states it)"
- ],
- "status": "blocked",
+ "blocking": [],
+ "status": "scored",
  "target_chain": {
   "pairs": 22,
   "first": "2026-01-01",
@@ -7997,5 +7995,12 @@
   "power": 0.115,
   "note": "Share of simulated runs (predictor x chain length + noise at the real field's spread) that pass. Noise sigma is an upper bound: it includes any real signal. Permutations per simulation: 1,000."
  },
- "verdict": null
+ "result": {
+  "spearman_rho_cells": -0.5978,
+  "spearman_rho_block_medians": -0.7229,
+  "p_block_permutation_two_sided": 0.0,
+  "expected_sign": -1,
+  "decile_median_difference_mm": 65.512
+ },
+ "verdict": "pass"
 }

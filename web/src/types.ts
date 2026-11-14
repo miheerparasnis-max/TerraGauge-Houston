@@ -55,6 +55,7 @@ interface Score { median_abs_error: number; mean_abs_error: number; correlation:
 
 export interface Meta {
   status: string;
+  predictionTest?: { status: string; pairs: number; first: string; last: string; squares: number; power: number; verdict: string | null; result?: { spearman_rho_block_medians: number; p_block_permutation_two_sided: number } | null };
   nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number };
   stations: { total: number; deepSeated: string[]; rateWithheld: string[] };
   record: { start: string; end: string; dates: string[]; products: number };

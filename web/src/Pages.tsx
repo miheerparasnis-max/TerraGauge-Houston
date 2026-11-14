@@ -143,6 +143,17 @@ export function HowWeKnow({ meta, cells }: { meta: Meta; cells: Cell[] }) {
         <tbody>{n.detect.map((d) => <tr key={d.rate}><td>{d.rate} mm a year</td><td>{d.passes ?? "—"}</td><td>{d.years !== null ? `about ${d.years} years` : "—"}</td></tr>)}</tbody>
       </table>
       <p className="small">Best case. The air's effect carries over from one pass to the next, so the true wait is longer.</p>
+      {meta.predictionTest && (() => { const t = meta.predictionTest; return (
+        <>
+          <h4>A prediction we wrote down before the data arrived</h4>
+          <p>On 12 November 2026, before downloading any 2026 NISAR data, we recorded a prediction and the exact rules for scoring it: squares the older satellite record showed sinking fastest should also move most in NISAR's {t.pairs} image pairs from {t.first.slice(0, 7)} to {t.last.slice(0, 7)}. We then checked how often a test like this could catch a real pattern through NISAR's noise: about {Math.round(t.power * 100)}% of the time, because Houston moves only a few millimetres in ten months.</p>
+          {t.status === "scored" && t.result ? (t.verdict === "pass"
+            ? <><p><b>Result: the prediction came true.</b> The places the older satellite record showed sinking fastest are the same places NISAR saw moving most in 2026. Across {t.squares.toLocaleString()} squares grouped into 10 km areas, the two rank the areas in nearly the same order (agreement {num(Math.abs(t.result.spearman_rho_block_medians), 2)}, where 1 is identical), and when we shuffled the areas 10,000 times, chance never matched this well.</p>
+                <p className="small">This shows NISAR sees the same pattern, not the same speeds: the gap between the fastest- and slowest-moving areas in NISAR was about five times larger than the older record's speeds predict, likely seasonal clay shrinkage and air effects on the radar, so we don't put NISAR's speeds on the map yet. We set the scoring rules on 12 November, before the data existed, and settled which way NISAR's numbers point from its processing software before scoring (decisions D-041, D-049).</p></>
+            : <p><b>Result:</b> {t.verdict}</p>)
+            : <p><b>Status: not scored.</b> Our rules require knowing which way NISAR's readings point (toward the satellite or away). NASA's official product specification doesn't say, so under our own rules we did not compute the score rather than guess. {t.squares.toLocaleString()} squares are ready for it once that is confirmed.</p>}
+        </>
+      ); })()}
 
       <h3 id="rules">How each answer is decided</h3>
       <h4>Movement</h4>
