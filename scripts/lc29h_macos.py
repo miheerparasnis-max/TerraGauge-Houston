@@ -213,14 +213,27 @@ def configure_test(args: argparse.Namespace) -> int:
     return 0
 
 
+def port_in_use(port: str) -> bool:
+    """True if another process already has the serial port open (two readers split the bytes)."""
+    import subprocess
+    try:
+        return bool(subprocess.run(["lsof", "-t", port], capture_output=True, text=True, timeout=10).stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def capture(args: argparse.Namespace) -> int:
     output = Path(args.output).expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
+    if port_in_use(args.port):
+        raise OSError(f"{args.port} is already open in another process; two captures would split the data. Stop the other one first.")
+    if output.exists() and output.stat().st_size:
+        raise OSError(f"{output} already has data; choose a new file name rather than overwrite a session.")
     fd = open_port(args.port, args.baud)
     total = 0
     started = time.monotonic()
     try:
-        with output.open("wb") as handle:
+        with output.open("wb", buffering=0) as handle:  # unbuffered: the file grows as data arrives
             while time.monotonic() - started < args.seconds:
                 remaining = args.seconds - (time.monotonic() - started)
                 ready, _, _ = select.select([fd], [], [], min(0.5, max(0, remaining)))
