@@ -3,7 +3,6 @@ import type { Cell, Confidence, Mode, Priority } from "./types";
 export const MODES: { key: Mode; name: string; question: string }[] = [
   { key: "movement", name: "Movement", question: "Where is the ground moving?" },
   { key: "confidence", name: "Confidence", question: "How sure are we?" },
-  { key: "future", name: "Future", question: "Where is it heading?" },
   { key: "priority", name: "Priority", question: "Where should we act first?" },
 ];
 
@@ -43,7 +42,6 @@ export function cellColor(cell: Cell, mode: Mode, year: number): string {
   if (mode === "priority") return PRIORITY[cell.pri].color;
   if (cell.pri === "check") return PRIORITY.check.color;
   if (mode === "confidence") return cell.conf ? CONFIDENCE[cell.conf].color : "rgba(0,0,0,0)";
-  if (mode === "future") return movementColor(cell.future ? cell.future[String(year)].center_mm : null, 30);
   return movementColor(cell.rate);
 }
 

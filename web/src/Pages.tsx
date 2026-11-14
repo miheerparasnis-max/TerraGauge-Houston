@@ -20,7 +20,8 @@ function Scatter({ meta }: { meta: Meta }) {
   );
 }
 
-function Gauge({ signal, noise, label }: { signal: number; noise: number; label: string }) {
+function Gauge({ signal, noise, label }: { signal: number | null; noise: number | null; label: string }) {
+  if (signal === null || noise === null) return <figure className="gauge"><figcaption>{label}</figcaption><p className="small">Not enough overlapping high-quality cells to estimate signal versus noise.</p></figure>;
   const pct = (v: number) => `${Math.max(0.8, (v / (noise * 1.05)) * 100)}%`;
   return (
     <figure className="gauge">
@@ -43,7 +44,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <thead><tr><th>Data</th><th>What it tells us</th><th>How we use it</th></tr></thead>
         <tbody>
           <tr><td>NASA OPERA satellite radar, {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)}</td><td>How much each square moved, every few months</td><td>Main movement measurement</td></tr>
-          <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Blended in where a station is inside a square; checks the satellite; defines coverage</td></tr>
+          <tr><td>HoustonNet GPS, 257 stations</td><td>Very precise movement at single points</td><td>Checks satellite trends and defines monitoring coverage; never blended into a different-time-window satellite trend</td></tr>
           <tr><td>NASA/ISRO NISAR, Nov 2025–Jan 2026</td><td>The newest radar satellite</td><td>Quality check; too new to measure slow sinking (see below)</td></tr>
           <tr><td>USGS groundwater wells</td><td>Whether water levels are dropping</td><td>Context in each square's evidence</td></tr>
           <tr><td>USGS extensometers</td><td>How much soil is squeezing underground</td><td>Context in each square's evidence</td></tr>
@@ -68,9 +69,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
         <div><strong>{num(b.fast_median_before_mm_year)} → {num(b.fast_median_after_mm_year)}</strong><span>mm a year: the fastest-sinking areas before and after {b.test[0].slice(0, 4)}. Sinking slowed down.</span></div>
         <div><strong>{b.correlation.toFixed(2)}</strong><span>correlation between earlier and later rates. Two years of satellite data per side is too short and noisy to predict reliably.</span></div>
       </div>
-      <p>{meta.forecast.mode === "tested"
-        ? `So the map's Future view uses a tested forecast: earlier rates scaled by ${meta.forecast.damping}.`
-        : "So the Future view is a clearly labeled \"if the trend continues\" scenario with a wide range, not a tested forecast. Because sinking has been slowing, it is most likely an overestimate."}</p>
+      <p><strong>We withhold future projections.</strong> Earlier rates did not predict later rates reliably enough, and the historical satellite reference region is still awaiting scientific review. A map that invents a precise future would be less useful than an honest monitoring-priority map.</p>
       {!meta.record.extendedThroughOpera2026 && <p className="note-block">With OPERA data through 2026 (11 more files, about 3.7 GB), we can test five years against the next five years, which is long enough for a real forecast. Run <code>scripts/fetch_opera_extension.py</code> and the site updates itself.</p>}
 
       <h3>Why doesn't NASA's newest satellite (NISAR) change the map yet?</h3>
@@ -81,7 +80,7 @@ export function HowWeKnow({ meta }: { meta: Meta }) {
 
       <h3>How each answer is decided</h3>
       <h4>Movement</h4>
-      <p>Each square's satellite rate (converted from the satellite's slanted view to up and down) is blended with a GPS station's rate if one sits within {meta.thresholds.gps_blend_km} km. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as stable: that's twice the wobble we see at GPS stations that aren't moving.</p>
+      <p>Each square's movement rate comes from the historical satellite record, converted from the satellite's slanted view to up and down. GPS remains a separate point-scale check and coverage signal, because most station records do not share the satellite's exact time window. Changes smaller than {num(meta.thresholds.stable_mm_year)} mm a year count as stable: that's twice the wobble we see at GPS stations that aren't moving.</p>
       <h4>Confidence</h4>
       <ul>{(["high", "medium", "low"] as const).map((k) => <li key={k}><b>{CONFIDENCE[k].name}:</b> {CONFIDENCE[k].meaning}</li>)}</ul>
       <h4>Priority</h4>

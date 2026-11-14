@@ -26,6 +26,20 @@ def _number(value: Any, name: str, allow_none: bool = True) -> float | None:
     return result
 
 
+def _fraction(value: Any, name: str) -> float | None:
+    result = _number(value, name)
+    if result is not None and not 0.0 <= result <= 1.0:
+        raise ValidationError(f"{name} must be between 0 and 1")
+    return result
+
+
+def _nonnegative(value: Any, name: str) -> float | None:
+    result = _number(value, name)
+    if result is not None and result < 0:
+        raise ValidationError(f"{name} must be non-negative")
+    return result
+
+
 def cell_from_dict(payload: dict[str, Any]) -> CellInput:
     if not isinstance(payload, dict):
         raise ValidationError("cell must be an object")
@@ -38,15 +52,18 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
     dates = evidence_data.get("nisar_acquisition_dates", [])
     if not isinstance(dates, list) or not all(isinstance(item, str) for item in dates):
         raise ValidationError("nisar_acquisition_dates must be a list of strings")
+    normalized_dates = []
     for value in dates:
         try:
-            date.fromisoformat(value[:10])
+            normalized_dates.append(date.fromisoformat(value[:10]))
         except ValueError as error:
             raise ValidationError("nisar_acquisition_dates must begin with ISO dates") from error
+    if normalized_dates != sorted(normalized_dates) or len(set(normalized_dates)) != len(normalized_dates):
+        raise ValidationError("nisar_acquisition_dates must be unique and chronological")
     evidence = Evidence(
         nisar_acquisition_dates=dates,
         nearest_gps_station=_optional_string(evidence_data.get("nearest_gps_station"), "nearest_gps_station"),
-        gps_distance_km=_number(evidence_data.get("gps_distance_km"), "gps_distance_km"),
+        gps_distance_km=_nonnegative(evidence_data.get("gps_distance_km"), "gps_distance_km"),
         historic_gps_up_mm_year=_number(evidence_data.get("historic_gps_up_mm_year"), "historic_gps_up_mm_year"),
         historic_gps_start_year=_number(evidence_data.get("historic_gps_start_year"), "historic_gps_start_year"),
         historic_gps_end_year=_number(evidence_data.get("historic_gps_end_year"), "historic_gps_end_year"),
@@ -55,17 +72,19 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
         gps_residual_mm=_number(evidence_data.get("gps_residual_mm"), "gps_residual_mm"),
         gps_uncertainty_mm=_number(evidence_data.get("gps_uncertainty_mm"), "gps_uncertainty_mm"),
         usgs_site_id=_optional_string(evidence_data.get("usgs_site_id"), "usgs_site_id"),
-        usgs_distance_km=_number(evidence_data.get("usgs_distance_km"), "usgs_distance_km"),
+        usgs_distance_km=_nonnegative(evidence_data.get("usgs_distance_km"), "usgs_distance_km"),
         groundwater_depth_change_ft=_number(evidence_data.get("groundwater_depth_change_ft"), "groundwater_depth_change_ft"),
         nearest_extensometer_station=_optional_string(evidence_data.get("nearest_extensometer_station"), "nearest_extensometer_station"),
-        extensometer_distance_km=_number(evidence_data.get("extensometer_distance_km"), "extensometer_distance_km"),
+        extensometer_distance_km=_nonnegative(evidence_data.get("extensometer_distance_km"), "extensometer_distance_km"),
         cumulative_compaction_change_ft=_number(evidence_data.get("cumulative_compaction_change_ft"), "cumulative_compaction_change_ft"),
         opera_historic_pair_displacement_mm=_number(evidence_data.get("opera_historic_pair_displacement_mm"), "opera_historic_pair_displacement_mm"),
-        opera_historic_valid_fraction=_number(evidence_data.get("opera_historic_valid_fraction"), "opera_historic_valid_fraction"),
-        opera_historic_water_fraction=_number(evidence_data.get("opera_historic_water_fraction"), "opera_historic_water_fraction"),
+        opera_historic_valid_fraction=_fraction(evidence_data.get("opera_historic_valid_fraction"), "opera_historic_valid_fraction"),
+        opera_historic_water_fraction=_fraction(evidence_data.get("opera_historic_water_fraction"), "opera_historic_water_fraction"),
         flood_source=_optional_string(evidence_data.get("flood_source"), "flood_source"),
         flood_zone=_optional_string(evidence_data.get("flood_zone"), "flood_zone"),
     )
+    if evidence.historic_gps_start_year is not None and evidence.historic_gps_end_year is not None and evidence.historic_gps_start_year > evidence.historic_gps_end_year:
+        raise ValidationError("historic_gps_start_year must not be after historic_gps_end_year")
     observations = payload.get("observation_count")
     if observations is not None and (isinstance(observations, bool) or not isinstance(observations, int) or observations < 0):
         raise ValidationError("observation_count must be a non-negative integer")
@@ -91,9 +110,9 @@ def cell_from_dict(payload: dict[str, Any]) -> CellInput:
         longitude=longitude,
         latitude=latitude,
         pair_los_displacement_mm=_number(payload.get("pair_los_displacement_mm"), "pair_los_displacement_mm"),
-        reference_scatter_mm=_number(payload.get("reference_scatter_mm"), "reference_scatter_mm"),
-        coherence_median=_number(payload.get("coherence_median"), "coherence_median"),
-        valid_fraction=_number(payload.get("valid_fraction"), "valid_fraction"),
+        reference_scatter_mm=_nonnegative(payload.get("reference_scatter_mm"), "reference_scatter_mm"),
+        coherence_median=_fraction(payload.get("coherence_median"), "coherence_median"),
+        valid_fraction=_fraction(payload.get("valid_fraction"), "valid_fraction"),
         in_main_connected_component=payload["in_main_connected_component"],
         flood_exposed=flood_exposed,
         evidence=evidence,

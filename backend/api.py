@@ -60,19 +60,29 @@ class TerraGaugeHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         try:
             payload = self._body()
-            if self.path == "/v1/analyze-cell":
+            path = urlparse(self.path).path
+            if path == "/v1/analyze-cell":
                 return self._json(HTTPStatus.OK, self.service.analyze_cell(payload))
-            if self.path == "/v1/gnss/noise-floor":
+            if path == "/v1/gnss/noise-floor":
                 return self._json(HTTPStatus.OK, self.service.node_noise_floor(payload))
             return self._json(HTTPStatus.NOT_FOUND, {"error": "route_not_found"})
         except (ValueError, ValidationError, json.JSONDecodeError) as error:
             return self._json(HTTPStatus.BAD_REQUEST, {"error": "invalid_request", "message": str(error)})
 
     def _body(self) -> dict:
-        length = int(self.headers.get("Content-Length", "0"))
+        raw_length = self.headers.get("Content-Length")
+        if raw_length is None:
+            raise ValueError("Content-Length is required")
+        try:
+            length = int(raw_length)
+        except ValueError as error:
+            raise ValueError("Content-Length must be an integer") from error
         if length <= 0 or length > MAX_BODY_BYTES:
             raise ValueError("request body must be between 1 and 1,000,000 bytes")
-        payload = json.loads(self.rfile.read(length))
+        content_type = self.headers.get_content_type()
+        if content_type != "application/json":
+            raise ValueError("Content-Type must be application/json")
+        payload = json.loads(self.rfile.read(length).decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError("JSON body must be an object")
         return payload
@@ -83,6 +93,7 @@ class TerraGaugeHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(body)
 

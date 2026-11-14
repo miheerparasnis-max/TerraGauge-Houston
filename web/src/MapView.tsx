@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Cell, Mode, SensorSite, Sites } from "./types";
 import { cellRing } from "./geo";

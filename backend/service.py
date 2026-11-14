@@ -17,15 +17,23 @@ class TerraGaugeService:
     def __init__(self, dataset_path: str | Path, thresholds: Thresholds | None = None):
         self.dataset_path = Path(dataset_path)
         self.thresholds = thresholds or Thresholds()
+        self._loaded_mtime_ns: int | None = None
+        self._loaded_cells = []
+
+    def _cells(self):
+        """Reload only when the dataset changes, while keeping every request current."""
+        mtime_ns = self.dataset_path.stat().st_mtime_ns
+        if self._loaded_mtime_ns != mtime_ns:
+            self._loaded_cells = load_cells(self.dataset_path)
+            self._loaded_mtime_ns = mtime_ns
+        return self._loaded_cells
 
     def cells(self) -> list[dict[str, Any]]:
-        return [classify_cell(cell, self.thresholds).to_dict() for cell in load_cells(self.dataset_path)]
+        return [classify_cell(cell, self.thresholds).to_dict() for cell in self._cells()]
 
     def cell(self, cell_id: str) -> dict[str, Any] | None:
-        for result in self.cells():
-            if result["cell"]["cell_id"] == cell_id:
-                return result
-        return None
+        cell = next((item for item in self._cells() if item.cell_id == cell_id), None)
+        return classify_cell(cell, self.thresholds).to_dict() if cell is not None else None
 
     def summary(self) -> dict[str, Any]:
         results = self.cells()
@@ -53,7 +61,7 @@ class TerraGaugeService:
                     entries.append({"manifest": path.name, "record": json.loads(path.read_text(encoding="utf-8"))})
                 elif path.suffix == ".sha256":
                     entries.append({"manifest": path.name, "sha256": path.read_text(encoding="utf-8").strip()})
-        return {"dataset": str(self.dataset_path), "entries": entries, "disclaimer": "Source records document provenance; they do not upgrade a pairwise observation into an annual rate."}
+        return {"dataset": self.dataset_path.name, "entries": entries, "disclaimer": "Source records document provenance; they do not upgrade a pairwise observation into an annual rate."}
 
     def opera_temporal_status(self) -> dict[str, Any]:
         """Return the checked historical OPERA rate status for direct UI display.

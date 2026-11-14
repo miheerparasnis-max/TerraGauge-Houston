@@ -90,7 +90,9 @@ write intermediate JSON artifacts with product paths, source filenames,
 parameters, and limitations. They never silently turn a pair displacement into a
 yearly rate.
 
-Install ingestion-only dependencies in an isolated environment:
+Install ingestion-only dependencies in an isolated environment. This includes
+the Earthdata client and GeoTIFF reader used by the optional NASADEM, DSWx, and
+DIST adapters:
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -159,6 +161,21 @@ python3 -m backend.ingestion.cli temporal-network-diagnostic data/derived/nisar_
   data/derived/nisar_gunw_houston_20251126_20251208_pair_cells.json \
   data/derived/nisar_gunw_houston_20251208_20251220_pair_cells.json \
   data/derived/nisar_gunw_houston_20251220_20260101_pair_cells.json
+```
+
+Only after the diagnostic reports
+`eligible_for_reference_review_and_inversion` **and** an independent science
+review documents the stable reference may an inversion run. The CLI requires
+that review to be stated explicitly; a candidate patch or a repeated copy of a
+pair never qualifies.
+
+```bash
+python3 -m backend.ingestion.cli temporal-invert data/derived/nisar_rate.json \
+  --reference-cell VERIFIED-STABLE-CELL-ID \
+  --reference-status reviewed \
+  data/derived/nisar_gunw_houston_PAIR_A.json \
+  data/derived/nisar_gunw_houston_PAIR_B.json \
+  data/derived/nisar_gunw_houston_PAIR_C.json
 ```
 
 ### OPERA DISP-S1
@@ -338,14 +355,13 @@ npm install
 npm run dev        # opens http://localhost:5173
 ```
 
-One combined map of 1 km squares answers four questions (color the map by each):
+One combined map of 1 km squares answers three questions (color the map by each):
 
-- **Movement:** OPERA satellite rate converted to vertical, blended with a GPS station's rate where one is within 1 km (inverse-variance weighting).
+- **Movement:** historical OPERA satellite rate converted to vertical. GPS stays a separate point-scale cross-check and monitoring-coverage signal rather than being blended across mismatched time windows.
 - **Confidence:** High / Medium / Low from the fit error, a GPS cross-check within 3 km, record jumpiness, and agreement with the squares around it (`backend/insights.py`).
-- **Future:** projection to 2030/2035/2040 with an ~80% range. A backtest decides whether it's shown as a tested forecast or as a labeled "if the trend continues" scenario.
 - **Priority:** Urgent / High / Watch / Stable / Check data, plus the top 15 suggested GPS sensor sites (sinking areas with no active station within 2 km, kept 4 km apart).
 
-Clicking a square opens a plain-language card with the evidence, the trend chart, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, prediction test, why NISAR can't measure this yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
+Future movement projections are deliberately withheld: the held-out back-test does not support them and the historical reference region is still unreviewed. Clicking a square opens a plain-language card with the evidence, sensor coverage, and what TerraGauge can't conclude. Other pages: "How we know" (data sources, GPS check, prediction test, why NISAR can't measure this yet) and "Our $74 sensor". The basemap is OpenFreeMap (no API key); without internet the map falls back to a plain background.
 
 To regenerate the data the site shows:
 

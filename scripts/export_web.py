@@ -2,13 +2,13 @@
 
 Run after scripts/build_provisional.py:  python3 scripts/export_web.py
 
-One map, all sources combined. For each 1 km cell:
-- movement: OPERA satellite rate converted to vertical, blended with a GPS
-  station's rate when one is within 1 km (inverse-variance weighting); GPS
-  alone where the satellite has no reading but a station is within 1 km.
+One map, all sources kept scientifically distinct. For each 1 km cell:
+- movement: the historical OPERA satellite rate converted to vertical. GPS is
+  a separate point-scale comparison and coverage signal; it is never blended
+  into a satellite trend from a different time window.
 - confidence: High / Medium / Low with reasons (backend.insights.confidence).
-- future: projection to 2030/2035/2040 with an ~80% range, using the factor
-  chosen by the backtest (backend.insights.backtest).
+- future: deliberately withheld. The held-out test does not support a
+  long-range forecast, and the historical reference choice remains unreviewed.
 - priority + sensor plan (backend.insights.priority / sensor_plan).
 All science logic is in Python; the website only displays these numbers.
 """
@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.detection import rate_uncertainty_mm_year  # noqa: E402
 from backend.insights import (  # noqa: E402
-    backtest, confidence, decimal_year, distance_km, gps_difference, neighborhood_medians, priority, project, sensor_plan, vertical_rate,
+    backtest, confidence, distance_km, gps_difference, neighborhood_medians, priority, sensor_plan, vertical_rate,
 )
 from backend.model import Thresholds  # noqa: E402
 
@@ -33,9 +33,6 @@ DERIVED = Path("data/derived")
 PROV = DERIVED / "provisional"
 LAYERS = DERIVED / "nasa_layers"
 OUT = Path("web/public/data")
-GPS_SIGMA_MM_YEAR = 0.5      # assumed uncertainty of a >=10-year HoustonNet rate
-GPS_BLEND_KM = 1.0
-TARGET_YEARS = [2030, 2035, 2040]
 
 
 def load(path: Path) -> dict:
@@ -53,8 +50,9 @@ def robust_sd(values: list[float]) -> float:
 
 def main() -> None:
     thresholds = Thresholds()
-    opera = load(PROV / "opera_houston_los_velocity_20160712_20210505.json") if (PROV / "opera_houston_los_velocity_20160712_20210505.json").exists() else None
     velocity_files = sorted(PROV.glob("opera_houston_los_velocity_*.json"))
+    if not velocity_files:
+        raise FileNotFoundError("No OPERA velocity export found; run scripts/build_provisional.py first.")
     opera = load(velocity_files[-1])
     comparison = load(PROV / "opera_vs_houstonnet_comparison.json")
     build = load(PROV / "build_report.json")
@@ -74,7 +72,6 @@ def main() -> None:
 
     dates = opera["dates"]
     data_start, data_end = dates[0], dates[-1]
-    end_year = decimal_year(data_end)
 
     # Noise floor from the reference stations (LOS), as in the decision rules.
     reference_ids = set(opera.get("reference_cell_ids") or [])
@@ -90,7 +87,6 @@ def main() -> None:
     split_date = dates[len(dates) // 2]
     bt = backtest(opera["cells"], dates, split_date)
     damping = bt["best_damping"] if bt["beats_no_motion"] else 1.0
-    forecast_mode = "tested" if bt["beats_no_motion"] else "scenario"
 
     sat_rates = [{"id": c["cell_id"], "lon": float(c["longitude"]), "lat": float(c["latitude"]), "rate": vertical_rate(c["opera_los_velocity_mm_year"])} for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= 40]
     neighbors = neighborhood_medians(sat_rates)
@@ -106,7 +102,9 @@ def main() -> None:
         f = flood.get(cid, {})
         sfha = f.get("flood_exposed") is True
 
-        # Nearest long-history GPS station (for blending and coverage).
+        # GPS remains a point-scale comparison and coverage source. It is not
+        # blended with the 2016–2021 satellite trend because its time window is
+        # generally different.
         near = min(long_history, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
         near_km = distance_km(lon, lat, near["longitude"], near["latitude"])
         cover = min(active, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
@@ -118,28 +116,18 @@ def main() -> None:
             se_sat = sqrt(vertical_rate(op["opera_velocity_se_mm_year"]) ** 2 + model_error ** 2)
             rate, se = rate_sat, se_sat
             sources.append("satellite")
-            if near_km <= GPS_BLEND_KM:
-                w_s, w_g = 1 / se_sat ** 2, 1 / GPS_SIGMA_MM_YEAR ** 2
-                rate = (rate_sat * w_s + near["up_mm_year"] * w_g) / (w_s + w_g)
-                se = sqrt(1 / (w_s + w_g))
-                sources.append("gps")
-        elif near_km <= GPS_BLEND_KM:
-            rate, se = float(near["up_mm_year"]), GPS_SIGMA_MM_YEAR
-            sources.append("gps")
 
         if rate is not None:
             if op:
                 diff, check_id, check_km = gps_difference(lon, lat, vertical_rate(op["opera_los_velocity_mm_year"]), stations)
                 area = neighbors.get(cid)
                 level, conf_reasons = confidence(se_vertical=vertical_rate(op["opera_velocity_se_mm_year"]), residual_sd_mm=op["opera_residual_sd_mm"], gps_difference_mm_year=diff, neighbor_difference_mm_year=(vertical_rate(op["opera_los_velocity_mm_year"]) - area) if area is not None else None)
-                if sources == ["satellite", "gps"] and level != "high":
-                    level = "high"; conf_reasons = conf_reasons + ["A GPS station sits inside this square, so its precise reading is blended in."]
             else:
                 diff = check_id = check_km = None
-                level, conf_reasons = "high", ["A long-running GPS station sits inside this square."]
+                level, conf_reasons = "low", ["No satellite trend passed the quality checks in this square. Nearby GPS is shown as context, not substituted for a 1 km satellite measurement."]
             significant = abs(rate) >= sig_threshold_vertical and abs(rate) >= 2 * se
             pri, pri_reason = priority(rate_vertical=rate, significant=significant, level=level, flood_zone_sfha=sfha, open_water=f.get("flood_zone") == "OPEN WATER" or (nasa.get("dswx", {}).get("cells", {}).get(cid, {}).get("water_fraction") or 0) > 0.5)
-            future = {str(y): {k: r(v / 10.0, 1) for k, v in project(rate, se, y - end_year, damping, model_error).items()} for y in TARGET_YEARS}
+            future = None
         else:
             diff = check_id = check_km = None
             level, conf_reasons, significant, future = None, ["No satellite reading passed the quality checks here, and no GPS station is inside the square."], False, None
@@ -176,7 +164,7 @@ def main() -> None:
     sensor_sites = []
     for site in plan:
         c = by_id[site["id"]]
-        sensor_sites.append({"rank": site["rank"], "id": site["id"], "lon": r(site["lon"], 5), "lat": r(site["lat"], 5), "rate": c["rate"], "areaRate": r(site["area_rate"]), "conf": c["conf"], "gpsKm": c["gps"]["km"], "sfha": c["flood"]["sfha"], "zone": c["flood"]["zone"], "future2035": c["future"]["2035"] if c["future"] else None})
+        sensor_sites.append({"rank": site["rank"], "id": site["id"], "lon": r(site["lon"], 5), "lat": r(site["lat"], 5), "rate": c["rate"], "areaRate": r(site["area_rate"]), "conf": c["conf"], "gpsKm": c["gps"]["km"], "sfha": c["flood"]["sfha"], "zone": c["flood"]["zone"], "future2035": None})
 
     def check(source: dict, days: int) -> dict:
         xs, ys = [], []
@@ -184,9 +172,12 @@ def main() -> None:
             op = opera_cells.get(row["cell_id"])
             if op and row["pair_los_displacement_mm"] is not None and row["in_main_connected_component"] and (row["coherence_median"] or 0) >= 0.4 and (row["valid_fraction"] or 0) >= 0.5:
                 xs.append(float(row["pair_los_displacement_mm"])); ys.append(op["opera_los_velocity_mm_year"] * days / 365.25)
+        if len(xs) < 2:
+            return {"cells": len(xs), "days": days, "noise_mm": None, "signal_mm": None, "r": None, "status": "insufficient_overlap"}
         mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
         sx = sqrt(sum((x - mx) ** 2 for x in xs) / len(xs)); sy = sqrt(sum((y - my) ** 2 for y in ys) / len(ys))
-        return {"cells": len(xs), "days": days, "noise_mm": sx, "signal_mm": sy, "r": sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / (len(xs) * sx * sy)}
+        correlation = None if sx == 0 or sy == 0 else sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / (len(xs) * sx * sy)
+        return {"cells": len(xs), "days": days, "noise_mm": sx, "signal_mm": sy, "r": correlation, "status": "available" if correlation is not None else "zero_variance"}
 
     sigma = pair["reference_scatter_mm"]
     detect = []
@@ -197,10 +188,10 @@ def main() -> None:
     meta = {
         "status": "provisional_unreviewed",
         "record": {"start": data_start, "end": data_end, "dates": dates, "products": opera["product_count"], "extendedThroughOpera2026": data_end >= "2026-01-01"},
-        "thresholds": {"stable_mm_year": round(sig_threshold_vertical, 1), "gps_covered_km": thresholds.gps_nearby_km, "gps_blend_km": GPS_BLEND_KM},
+        "thresholds": {"stable_mm_year": round(sig_threshold_vertical, 1), "gps_covered_km": thresholds.gps_nearby_km},
         "counts": counts,
         "validation": {"stations": comparison["stats"]["station_count"], "r": comparison["stats"].get("pearson_r"), "typical_diff_mm_year": r(vertical_rate(comparison["stats"]["median_abs_residual_mm_year"]), 1), "points": [{"id": p["station_id"], "gps": r(p["gps_up_mm_year"]), "sat": r(vertical_rate(p["opera_los_mm_year"]))} for p in comparison["stations"]]},
-        "forecast": {"mode": forecast_mode, "damping": damping, "model_error_mm_year": r(model_error, 2), "base": data_end, "years": TARGET_YEARS, "backtest": {k: (r(v, 2) if isinstance(v, float) else v) for k, v in bt.items()}},
+        "forecast": {"mode": "withheld", "reason": "The historical reference region is still unreviewed and the held-out back-test did not support extrapolating the 2016–2021 trend.", "damping": damping, "model_error_mm_year": r(model_error, 2), "base": data_end, "years": [], "backtest": {k: (r(v, 2) if isinstance(v, float) else v) for k, v in bt.items()}},
         "nisar": {"pair": check(pair, 12), "chain": check(chain, 60), "detect": detect, "sigma_mm": r(sigma, 1)},
         "reference": build["reference"],
         "sensors": sensor_sites,

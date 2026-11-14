@@ -14,7 +14,7 @@ from .reference import write_reference_review_candidates
 from .nisar import GunwConfig, inspect_hdf5, write_pair_cells
 from .opera import OperaConfig, write_disp_cells
 from .usgs import write_groundwater_daily
-from .temporal import write_network_diagnostic
+from .temporal import invert_files, write_network_diagnostic
 from .quality import write_pair_integrity_report
 from .compaction import write_extensometer_csv, write_usgs_2023_release
 from .opera_temporal import invert_opera_files
@@ -98,6 +98,11 @@ def main() -> None:
     temporal = commands.add_parser("temporal-network-diagnostic", help="check date graph redundancy before reference selection or inversion")
     temporal.add_argument("output")
     temporal.add_argument("inputs", nargs="+", help="pair-cell JSON artifacts in chronological order")
+    temporal_invert = commands.add_parser("temporal-invert", help="invert an eligible NISAR network after a documented stable-reference review")
+    temporal_invert.add_argument("output")
+    temporal_invert.add_argument("--reference-cell", required=True)
+    temporal_invert.add_argument("--reference-status", required=True, choices=["reviewed"], help="only pass reviewed after documenting independent science review")
+    temporal_invert.add_argument("inputs", nargs="+", help="distinct same-track pair-cell JSON artifacts")
     integrity = commands.add_parser("validate-nisar-pair", help="write a structural integrity report for a compact NISAR pair artifact")
     integrity.add_argument("input")
     integrity.add_argument("output")
@@ -144,6 +149,8 @@ def main() -> None:
         write_reference_review_candidates(args.nisar, args.houstonnet, args.output)
     elif args.command == "temporal-network-diagnostic":
         write_network_diagnostic(args.inputs, args.output)
+    elif args.command == "temporal-invert":
+        invert_files(args.inputs, args.output, args.reference_cell, args.reference_status)
     elif args.command == "validate-nisar-pair":
         write_pair_integrity_report(args.input, args.output)
     elif args.command == "usgs-extensometer":

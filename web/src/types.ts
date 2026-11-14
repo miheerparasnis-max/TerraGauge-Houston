@@ -1,6 +1,6 @@
 export type Priority = "urgent" | "high" | "watch" | "stable" | "check" | "no_data";
 export type Confidence = "high" | "medium" | "low";
-export type Mode = "movement" | "confidence" | "future" | "priority";
+export type Mode = "movement" | "confidence" | "priority";
 
 export interface Projection { center_mm: number; low_mm: number; high_mm: number } // values are in cm (exported /10)
 
@@ -35,14 +35,14 @@ export interface SensorSite { rank: number; id: string; lon: number; lat: number
 export interface Meta {
   status: string;
   record: { start: string; end: string; dates: string[]; products: number; extendedThroughOpera2026: boolean };
-  thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number };
+  thresholds: { stable_mm_year: number; gps_covered_km: number };
   counts: { priority: Record<string, number>; confidence: Record<string, number> };
   validation: { stations: number; r: number; typical_diff_mm_year: number; points: { id: string; gps: number; sat: number }[] };
   forecast: {
-    mode: "tested" | "scenario"; damping: number; model_error_mm_year: number; base: string; years: number[];
+    mode: "tested" | "scenario" | "withheld"; reason?: string; damping: number; model_error_mm_year: number; base: string; years: number[];
     backtest: { train: string[]; test: string[]; cells: number; correlation: number; mae_persistence_mm_year: number; mae_no_motion_mm_year: number; best_damping: number; fast_cells: number; fast_median_before_mm_year: number | null; fast_median_after_mm_year: number | null; beats_no_motion: boolean };
   };
-  nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
+  nisar: { pair: { cells: number; noise_mm: number | null; signal_mm: number | null; r: number | null; status: string }; chain: { cells: number; noise_mm: number | null; signal_mm: number | null; r: number | null; status: string }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };
   sensors: SensorSite[];
   nasaLayers: Record<string, string>;

@@ -14,14 +14,13 @@ async function getJSON<T>(name: string): Promise<T> {
 }
 
 function Legend({ mode, year, meta }: { mode: Mode; year: number; meta: Meta }) {
-  if (mode === "movement" || mode === "future") {
-    const span = mode === "movement" ? 25 : 30;
-    const unit = mode === "movement" ? "mm a year" : `cm by ${year}`;
+  if (mode === "movement") {
+    const span = 25;
+    const unit = "mm a year";
     return (
       <div>
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
         <div className="ramp-keys"><span>Sinking {span} {unit}</span><span>Stable</span><span>Rising</span></div>
-        {mode === "future" && meta.forecast.mode === "scenario" && <p className="legend-note">If the {meta.record.start.slice(0, 4)}–{meta.record.end.slice(0, 4)} trend continues. Likely an overestimate: sinking has been slowing.</p>}
       </div>
     );
   }
@@ -40,14 +39,14 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
   const [mode, setMode] = useState<Mode>("movement");
-  const [year, setYear] = useState(2035);
+  const [year] = useState(2035);
   const [layers, setLayers] = useState<Layers>({ sensors: true, gps: false, ext: false, wells: false, flood: false });
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lon: number; lat: number; key: number } | null>(null);
 
   useEffect(() => {
     Promise.all([getJSON<Cell[]>("cells.json"), getJSON<Meta>("meta.json"), getJSON<Sites>("sites.json")])
-      .then(([c, m, s]) => { setCells(c); setMeta(m); setSites(s); setYear(m.forecast.years[1] ?? m.forecast.years[0]); })
+      .then(([c, m, s]) => { setCells(c); setMeta(m); setSites(s); })
       .catch((e: Error) => setError(e.message));
   }, []);
   useEffect(() => { if (tab === "map") window.dispatchEvent(new Event("resize")); }, [tab]);
@@ -93,11 +92,6 @@ export default function App() {
               {MODES.map((m) => <button key={m.key} role="radio" aria-checked={mode === m.key} className={mode === m.key ? "on" : ""} onClick={() => setMode(m.key)}>{m.name}</button>)}
             </div>
             <p className="question">{q.question}</p>
-            {mode === "future" && (
-              <div className="years" role="radiogroup" aria-label="Year">
-                {meta.forecast.years.map((y) => <button key={y} role="radio" aria-checked={year === y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}</button>)}
-              </div>
-            )}
             <Legend mode={mode} year={year} meta={meta} />
           </div>
           <details className="box layers">
@@ -121,10 +115,10 @@ export default function App() {
                 <span className="q">How sure are we?</span>
                 <span className="a">The satellite matches {meta.validation.stations} GPS stations to within about <strong>{num(meta.validation.typical_diff_mm_year)} mm a year</strong>. Each square gets its own confidence level.</span>
               </button>
-              <button className="answer" onClick={() => setMode("future")}>
-                <span className="q">Where is it heading?</span>
-                <span className="a">{meta.forecast.mode === "tested" ? "A tested forecast to " : "A what-if projection to "}{meta.forecast.years[meta.forecast.years.length - 1]} with a likely range. {meta.forecast.mode === "scenario" && "Sinking has been slowing, so treat it as an upper estimate."}</span>
-              </button>
+              <div className="answer">
+                <span className="q">Can TerraGauge predict floods or future sinking?</span>
+                <span className="a">No. {meta.forecast.reason ?? "Future projections are withheld until the evidence supports them."} TerraGauge directs investigation and monitoring; it does not forecast damage.</span>
+              </div>
               <button className="answer" onClick={() => setMode("priority")}>
                 <span className="q">Where should we act first?</span>
                 <span className="a"><strong>{(meta.counts.priority.urgent ?? 0).toLocaleString()}</strong> urgent squares. Below are the top {meta.sensors.length} places to add a GPS sensor.</span>

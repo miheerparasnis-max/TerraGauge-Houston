@@ -1,6 +1,12 @@
 import unittest
+import json
+import threading
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
+from backend.api import TerraGaugeHandler
 from backend.decision import classify_cell
 from backend.detection import detectability, gnss_session_noise_floor, rate_uncertainty_mm_year
 from backend.model import CellInput, Evidence, Label, Thresholds
@@ -81,6 +87,25 @@ class InputValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             cell_from_dict(payload)
 
+    def test_rejects_out_of_range_quality_fraction(self):
+        payload = cell().__dict__.copy()
+        payload["evidence"] = payload["evidence"].__dict__
+        payload["coherence_median"] = 1.1
+        with self.assertRaisesRegex(ValidationError, "between 0 and 1"):
+            cell_from_dict(payload)
+
+    def test_rejects_negative_monitoring_distance(self):
+        payload = cell().__dict__.copy()
+        payload["evidence"] = {**payload["evidence"].__dict__, "gps_distance_km": -0.1}
+        with self.assertRaisesRegex(ValidationError, "non-negative"):
+            cell_from_dict(payload)
+
+    def test_rejects_nonchronological_observation_dates(self):
+        payload = cell().__dict__.copy()
+        payload["evidence"] = {**payload["evidence"].__dict__, "nisar_acquisition_dates": ["2026-01-13", "2026-01-01"]}
+        with self.assertRaisesRegex(ValidationError, "unique and chronological"):
+            cell_from_dict(payload)
+
 
 class OperaTemporalStatusTests(unittest.TestCase):
     def test_exposes_withheld_rate_reason_for_frontend(self):
@@ -91,6 +116,48 @@ class OperaTemporalStatusTests(unittest.TestCase):
         self.assertEqual(status["date_count"], 20)
         self.assertEqual(status["product_count"], 19)
         self.assertIn("withheld", status["display_message"].lower())
+
+
+class ApiTests(unittest.TestCase):
+    """Exercise the public API surface, not just the service functions."""
+
+    def setUp(self):
+        dataset = Path(__file__).resolve().parents[1] / "data" / "sample_cells.json"
+        self.previous_service = TerraGaugeHandler.service
+        TerraGaugeHandler.service = TerraGaugeService(dataset)
+        try:
+            self.server = ThreadingHTTPServer(("127.0.0.1", 0), TerraGaugeHandler)
+        except PermissionError:
+            self.skipTest("local TCP sockets are disabled in this execution environment")
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.base_url = f"http://127.0.0.1:{self.server.server_port}"
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.thread.join(timeout=2)
+        self.server.server_close()
+        TerraGaugeHandler.service = self.previous_service
+
+    def test_health_and_temporal_status_are_json(self):
+        with urlopen(f"{self.base_url}/health") as response:
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+            self.assertEqual(json.load(response)["status"], "ok")
+        with urlopen(f"{self.base_url}/v1/opera-temporal-status") as response:
+            self.assertEqual(json.load(response)["rate_status"], "withheld_reformat_and_reference_review_required")
+
+    def test_post_requires_json_content_type(self):
+        request = Request(
+            f"{self.base_url}/v1/gnss/noise-floor",
+            data=b'{"session_heights_mm":[1,2,3]}',
+            method="POST",
+            headers={"Content-Type": "text/plain"},
+        )
+        with self.assertRaises(HTTPError) as caught:
+            urlopen(request)
+        self.assertEqual(caught.exception.code, 400)
+        self.assertEqual(json.load(caught.exception)["error"], "invalid_request")
 
 
 if __name__ == "__main__":

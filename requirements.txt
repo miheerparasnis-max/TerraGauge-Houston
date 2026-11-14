@@ -3,3 +3,5 @@
 numpy>=2.0
 h5py>=3.11
 pyproj>=3.6
+earthaccess>=0.10
+rasterio>=1.3
