@@ -569,7 +569,6 @@ export function Landing({ meta, sites, cells, story, playIntro, onWarm, onEnter,
           <div className="hero-copy">
             <p className="tagline">Where did Houston's ground move, and how sure are we?</p>
             <p className="hero-sub">Ten years of satellite radar, processed by NASA, and the new NISAR mission, checked against GPS on the ground, one square kilometer at a time.</p>
-            <button className="cta" onClick={toStory}>Start the story</button>
           </div>
           <div className="scroll-cue" style={{ opacity: 1 - ramp(s, 0.05, 0.3) }} aria-hidden="true"><span />Scroll</div>
         </div>
