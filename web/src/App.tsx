@@ -259,7 +259,7 @@ export default function App() {
     if (!byId.has(id)) { let best: Cell | null = null, d = Infinity; for (const c of cells) { const dd = (c.lon - lon) ** 2 + (c.lat - lat) ** 2; if (dd < d) { d = dd; best = c; } } if (best) id = best.id; }
     setMode("movement"); setSelected(id); setFocus({ lon, lat, key: Date.now() });
   };
-  const landingView = landing && <Landing meta={meta} sites={sites} story={story} playIntro={firstVisit.current} onWarm={warm} onEnter={enter} onEnterAt={enterAt} />;
+  const landingView = landing && <Landing meta={meta} sites={sites} cells={cells} story={story} playIntro={firstVisit.current} onWarm={warm} onEnter={enter} onEnterAt={enterAt} />;
   if (!dashMounted && landing) return <>{landingView}</>;
   if (error) return <>{landingView}<div className={landing ? "app under loading" : "loading"}>{error}</div></>;
   if (!cells || !meta || !sites || !stats) return <>{landingView}<div className={landing ? "app under loading" : "loading"}><span className="spinner" aria-hidden="true" />Loading Houston's ground record…</div></>;

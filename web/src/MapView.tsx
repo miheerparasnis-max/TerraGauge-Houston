@@ -26,9 +26,19 @@ interface Props {
 // OpenFreeMap: free vector basemap, no API key. If it can't be reached, the
 // map still works on a plain background.
 export const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
+
+/** Where the dashboard map's camera sits once it has fitted Houston; the landing's globe dive ends here. */
+export const dashCamera = { center: [-95.38, 29.8] as [number, number], zoom: 9.2, ready: false };
 const FALLBACK: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": UI.surface } }] };
 
-export async function loadStyle(): Promise<string | maplibregl.StyleSpecification> {
+let styleOnce: Promise<maplibregl.StyleSpecification> | null = null;
+/** The basemap style, fetched once and shared by every map on the page (each gets its own copy). */
+export async function loadStyle(): Promise<maplibregl.StyleSpecification> {
+  styleOnce ??= fetchStyle();
+  return structuredClone(await styleOnce);
+}
+
+async function fetchStyle(): Promise<maplibregl.StyleSpecification> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
@@ -150,6 +160,8 @@ export function MapView({ cells, sites, sensors, nodes, gaps, mode, meta, year, 
         const fit = () => {
           const narrow = window.innerWidth < 860;
           m.fitBounds([[-95.95, 29.4], [-94.8, 30.2]], { padding: narrow ? { top: 200, bottom: 90, left: 10, right: 10 } : { top: 20, bottom: 20, left: 370, right: 440 }, duration: 0 });
+          const c = m.getCenter();
+          Object.assign(dashCamera, { center: [c.lng, c.lat], zoom: m.getZoom(), ready: true });
         };
         if (m.getContainer().clientWidth > 0) fit();
         else {

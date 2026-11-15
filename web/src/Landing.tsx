@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Galaxy from "./reactbits/Galaxy";
 import Topography from "./reactbits/Topography";
 import Radar from "./reactbits/Radar";
 import PolygonRadar from "./reactbits/PolygonRadar";
-import { Intro, HOUSTON } from "./Intro";
+import { GlobeDive, HOUSTON, radiusForVisible, zoomForRadius } from "./GlobeDive";
+import { dashCamera } from "./MapView";
+import type { Cell } from "./types";
 import type { Meta, Sites } from "./types";
 import { ACTION, num } from "./labels";
 import { CONFIDENCE_COLORS, CONTEXT_BAR, PRIORITY_COLORS, RISE, SINK, SINK_EXTREME, STARS, UI } from "./palette";
@@ -23,7 +25,7 @@ const gapBehind = (sweep: number, bearing: number) => (((sweep - bearing) % TAU)
 // Scroll story. On wide screens each section is `len` screens tall and its panel stays
 // pinned for (len - 1) screens; on phones sections flow at their natural height. Either
 // way the scene reads section positions measured from the page.
-const SECTIONS = [["hero", 1.15], ["move", 2.4], ["sure", 2.6], ["first", 2.4], ["sources", 2.9], ["portal", 2.3]] as const;
+const SECTIONS = [["hero", 1.15], ["move", 2.4], ["sure", 2.6], ["first", 2.4], ["sources", 2.9], ["portal", 3.8]] as const;
 type SectionId = (typeof SECTIONS)[number][0];
 const DEFAULT_LEN = Object.fromEntries(SECTIONS) as Record<SectionId, number>;
 
@@ -38,6 +40,7 @@ export interface Story {
 interface Props {
   meta: Meta | null;
   sites: Sites | null;
+  cells: Cell[] | null;
   story: Story | null;
   playIntro: boolean;
   /** Mount the dashboard underneath so the portal can reveal it. */
@@ -111,19 +114,197 @@ function SiteRow({ rank, lon, lat, rate, km, onOpen }: { rank: number; lon: numb
   );
 }
 
-export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnterAt }: Props) {
+/** The GPS stations on the card 02 scope; positions are fixed, so scrolling never re-renders them. */
+const BlipDots = memo(function BlipDots({ blips, station, setStation, refs }: { blips: Blip[]; station: number | null; setStation: (i: number) => void; refs: React.MutableRefObject<(HTMLButtonElement | null)[]> }) {
+  return (
+    <>
+      {blips.map((b, i) => (
+        <button key={b.id} ref={(el) => { refs.current[i] = el; }} className={station === i ? "blip on" : "blip"} style={{ left: `${50 + b.x * 50}%`, top: `${50 - b.y * 50}%`, ["--c" as string]: BAND_COLOR[b.band] }}
+          onClick={() => setStation(i)} tabIndex={-1} aria-label={`Station ${b.id}`} />
+      ))}
+    </>
+  );
+});
+
+/* Card contents are memoized: scrolling only moves and fades each card, it never rebuilds its charts. */
+
+const ProblemCard = memo(function ProblemCard({ story: st, chartH }: { story: Story | null; chartH: number }) {
+  return (
+    <>
+    <div className="col">
+      <p className="kicker">01 · The problem</p>
+      <h2 id="b-move">Houston is sinking, and sinking land floods deeper</h2>
+      <p className="lede">Much of Houston sits on thick clay. Pumping water out of the sand between the clay layers lets the clay squeeze, and the land above drops for good. Lower ground means the same storm brings deeper water, and drains and levees were built for the old ground level.</p>
+      <ul className="facts-list">
+        <li><strong>10+ ft</strong><span>of sinking near Pasadena between 1906 and 1995. About 3,200 square miles of greater Houston dropped at least a foot.<cite>USGS</cite></span></li>
+        <li><strong>~10 ft</strong><span>Baytown's Brownwood neighborhood sank so far that Hurricane Alicia wiped it out in 1983. It is a nature center today.<cite>Houston History Magazine</cite></span></li>
+        <li><strong>28 in</strong><span>dropped at a GPS station in Jersey Village over 26 years, as pumping moved northwest.<cite>Harris-Galveston Subsidence District</cite></span></li>
+        <li><strong>$125B</strong><span>in damage from Hurricane Harvey in 2017, after almost 34 inches of rain fell on Harris County in four days.<cite>NOAA, Harris County Flood Control District</cite></span></li>
+      </ul>
+      <p className="hope">It can be slowed. Where pumping was cut in the late 1970s, sinking along the Ship Channel largely stopped. Knowing exactly where the ground moves now tells the region where to act next.<cite>USGS</cite></p>
+    </div>
+    <div className="col">
+      <figure className="fig">
+        <figcaption><b>Ten years of sinking, seen from space</b><span>Ground change since July 2016. Middle value of the fastest-sinking tenth of measured squares, and of all measured squares.</span></figcaption>
+        {st && <LineChart x={st.dates.map(yearOf)} labels={st.dates.map(monthLabel)} xTicks={[2017, 2019, 2021, 2023, 2025]} unit="cm" height={chartH} ariaLabel="Ground change since 2016, in centimeters"
+          series={[{ name: "Fastest-sinking tenth", color: SINK[2], values: st.fastCurve }, { name: "Typical square", color: UI.ink3, values: st.typicalCurve, emphasis: false }]} />}
+      </figure>
+      <figure className="fig">
+        <figcaption><b>How fast each square is moving</b><span>{st ? st.measured.toLocaleString() : "—"} squares of 1 km, in mm a year</span></figcaption>
+        {st && <ColumnChart height={Math.round(chartH * 0.85)} ariaLabel="Number of squares by speed of movement" bars={st.bins.map((b, i) => ({ label: b.label, value: b.n, color: [RISE[1], CONTEXT_BAR, SINK[0], SINK[1], SINK[2], SINK_EXTREME][i] }))} />}
+      </figure>
+      <p className="punch"><strong>{st ? st.fast.toLocaleString() : "—"}</strong> squares sink 1 cm or more a year. <strong>{st ? st.fastInFlood.toLocaleString() : "—"}</strong> of them sit inside FEMA high-risk flood zones.</p>
+    </div>
+    </>
+  );
+});
+
+const ConfidenceCard = memo(function ConfidenceCard({ meta, blips, station, setStation, openAt }: { meta: Meta | null; blips: Blip[]; station: number | null; setStation: (i: number | null) => void; openAt: (lon: number, lat: number) => void }) {
+  const bands = { a: blips.filter((b) => b.band === "a").length, b: blips.filter((b) => b.band === "b").length, c: blips.filter((b) => b.band === "c").length };
+  const pickBlip = (i: number) => setStation(((i % blips.length) + blips.length) % blips.length);
+  return (
+    <>
+    <p className="kicker">02 · Confidence</p>
+    <h2 id="b-sure">How sure are we?</h2>
+    <p className="lede">We compared the satellite with {meta?.validation.stations ?? "—"} GPS stations it never learned from. Each dot on the scope is one of them, drawn where it stands around Houston.</p>
+    <div className="trio">
+      <p><strong>{meta ? num(meta.validation.typical_diff_mm_year) : "—"}</strong><span>mm a year: the typical gap between them</span></p>
+      <p><strong>{meta ? meta.validation.r.toFixed(2) : "—"}</strong><span>out of 1: how closely they rise and fall together</span></p>
+      <p><strong>{meta ? (meta.counts.confidence.high ?? 0).toLocaleString() : "—"}</strong><span>squares confirmed by a GPS station nearby</span></p>
+    </div>
+    {blips.length > 0 && <SegmentedBar ariaLabel="How far apart the satellite and each GPS station are" parts={[
+      { label: "Within 2 mm a year", value: bands.a, color: BAND_COLOR.a },
+      { label: "2 to 5 mm", value: bands.b, color: BAND_COLOR.b },
+      { label: "More than 5 mm", value: bands.c, color: BAND_COLOR.c },
+    ]} />}
+    <StationInspector blip={station === null ? null : blips[station] ?? null} onPrev={() => pickBlip((station ?? 0) - 1)} onNext={() => pickBlip(station === null ? blips.findIndex((b) => b.band === "a") : station + 1)} onOpen={(b) => openAt(b.lon, b.lat)} />
+    </>
+  );
+});
+
+const PriorityCard = memo(function PriorityCard({ meta, openAt }: { meta: Meta | null; openAt: (lon: number, lat: number) => void }) {
+  const counts = meta?.counts.action ?? {};
+  const hw = meta?.hardware;
+  return (
+    <>
+    <div className="col">
+      <p className="kicker">03 · Priority</p>
+      <h2 id="b-first">Where should Houston look first?</h2>
+      <p className="lede">Sinking matters most where floods already reach. Every square gets one action, from rules checked in order, and the map suggests exactly where a new sensor would turn a satellite reading into proof.</p>
+      <ul className="facts-list keyed">
+        {(["investigate_first", "add_monitoring", "review_disagreement"] as const).map((k) => (
+          <li key={k}><strong>{(counts[k] ?? 0).toLocaleString()}</strong><span><i className="key-box" style={{ background: ACTION[k].color }} /><b>{ACTION[k].name}.</b> {ACTION[k].meaning}</span></li>
+        ))}
+      </ul>
+      {hw && meta && (
+        <div className="kit">
+          <div><strong>{meta.sensors.length}</strong><span>permanent GPS stations, about $20,000–30,000 each. One confirms 1 cm a year of sinking in about {hw.gps_weeks_10} weeks.</span></div>
+          <div><strong>{meta.nodes.length}</strong><span>low-cost sensors, from $74. About {hw.node_weeks_10} weeks to confirm the same, and every flagged flood-zone square gets one within 6 km.</span></div>
+          <div><strong>{meta.gaps.length}</strong><span>sensors for land nothing measures yet.</span></div>
+        </div>
+      )}
+    </div>
+    <div className="col">
+      <figure className="fig">
+        <figcaption><b>What each measured square needs</b><span>Number of 1 km squares in each action</span></figcaption>
+        <HBarChart ariaLabel="Squares in each action" labelWidth={170} rows={(["investigate_first", "add_monitoring", "review_disagreement", "observe", "no_clear_motion"] as const).map((k) => ({ label: ACTION[k].name, value: counts[k] ?? 0, color: k === "no_clear_motion" ? CONTEXT_BAR : PRIORITY_COLORS[k], note: ACTION[k].meaning }))} />
+      </figure>
+      {meta && (
+        <figure className="fig">
+          <figcaption><b>Top sites for a new GPS station</b><span>Fastest-sinking flood-zone areas with no station nearby</span></figcaption>
+          <ol className="site-rows">{meta.sensors.slice(0, 3).map((x) => <SiteRow key={x.id} rank={x.rank} lon={x.lon} lat={x.lat} rate={x.areaRate} km={x.gpsKm} onOpen={() => openAt(x.lon, x.lat)} />)}</ol>
+        </figure>
+      )}
+    </div>
+    </>
+  );
+});
+
+interface Source { short: string; name: string; what: string; use: string }
+const EvidenceCard = memo(function EvidenceCard({ sources, active }: { sources: Source[]; active: number }) {
+  const src = sources[active];
+  return (
+    <>
+    <p className="kicker">04 · Evidence</p>
+    <h2 id="b-sources">{sources.length} datasets, one map</h2>
+    <p className="lede">Every square kilometer gets the same {sources.length} checks. Each sonar ping moves to the next one; tap a corner to jump to it.</p>
+    {src && (
+      <div className="readout" aria-live="polite">
+        <p className="readout-step">{active + 1} of {sources.length}</p>
+        <h3>{src.name}</h3>
+        <p>{src.what}</p>
+        <p className="use">{src.use}</p>
+      </div>
+    )}
+    </>
+  );
+});
+
+/**
+ * Rendering quality for the animated backgrounds. Starts sharp; if the page can't hold
+ * roughly 50 frames a second it steps the resolution down (never back up, so it can't flicker).
+ */
+const QUALITY = [
+  { galaxy: 1, topo: 1.25, radar: 1.25, globe: 1.5 },
+  { galaxy: 0.85, topo: 1, radar: 1, globe: 1.2 },
+  { galaxy: 0.7, topo: 0.85, radar: 0.85, globe: 1 },
+] as const;
+
+function useQualityTier() {
+  const [tier, setTier] = useState(0);
+  useEffect(() => {
+    let raf = 0, last = 0, from = performance.now() + 2500; // let shaders compile first
+    const gaps: number[] = [];
+    const loop = (t: number) => {
+      if (last && t > from) gaps.push(t - last);
+      last = t;
+      if (gaps.length >= 90) {
+        const median = [...gaps].sort((a, b) => a - b)[gaps.length >> 1];
+        if (median > 20.5) setTier((x) => Math.min(QUALITY.length - 1, x + 1));
+        gaps.length = 0;
+        from = t + 1500;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    const reset = () => { last = 0; gaps.length = 0; from = performance.now() + 1000; };
+    document.addEventListener("visibilitychange", reset);
+    return () => { cancelAnimationFrame(raf); document.removeEventListener("visibilitychange", reset); };
+  }, []);
+  return tier;
+}
+
+/** Build the heavy layers one at a time in idle moments while the hero is on screen, not mid-scroll. */
+function useIdleStages(count: number) {
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    if (stage >= count) return;
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    const t = window.setTimeout(() => { if (idle) idle(() => setStage((x) => x + 1), { timeout: 1500 }); else setStage((x) => x + 1); }, stage === 0 ? 1200 : 1300);
+    return () => clearTimeout(t);
+  }, [stage, count]);
+  return stage;
+}
+
+export function Landing({ meta, sites, cells, story, playIntro, onWarm, onEnter, onEnterAt }: Props) {
   const { w: W, h: H } = useViewport();
   const y = useScrollY();
   const s = y / H;
   const wide = W >= 900;
   const reduce = useMemo(reducedMotion, []);
-  const [phase, setPhase] = useState<"intro" | "fading" | "ready">(playIntro && !reduce ? "intro" : "ready");
-  const [skip, setSkip] = useState(false);
   const [heroLit, setHeroLit] = useState(reduce || !playIntro);
   const [activeSource, setActiveSource] = useState(0);
   const [station, setStation] = useState<number | null>(null);
   const entered = useRef(false);
   const warmed = useRef(false);
+  const tier = useQualityTier();
+  const stage = useIdleStages(4);
+  const cap = Math.min(window.devicePixelRatio || 1, 2);
+  const q = QUALITY[tier];
+  const dpr = (v: number) => Math.min(cap, v);
+  const enterAtRef = useRef(onEnterAt);
+  enterAtRef.current = onEnterAt;
+  const openAt = useCallback((lon: number, lat: number) => enterAtRef.current(lon, lat), []);
 
   // ── Section layout, measured ──
   const rootRef = useRef<HTMLDivElement>(null);
@@ -162,58 +343,40 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
     return { opacity: o, transform: `translateY(${(1 - o) * (t < 0.5 ? 24 : -24)}px)`, visibility: o < 0.01 ? ("hidden" as const) : undefined };
   };
 
-  // ── Intro: lock scrolling; any scroll, swipe or key skips it. ──
-  useEffect(() => {
-    if (phase !== "intro") return;
-    const root = document.documentElement;
-    root.style.overflow = "hidden";
-    window.scrollTo(0, 0);
-    const skipNow = () => setSkip(true);
-    const onKey = (e: KeyboardEvent) => { if (["ArrowDown", "PageDown", " ", "Enter", "Escape"].includes(e.key)) skipNow(); };
-    window.addEventListener("wheel", skipNow, { passive: true });
-    window.addEventListener("touchmove", skipNow, { passive: true });
-    window.addEventListener("keydown", onKey);
-    return () => {
-      root.style.overflow = "";
-      window.removeEventListener("wheel", skipNow);
-      window.removeEventListener("touchmove", skipNow);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [phase]);
-  const introDone = useCallback(() => setPhase((p) => (p === "intro" ? "fading" : p)), []);
-  useEffect(() => {
-    if (phase !== "fading") return;
-    const t = window.setTimeout(() => setPhase("ready"), 1100);
-    return () => clearTimeout(t);
-  }, [phase]);
 
   // ── Scene values driven by scroll ──
   const minSide = Math.min(W, H);
   const heroScale = wide ? 0.86 : 0.92;
   const radarHero = 1 - ramp(s, 0.3, 0.95);
   const radarSure = win(s, S.sure - 0.55, S.sure + 0.05, S.first - 0.45, S.first + 0.05);
-  const radarOpacity = phase === "intro" ? 0 : Math.max(radarHero, radarSure);
-  const showRadar = phase !== "intro" && s < S.first + 0.2;
+  const radarOpacity = Math.max(radarHero, radarSure);
+
   const sureX = wide ? 0.5 + 0.2 * win(s, S.sure - 0.8, S.sure - 0.4, S.first - 0.2, S.first + 0.2) : 0.5;
   const sureY = wide ? 0.5 : s > S.move + 0.5 ? 0.34 : 0.5;
   const radarScale = s < S.move ? heroScale : wide ? 0.7 : 0.78;
 
   // Evidence polygon: one corner per dataset; the portal opens the map through it.
   const polyIn = ramp(s, S.sources - 0.5, S.sources + 0.05);
-  const portalT = smooth(ramp(s, S.portal + 0.45, MAX - 0.03));
-  const holeIn = ramp(s, S.portal + 0.05, S.portal + 0.4);
-  const toCenter = ramp(s, S.portal - 0.4, S.portal + 0.2);
+  // 05: the decagon glides to the centre and becomes the Earth, which the scroll then spins
+  // and dives into Houston, landing on the live map's own camera before handing over to it.
+  const toCenter = smooth(ramp(s, S.portal - 0.9, S.portal - 0.25));
   const polyX = wide ? lerp(0.68, 0.5, toCenter) : 0.5;
-  const polyY = wide ? 0.52 : lerp(0.3, 0.5, toCenter);
+  const polyY = wide ? lerp(0.52, 0.5, toCenter) : lerp(0.3, 0.5, toCenter);
+  const morph = smooth(ramp(s, S.portal - 0.2, S.portal + 0.15));
+  const dive = ramp(s, S.portal + 0.25, MAX - 0.22);
+  const handoff = smooth(ramp(s, MAX - 0.22, MAX - 0.04));
 
-  const galaxyOpacity = 1 - 0.7 * ramp(s, 0.4, 1.5);
-  const topoOpacity = phase === "intro" ? 0 : win(s, 0.55, 1.35, S.sources - 0.5, S.sources) * (1 - 0.75 * radarSure);
-  const showTopo = phase !== "intro" && s > 0.25 && s < S.sources + 0.3;
+  const galaxyOpacity = Math.max(1 - 0.7 * ramp(s, 0.4, 1.5), 0.3 + 0.7 * morph);
+  const topoOpacity = win(s, 0.55, 1.35, S.sources - 0.5, S.sources) * (1 - 0.75 * radarSure);
+  const showTopo = stage >= 1 || s > 0.25;
+  // Only one big background animates at a time: the others hold still where they're covered.
+  const topoMoving = topoOpacity > 0.02 && radarSure < 0.5;
+  const galaxyStill = topoOpacity > 0.6 && morph < 0.01;
   const topoTilt = lerp(64, 34, smooth(ramp(s, S.move, S.sources - 1)));
   const topoElevation = lerp(0.6, 1.7, ramp(s, S.move, S.sure + 0.5));
 
   // Warm the dashboard before the portal so its map has tiles by the time it shows.
-  useEffect(() => { if (!warmed.current && s > S.sources - 0.3) { warmed.current = true; onWarm(); } }, [s, S.sources, onWarm]);
+  useEffect(() => { if (!warmed.current && (stage >= 2 || s > S.sources - 0.3)) { warmed.current = true; onWarm(); } }, [s, stage, S.sources, onWarm]);
   useEffect(() => {
     if (!entered.current && meta && s >= MAX - 0.02 && MAX > 3) { entered.current = true; onEnter(); }
   }, [s, MAX, meta, onEnter]);
@@ -233,7 +396,6 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
     const reach = Math.max(...rows.map((r) => Math.hypot(r.dx, r.dy)), 1e-6) / 0.92;
     return rows.map((r) => ({ ...r, x: r.dx / reach, y: r.dy / reach, bearing: Math.atan2(r.dx, r.dy) })).sort((a, b) => a.bearing - b.bearing);
   }, [meta, sites]);
-  const bands = { a: blips.filter((b) => b.band === "a").length, b: blips.filter((b) => b.band === "b").length, c: blips.filter((b) => b.band === "c").length };
 
   const sources = useMemo(() => {
     if (!meta) return [];
@@ -269,15 +431,20 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
   const lastPulse = useRef(0);
   const polyShown = useRef(false);
 
+  const letterAt = useRef({ y: NaN, w: 0, bearings: [] as number[] });
   const onSweep = useCallback((sweep: number, intro: number) => {
     const g = geo.current;
     if (g.heroOn) {
       let all = true;
+      const cache = letterAt.current;
+      if (cache.y !== window.scrollY || cache.w !== window.innerWidth) {
+        // Measure only when the page has moved, not on every radar frame.
+        cache.bearings = letterRefs.current.map((el) => { if (!el) return 0; const r = el.getBoundingClientRect(); return Math.atan2(r.left + r.width / 2 - g.cx, g.cy - (r.top + r.height / 2)); });
+        cache.y = window.scrollY; cache.w = window.innerWidth;
+      }
       letterRefs.current.forEach((el, i) => {
         if (!el) return;
-        const r = el.getBoundingClientRect();
-        const bearing = Math.atan2(r.left + r.width / 2 - g.cx, g.cy - (r.top + r.height / 2));
-        const gap = gapBehind(sweep, bearing);
+        const gap = gapBehind(sweep, cache.bearings[i]);
         if (!lit.current[i] && (i === 0 || lit.current[i - 1]) && intro > 0.55 && gap < 0.35) { lit.current[i] = true; el.classList.add("on"); }
         el.style.setProperty("--f", Math.exp(-gap * 2.4).toFixed(3));
         all &&= lit.current[i];
@@ -311,59 +478,65 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
   const sureR = (radarScale * minSide) / 2;
   const sureBox = { left: sureX * W - sureR, top: sureY * H - sureR, width: 2 * sureR, height: 2 * sureR };
   const pcx = polyX * W, pcy = polyY * H;
-  const polyR0 = ((wide ? 0.56 : 0.56) * minSide) / 2;
-  const cover = Math.hypot(Math.max(pcx, W - pcx), Math.max(pcy, H - pcy)) / Math.cos(Math.PI / N) + 40;
-  const polyR = lerp(polyR0, cover, portalT);
+  const polyR = (0.56 * minSide) / 2;
   const polyScale = (2 * polyR) / minSide;
+  // The Earth starts exactly the decagon's size, spins half a turn to the Gulf Coast, then dives.
+  const target = dashCamera;
+  const lat0 = 16;
+  const diveCamera = (t: number, m = 1) => ({
+    lon: lerp(target.center[0] + 180, target.center[0], smooth(ramp(t, 0, 0.75))),
+    lat: lerp(lat0, target.center[1], smooth(ramp(t, 0.1, 0.85))),
+    zoom: lerp(zoomForRadius(radiusForVisible(polyR * lerp(0.9, 1, m)), lat0), target.zoom, smooth(ramp(t, 0.18, 1))),
+  });
+  const camera = diveCamera(dive, morph);
+  const pathRef = useRef(diveCamera);
+  pathRef.current = diveCamera;
+  const divePath = useCallback((t: number) => pathRef.current(t), []);
+  const showPoly = stage >= 3 || s > S.first - 0.2;
+  const showGlobe = stage >= 4 || s > S.portal - 0.8;
   const corners = Array.from({ length: N }, (_, k) => { const b = (k / N) * TAU; return { b, x: pcx + Math.sin(b) * polyR, y: pcy - Math.cos(b) * polyR }; });
   // Portal: a polygon hole in the scene shows the live map underneath.
-  const mask = holeIn > 0 ? (() => {
-    const hole = corners.map((c) => `${(pcx + (c.x - pcx) * 0.965).toFixed(1)} ${(pcy + (c.y - pcy) * 0.965).toFixed(1)}`).join(" L");
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><path fill-rule='evenodd' d='M0 0H${W}V${H}H0Z M${hole}Z'/><path fill-opacity='${(1 - 0.92 * holeIn).toFixed(3)}' d='M${hole}Z'/></svg>`;
-    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  })() : undefined;
 
   const st = story;
-  const portalCopy = win(s, S.portal - 0.6, S.portal - 0.1, S.portal + 0.05, S.portal + 0.3);
-  const pickBlip = (i: number) => setStation(((i % blips.length) + blips.length) % blips.length);
-  const src = sources[activeSource];
+  const portalCopy = win(s, S.portal - 0.2, S.portal + 0.15, S.portal + 0.55, S.portal + 0.95);
   const chartH = Math.round(Math.max(140, Math.min(200, H * 0.2)));
-  const counts = meta?.counts.action ?? {};
-  const hw = meta?.hardware;
 
   return (
     <div className="landing" ref={rootRef}>
       {/* ── Fixed scene ── */}
-      <div className="scene" style={{ WebkitMaskImage: mask, maskImage: mask, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}>
+      <div className="scene" style={{ opacity: 1 - handoff, visibility: handoff > 0.995 ? "hidden" : undefined }}>
         <div className="layer" style={{ opacity: galaxyOpacity }} aria-hidden="true">
-          <Galaxy transparent={false} backgroundColor={UI.space} starColors={[...STARS, UI.accent, UI.blue]} density={1.1} glowIntensity={0.28} twinkleIntensity={0.4} saturation={0.2} hueShift={200} rotationSpeed={0.04} starSpeed={0.3} mouseRepulsion={false} repulsionStrength={1} intro={playIntro && !reduce} dpr={1.5} />
+          <Galaxy transparent={false} backgroundColor={UI.space} starColors={[...STARS, UI.accent, UI.blue]} density={1.1} glowIntensity={0.28} twinkleIntensity={0.4} saturation={0.2} hueShift={200} rotationSpeed={0.04} starSpeed={0.3} mouseRepulsion={false} repulsionStrength={1} intro={playIntro && !reduce} disableAnimation={galaxyStill} dpr={dpr(q.galaxy)} />
         </div>
         {showTopo && (
-          <div className="layer" style={{ opacity: topoOpacity }} aria-hidden="true">
-            <Topography color={UI.blue} lineCount={26} lineWidth={1.1} elevation={topoElevation} tilt={topoTilt} speed={0.18} glow={0.6} fog={0.5} depthOfField={0.35} foreground={0.25} parallax={0.4} markers={s > S.first - 0.3 ? "plus" : "none"} hoverEffect="lift" clickEffect="pulse" dpr={1.5} />
+          <div className="layer" style={{ opacity: topoOpacity, visibility: topoOpacity < 0.01 ? "hidden" : undefined }} aria-hidden="true">
+            <Topography color={UI.blue} lineCount={26} lineWidth={1.1} elevation={topoElevation} tilt={topoTilt} speed={topoMoving ? 0.18 : 0} glow={0.6} fog={0.5} depthOfField={0.35} foreground={0.25} parallax={0.4} markers={topoMoving && s > S.first - 0.3 ? "plus" : "none"} hoverEffect="lift" clickEffect="pulse" dpr={dpr(q.topo)} />
           </div>
         )}
-        {showRadar && (
-          <div className="layer" style={{ opacity: radarOpacity }} aria-hidden="true">
-            <Radar sweepStart={-1.35} color={UI.accent} scale={radarScale} centerX={sureX} centerY={sureY} ringCount={wide ? 6 : 5} spokeCount={12} targets={0} clutter={0.1} trail={0.42} glow={0.9} gridOpacity={0.8} speed={0.9} grain={0.02} paused={radarOpacity < 0.01} onSweep={onSweep} dpr={1.5} />
+        {(
+          <div className="layer" style={{ opacity: radarOpacity, visibility: radarOpacity < 0.01 ? "hidden" : undefined }} aria-hidden="true">
+            <Radar sweepStart={-1.35} color={UI.accent} scale={radarScale} centerX={sureX} centerY={sureY} ringCount={wide ? 6 : 5} spokeCount={12} targets={0} clutter={0.1} trail={0.42} glow={0.9} gridOpacity={0.8} speed={0.9} grain={0.02} paused={radarOpacity < 0.01} onSweep={onSweep} dpr={dpr(q.radar)} />
           </div>
         )}
-        {phase !== "intro" && s > S.first - 0.2 && (
-          <div className="layer" style={{ opacity: polyIn }} aria-hidden="true">
-            <PolygonRadar sides={N} intro={false} mode="pulse" color={UI.accent} scale={polyScale} centerX={polyX} centerY={polyY} ringCount={5} spokeCount={N} ticks={false} targets={12} clutter={0.22} trail={0.5} glow={0.85} gridOpacity={0.9} speed={0.8} grain={0.02} paused={polyIn < 0.01} onSweep={onPing} dpr={1.5} />
+        {showPoly && (
+          <div className="layer" style={{ opacity: polyIn * (1 - morph), visibility: polyIn * (1 - morph) < 0.01 ? "hidden" : undefined }} aria-hidden="true">
+            <PolygonRadar sides={N} intro={false} mode="pulse" color={UI.accent} scale={polyScale} centerX={polyX} centerY={polyY} ringCount={5} spokeCount={N} ticks={false} targets={12} clutter={0.22} trail={0.5} glow={0.85} gridOpacity={0.9} speed={0.8} grain={0.02} paused={polyIn * (1 - morph) < 0.01} onSweep={onPing} dpr={dpr(q.radar)} />
+          </div>
+        )}
+
+        {showGlobe && (
+          <div className="layer" style={{ opacity: morph, visibility: morph < 0.001 ? "hidden" : undefined }}>
+            <GlobeDive camera={camera} cells={cells} meta={meta} active={morph > 0.001} pixelRatio={dpr(q.globe)} path={divePath} />
           </div>
         )}
 
         {/* GPS stations on the scope (card 02): tap one to inspect it. */}
         <div className="scope" style={{ ...sureBox, opacity: radarSure, visibility: radarSure > 0.02 ? undefined : "hidden" }}>
-          {blips.map((b, i) => (
-            <button key={b.id} ref={(el) => { blipRefs.current[i] = el; }} className={station === i ? "blip on" : "blip"} style={{ left: `${50 + b.x * 50}%`, top: `${50 - b.y * 50}%`, ["--c" as string]: BAND_COLOR[b.band] }}
-              onClick={() => setStation(i)} tabIndex={-1} aria-label={`Station ${b.id}`} />
-          ))}
+          <BlipDots blips={blips} station={station} setStation={setStation} refs={blipRefs} />
         </div>
 
         {/* Dataset names on the polygon's corners (card 04). */}
-        <div className="corners" style={{ opacity: polyIn * (1 - ramp(s, S.portal - 0.4, S.portal + 0.1)), visibility: polyIn > 0.02 && s < S.portal + 0.2 ? undefined : "hidden" }} role="group" aria-label="Datasets">
+        <div className="corners" style={{ opacity: polyIn * (1 - ramp(s, S.portal - 0.95, S.portal - 0.55)), visibility: polyIn > 0.02 && s < S.portal - 0.5 ? undefined : "hidden" }} role="group" aria-label="Datasets">
           {sources.map((x, i) => {
             const c = corners[i];
             if (!c) return null;
@@ -378,22 +551,16 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
         </div>
       </div>
 
-      {phase !== "ready" && (
-        <div className={phase === "fading" ? "intro fade" : "intro"}>
-          <Intro skip={skip} onDone={introDone} />
-          {phase === "intro" && <button className="skip" onClick={() => setSkip(true)}>Skip intro</button>}
-        </div>
-      )}
 
       {/* ── Top bar ── */}
-      <header className={phase === "intro" ? "lbar hidden" : "lbar"} style={portalT > 0 ? { opacity: 1 - portalT * 2, pointerEvents: portalT > 0.3 ? "none" : undefined } : undefined}>
+      <header className="lbar" style={dive > 0.85 ? { opacity: 1 - ramp(dive, 0.85, 1), pointerEvents: dive > 0.95 ? "none" : undefined } : undefined}>
         <span className="lbar-brand"><img src="./logo.png" alt="" width={30} height={30} />TerraGauge</span>
         <button className="ghost" onClick={onEnter}>Open the map <span aria-hidden="true">→</span></button>
       </header>
 
       {/* ── Hero ── */}
       <section ref={(el) => { secRefs.current.hero = el; }} className={heroLit ? "hero lit" : "hero"} style={{ height: DEFAULT_LEN.hero * H }} aria-label="TerraGauge Houston">
-        <div className={phase === "intro" ? "hero-stage pre" : "hero-stage"} style={{ height: H, ["--R" as string]: `${(heroScale * minSide) / 2}px` }}>
+        <div className="hero-stage" style={{ height: H, ["--R" as string]: `${(heroScale * minSide) / 2}px` }}>
           <h1 className="wordmark" aria-label="TerraGauge">
             {WORD.split("").map((ch, i) => <span key={i} ref={(el) => { letterRefs.current[i] = el; }} aria-hidden="true">{ch}</span>)}
           </h1>
@@ -411,30 +578,7 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
       <section ref={(el) => { secRefs.current.move = el; }} className="beat" style={wide ? { height: DEFAULT_LEN.move * H } : undefined} aria-labelledby="b-move">
         <div className="hold" style={wide ? { height: H } : undefined}>
           <article className="glass wide-card" style={panelStyle("move")}>
-            <div className="col">
-              <p className="kicker">01 · The problem</p>
-              <h2 id="b-move">Houston is sinking, and sinking land floods deeper</h2>
-              <p className="lede">Much of Houston sits on thick clay. Pumping water out of the sand between the clay layers lets the clay squeeze, and the land above drops for good. Lower ground means the same storm brings deeper water, and drains and levees were built for the old ground level.</p>
-              <ul className="facts-list">
-                <li><strong>10+ ft</strong><span>of sinking near Pasadena between 1906 and 1995. About 3,200 square miles of greater Houston dropped at least a foot.<cite>USGS</cite></span></li>
-                <li><strong>~10 ft</strong><span>Baytown's Brownwood neighborhood sank so far that Hurricane Alicia wiped it out in 1983. It is a nature center today.<cite>Houston History Magazine</cite></span></li>
-                <li><strong>28 in</strong><span>dropped at a GPS station in Jersey Village over 26 years, as pumping moved northwest.<cite>Harris-Galveston Subsidence District</cite></span></li>
-                <li><strong>$125B</strong><span>in damage from Hurricane Harvey in 2017, after almost 34 inches of rain fell on Harris County in four days.<cite>NOAA, Harris County Flood Control District</cite></span></li>
-              </ul>
-              <p className="hope">It can be slowed. Where pumping was cut in the late 1970s, sinking along the Ship Channel largely stopped. Knowing exactly where the ground moves now tells the region where to act next.<cite>USGS</cite></p>
-            </div>
-            <div className="col">
-              <figure className="fig">
-                <figcaption><b>Ten years of sinking, seen from space</b><span>Ground change since July 2016. Middle value of the fastest-sinking tenth of measured squares, and of all measured squares.</span></figcaption>
-                {st && <LineChart x={st.dates.map(yearOf)} labels={st.dates.map(monthLabel)} xTicks={[2017, 2019, 2021, 2023, 2025]} unit="cm" height={chartH} ariaLabel="Ground change since 2016, in centimeters"
-                  series={[{ name: "Fastest-sinking tenth", color: SINK[2], values: st.fastCurve }, { name: "Typical square", color: UI.ink3, values: st.typicalCurve, emphasis: false }]} />}
-              </figure>
-              <figure className="fig">
-                <figcaption><b>How fast each square is moving</b><span>{st ? st.measured.toLocaleString() : "—"} squares of 1 km, in mm a year</span></figcaption>
-                {st && <ColumnChart height={Math.round(chartH * 0.85)} ariaLabel="Number of squares by speed of movement" bars={st.bins.map((b, i) => ({ label: b.label, value: b.n, color: [RISE[1], CONTEXT_BAR, SINK[0], SINK[1], SINK[2], SINK_EXTREME][i] }))} />}
-              </figure>
-              <p className="punch"><strong>{st ? st.fast.toLocaleString() : "—"}</strong> squares sink 1 cm or more a year. <strong>{st ? st.fastInFlood.toLocaleString() : "—"}</strong> of them sit inside FEMA high-risk flood zones.</p>
-            </div>
+            <ProblemCard story={st} chartH={chartH} />
           </article>
         </div>
       </section>
@@ -444,20 +588,7 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
         <div className="hold" style={wide ? { height: H } : undefined}>
           {!wide && <div className="beat-spacer" aria-hidden="true" />}
           <article className="glass side-card" style={panelStyle("sure")}>
-            <p className="kicker">02 · Confidence</p>
-            <h2 id="b-sure">How sure are we?</h2>
-            <p className="lede">We compared the satellite with {meta?.validation.stations ?? "—"} GPS stations it never learned from. Each dot on the scope is one of them, drawn where it stands around Houston.</p>
-            <div className="trio">
-              <p><strong>{meta ? num(meta.validation.typical_diff_mm_year) : "—"}</strong><span>mm a year: the typical gap between them</span></p>
-              <p><strong>{meta ? meta.validation.r.toFixed(2) : "—"}</strong><span>out of 1: how closely they rise and fall together</span></p>
-              <p><strong>{meta ? (meta.counts.confidence.high ?? 0).toLocaleString() : "—"}</strong><span>squares confirmed by a GPS station nearby</span></p>
-            </div>
-            {blips.length > 0 && <SegmentedBar ariaLabel="How far apart the satellite and each GPS station are" parts={[
-              { label: "Within 2 mm a year", value: bands.a, color: BAND_COLOR.a },
-              { label: "2 to 5 mm", value: bands.b, color: BAND_COLOR.b },
-              { label: "More than 5 mm", value: bands.c, color: BAND_COLOR.c },
-            ]} />}
-            <StationInspector blip={station === null ? null : blips[station] ?? null} onPrev={() => pickBlip((station ?? 0) - 1)} onNext={() => pickBlip(station === null ? blips.findIndex((b) => b.band === "a") : station + 1)} onOpen={(b) => onEnterAt(b.lon, b.lat)} />
+            <ConfidenceCard meta={meta} blips={blips} station={station} setStation={setStation} openAt={openAt} />
           </article>
         </div>
       </section>
@@ -466,35 +597,7 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
       <section ref={(el) => { secRefs.current.first = el; }} className="beat" style={wide ? { height: DEFAULT_LEN.first * H } : undefined} aria-labelledby="b-first">
         <div className="hold" style={wide ? { height: H } : undefined}>
           <article className="glass wide-card" style={panelStyle("first")}>
-            <div className="col">
-              <p className="kicker">03 · Priority</p>
-              <h2 id="b-first">Where should Houston look first?</h2>
-              <p className="lede">Sinking matters most where floods already reach. Every square gets one action, from rules checked in order, and the map suggests exactly where a new sensor would turn a satellite reading into proof.</p>
-              <ul className="facts-list keyed">
-                {(["investigate_first", "add_monitoring", "review_disagreement"] as const).map((k) => (
-                  <li key={k}><strong>{(counts[k] ?? 0).toLocaleString()}</strong><span><i className="key-box" style={{ background: ACTION[k].color }} /><b>{ACTION[k].name}.</b> {ACTION[k].meaning}</span></li>
-                ))}
-              </ul>
-              {hw && meta && (
-                <div className="kit">
-                  <div><strong>{meta.sensors.length}</strong><span>permanent GPS stations, about $20,000–30,000 each. One confirms 1 cm a year of sinking in about {hw.gps_weeks_10} weeks.</span></div>
-                  <div><strong>{meta.nodes.length}</strong><span>low-cost sensors, from $74. About {hw.node_weeks_10} weeks to confirm the same, and every flagged flood-zone square gets one within 6 km.</span></div>
-                  <div><strong>{meta.gaps.length}</strong><span>sensors for land nothing measures yet.</span></div>
-                </div>
-              )}
-            </div>
-            <div className="col">
-              <figure className="fig">
-                <figcaption><b>What each measured square needs</b><span>Number of 1 km squares in each action</span></figcaption>
-                <HBarChart ariaLabel="Squares in each action" labelWidth={170} rows={(["investigate_first", "add_monitoring", "review_disagreement", "observe", "no_clear_motion"] as const).map((k) => ({ label: ACTION[k].name, value: counts[k] ?? 0, color: k === "no_clear_motion" ? CONTEXT_BAR : PRIORITY_COLORS[k], note: ACTION[k].meaning }))} />
-              </figure>
-              {meta && (
-                <figure className="fig">
-                  <figcaption><b>Top sites for a new GPS station</b><span>Fastest-sinking flood-zone areas with no station nearby</span></figcaption>
-                  <ol className="site-rows">{meta.sensors.slice(0, 3).map((x) => <SiteRow key={x.id} rank={x.rank} lon={x.lon} lat={x.lat} rate={x.areaRate} km={x.gpsKm} onOpen={() => onEnterAt(x.lon, x.lat)} />)}</ol>
-                </figure>
-              )}
-            </div>
+            <PriorityCard meta={meta} openAt={openAt} />
           </article>
         </div>
       </section>
@@ -504,17 +607,7 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
         <div className="hold" style={wide ? { height: H } : undefined}>
           {!wide && <div className="beat-spacer tall" aria-hidden="true" />}
           <article className="glass side-card" style={panelStyle("sources")}>
-            <p className="kicker">04 · Evidence</p>
-            <h2 id="b-sources">{sources.length} datasets, one map</h2>
-            <p className="lede">Every square kilometer gets the same {sources.length} checks. Each sonar ping moves to the next one; tap a corner to jump to it.</p>
-            {src && (
-              <div className="readout" aria-live="polite">
-                <p className="readout-step">{activeSource + 1} of {sources.length}</p>
-                <h3>{src.name}</h3>
-                <p>{src.what}</p>
-                <p className="use">{src.use}</p>
-              </div>
-            )}
+            <EvidenceCard sources={sources} active={activeSource} />
           </article>
         </div>
       </section>
@@ -525,7 +618,7 @@ export function Landing({ meta, sites, story, playIntro, onWarm, onEnter, onEnte
           <div className="portal-copy" style={{ opacity: portalCopy }}>
             {/* Remounts as it comes into view, so the title starts centered and then drifts. */}
             <Marquee key={portalCopy > 0.02 ? "in" : "out"} as="h2" id="b-portal" text="Every square, its evidence, and what's missing" />
-            <p className="portal-hint">Keep scrolling to open the map</p>
+            <p className="portal-hint">Keep scrolling to dive into Houston</p>
           </div>
         </div>
       </section>
