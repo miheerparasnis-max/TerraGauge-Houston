@@ -91,9 +91,14 @@ export interface Meta {
   estimates: { count: number; radius_km: number; min_neighbors: number; median_error_mm_year: number; p80_error_mm_year: number; tested: number };
   /** Our fixed-antenna sensor test: the receiver's own repeatability, never land motion. Heights are relative to the sessions' average. */
   groundtruth?: {
-    status: "none" | "recorded" | "processed" | "passed";
-    recorded: number; processed: number; days: number; pass: boolean; scatterMm: number | null;
+    status: "none" | "recorded" | "processed" | "inconclusive" | "passed";
+    recorded: number; processed: number; days: number; pass: boolean; scatterMm: number | null; reason?: string | null;
     sessions: { id: string; window: [string, string] | null; hours: number | null; offsetMm: number | null; quality: string | null; fixedShare: number | null; sigmaMm: number | null }[];
+    /** What the receiver saw: satellites, phase breaks and signal strength by direction (no position). */
+    signal?: { id: string; seconds: number; tracked: number; steady: number; breakShare: number | null; byDirection: Record<string, number | null>; high: number | null }[];
+    clearSkyDbHz?: number | null;
+    /** Exploratory heights from each method, metres relative to that method's average. Never a result. */
+    roughHeights?: { note: string | null; methods: { label: string; offsetsM: (number | null)[] }[] };
   };
   hardware: { node_daily_sigma_mm: number; node_max_years: number; node_spacing_km: number; gps_daily_sigma_mm: number; node_weeks_10: number; gps_weeks_10: number; node_weeks_5: number; gps_weeks_5: number };
   nasaLayers: Record<string, string>;

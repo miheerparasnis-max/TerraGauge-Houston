@@ -83,14 +83,16 @@ def r(value, digits=1):
 GROUNDTRUTH_RAW = ROOT / "data" / "raw" / "groundtruth"
 GROUNDTRUTH_MANIFEST = ROOT / "data" / "groundtruth_session_manifest.json"
 GROUNDTRUTH_REPORT = DERIVED / "groundtruth" / "groundtruth_report.json"
+GROUNDTRUTH_DIAGNOSTICS = DERIVED / "groundtruth" / "groundtruth_diagnostics.json"
 
 
 def groundtruth_meta() -> dict:
     """Status of our fixed-antenna GroundTruth sessions for the Hardware page.
 
     Stages: "none" (nothing recorded), "recorded" (raw logs exist, not yet solved
-    against NOAA NETP), "processed" (heights solved, report not passing), "passed"
-    (three or more good sessions). Only each session's height relative to the
+    against a NOAA CORS base), "processed" (heights solved, report not passing), "inconclusive"
+    (reviewed: the data cannot support a result, heights withheld), "passed"
+    (three or more ambiguity-fixed sessions against one base). Only each session's height relative to the
     sessions' average leaves this script: never the absolute height or location.
     This is the receiver's own repeatability, never land motion.
     """
@@ -120,6 +122,21 @@ def groundtruth_meta() -> dict:
         out["scatterMm"] = r(report.get("vertical_session_scatter_mm"))
         if out["pass"]:
             out["status"] = "passed"
+    review = load(GROUNDTRUTH_MANIFEST).get("review", {}) if GROUNDTRUTH_MANIFEST.is_file() else {}
+    if not out["pass"] and out["processed"] and review.get("status") == "inconclusive":
+        # Heights from an unresolved solution can be metres off: say why, show no height at all.
+        out["status"] = "inconclusive"
+        out["reason"] = review.get("summary")
+        out["scatterMm"] = None
+        for x in out["sessions"]:
+            x["offsetMm"] = None
+        rough = review.get("rough_heights_by_method", {})
+        out["roughHeights"] = {"note": rough.get("note"), "methods": [{"label": x["label"], "offsetsM": x["offsets_m"]} for x in rough.get("methods", [])]}
+    if GROUNDTRUTH_DIAGNOSTICS.is_file():
+        diag = load(GROUNDTRUTH_DIAGNOSTICS)
+        out["clearSkyDbHz"] = diag.get("clear_sky_dbhz")
+        out["signal"] = [{"id": x["session_id"], "seconds": x["seconds"], "tracked": x["satellites_tracked"], "steady": x["steady_satellites_median"],
+                          "breakShare": x["phase_break_share"], "byDirection": x["gps_l1_cn0_by_direction"], "high": x["gps_l1_cn0_high"]} for x in diag["sessions"]]
     return out
 
 

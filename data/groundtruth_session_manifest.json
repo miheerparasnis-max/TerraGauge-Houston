@@ -1,0 +1,142 @@
+{
+  "purpose": "GroundTruth Node stationary-repeatability validation. Heights are ellipsoidal (ITRF2020 via NETP); location is withheld for privacy.",
+  "sessions": [
+    {
+      "session_id": "session1",
+      "raw_observation_log": "data/raw/groundtruth/session1.rtcm3",
+      "raw_sha256": "d1281e3c07bee64ad271a5966cd595d266863b7567e83c7bf0798b0897a08466",
+      "rinex_observation_file": "data/derived/groundtruth/session1.obs",
+      "rinex_sha256": "decbb70b25d9fa60af86e1d574420bf9beadf9510e4291e49a3fcc1280e9e49b",
+      "static_solution_height_mm": 2732.5,
+      "solution": {
+        "quality": "float",
+        "fixed_epoch_share": 0.125,
+        "epochs": 7149,
+        "sigma_3d_mm": 17.9
+      },
+      "window_utc": [
+        "2026-11-14T17:05:09Z",
+        "2026-11-14T19:05:08Z"
+      ],
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_files": [
+        "zhu13180.26o",
+        "brdc3180.26n"
+      ],
+      "cors_overlap": true,
+      "processing": "RTKLIB rnx2rtkp static, GPS, elevation mask 15 deg, broadcast orbits, base ZHU1 ITRF2020 propagated to the session date"
+    },
+    {
+      "session_id": "session2",
+      "raw_observation_log": "data/raw/groundtruth/session2.rtcm3",
+      "raw_sha256": "4d67dee59708717df5b9292e7f4badb3e5e400fdd98ffaa77a2beda4cdfae4e8",
+      "rinex_observation_file": "data/derived/groundtruth/session2.obs",
+      "rinex_sha256": "43ac43d1ed9033809c97ebc14b934849c177f279871c97ea7ce5ccf9b77025f0",
+      "static_solution_height_mm": 4581.2,
+      "solution": {
+        "quality": "float",
+        "fixed_epoch_share": 0.126,
+        "epochs": 7200,
+        "sigma_3d_mm": 20.0
+      },
+      "window_utc": [
+        "2026-11-14T19:14:01Z",
+        "2026-11-14T21:14:00Z"
+      ],
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_files": [
+        "zhu13180.26o",
+        "brdc3180.26n"
+      ],
+      "cors_overlap": true,
+      "processing": "RTKLIB rnx2rtkp static, GPS, elevation mask 15 deg, broadcast orbits, base ZHU1 ITRF2020 propagated to the session date"
+    },
+    {
+      "session_id": "session3",
+      "raw_observation_log": "data/raw/groundtruth/session3.rtcm3",
+      "raw_sha256": "8df762f76918bcc9a0ca9c653afba2ad4e24ea6cb8b083212122671e4fb0cea4",
+      "rinex_observation_file": "data/derived/groundtruth/session3.obs",
+      "rinex_sha256": "165b9ddcb92345f3c68edfebb89d49ae45471b43c0fca0bf30875bc270fbfb6f",
+      "static_solution_height_mm": -1060.9,
+      "solution": {
+        "quality": "float",
+        "fixed_epoch_share": 0.073,
+        "epochs": 1475,
+        "sigma_3d_mm": 26.4
+      },
+      "window_utc": [
+        "2026-11-14T21:35:27Z",
+        "2026-11-14T23:35:26Z"
+      ],
+      "session_hours": 2.0,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_files": [
+        "zhu13180.26o",
+        "brdc3180.26n"
+      ],
+      "cors_overlap": true,
+      "processing": "RTKLIB rnx2rtkp static, GPS, elevation mask 15 deg, broadcast orbits, base ZHU1 ITRF2020 propagated to the session date"
+    }
+  ],
+  "review": {
+    "status": "inconclusive",
+    "reviewed_utc": "2026-11-15",
+    "summary": "The three recordings are complete, but too few satellites were tracked cleanly to measure the sensor's height precisely, so no steadiness result is reported.",
+    "findings": [
+      "Raw logs are complete and decode to RINEX (7156, 7200 and 7200 one-second epochs; GPS, GLONASS, Galileo and BeiDou; L1 and L5). Nothing is corrupted.",
+      "NOAA NETP posted no data after 2026-11-14 19:00 UTC, so sessions 2 and 3 have no NETP overlap; all three were processed against ZHU1 (19 km), which shares only L1 with this receiver.",
+      "Satellites in the north-east half of the sky (azimuth 0-135 deg), including some near the zenith, arrived at 19-31 dB-Hz and lost carrier lock in 36-94% of one-second steps (L1-L5 geometry-free check, not only the receiver's lock flags). Satellites to the south and west arrived at 37-50 dB-Hz and tracked cleanly.",
+      "A median of 7, 11 and 12 satellites (sessions 1-3) were held without a phase break for 10 minutes or more, all to the south and west, so height cannot be separated from horizontal position and clock error (scripts/groundtruth_diagnostics.py).",
+      "No processing gave an ambiguity-fixed solution. Relative GPS (NETP, ZHU1) and multi-GNSS float PPP (CNES real-time orbits, clocks and biases) gave session heights that move by 0.5-5 m with reasonable processing choices, and no solution settled within a session.",
+      "The receiver output MSM4, which carries no Doppler, so cycle slips cannot be repaired from Doppler."
+    ],
+    "not_reported": "No session-to-session height scatter is reported, because any number would depend on processing choices rather than on the sensor.",
+    "decision": "D-050",
+    "rough_heights_by_method": {
+      "note": "Final session heights from each processing method, in metres relative to that method's own average. Exploratory runs on 2026-11-15; none is ambiguity-fixed and none is a result. With usable data every row would agree to within millimetres.",
+      "methods": [
+        {
+          "label": "GPS against a NOAA station 19 km away (ZHU1)",
+          "detail": "RTKLIB static, GPS L1, broadcast orbits (scripts/process_groundtruth.py --base zhu1)",
+          "offsets_m": [
+            0.65,
+            2.5,
+            -3.15
+          ]
+        },
+        {
+          "label": "Satellites only, precise orbits, all satellites",
+          "detail": "RTKLIB PPP-static, GPS+Galileo+BeiDou L1/L5 ionosphere-free, CNES real-time orbits, clocks and biases (cnt24446), C/N0 mask 35 dB-Hz",
+          "offsets_m": [
+            0.32,
+            0.37,
+            -0.69
+          ]
+        },
+        {
+          "label": "Satellites only, unsteady satellites removed",
+          "detail": "As above, excluding satellites whose phase broke in more than 8% of one-second steps",
+          "offsets_m": [
+            2.82,
+            -5.74,
+            2.92
+          ]
+        },
+        {
+          "label": "Satellites only, strict removal",
+          "detail": "As above with a 3% cutoff; session 1 kept too few satellites to solve",
+          "offsets_m": [
+            null,
+            1.0,
+            -1.0
+          ]
+        }
+      ]
+    }
+  }
+}

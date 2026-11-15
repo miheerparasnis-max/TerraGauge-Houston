@@ -296,6 +296,8 @@ python3 -m backend.ingestion.cli groundtruth-report data/groundtruth_session_man
 
 A passing report shows only stationary receiver repeatability. It never shows Houston land motion.
 
+The 2026-11-14 sessions were reviewed as inconclusive (too few cleanly tracked satellites; no fixed solution), so no repeatability result is reported. See D-050 in `docs/decisions.md`.
+
 ### macOS LC29H(BS) bring-up
 
 The LC29H(BS) is a base-station model: its meaningful output is binary RTCM

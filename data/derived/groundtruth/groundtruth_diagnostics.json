@@ -1,0 +1,80 @@
+{
+  "artifact_type": "groundtruth_signal_diagnostics",
+  "method": "Carrier-phase break: one-second step of the dual-frequency phase difference over 5 cm. Steady satellites: GPS, Galileo and BeiDou satellites inside an unbroken phase arc of 10 minutes or more at that second. Signal strength: median GPS L1 C/N0 per direction at elevation 15 deg or more; about 40 dB-Hz or more is typical of open sky.",
+  "clear_sky_dbhz": 40,
+  "sessions": [
+    {
+      "session_id": "session1",
+      "seconds": 7156,
+      "systems": [
+        "BeiDou",
+        "GLONASS",
+        "GPS",
+        "Galileo"
+      ],
+      "satellites_tracked": 45,
+      "steady_satellites_median": 7.0,
+      "phase_break_share": 0.269,
+      "gps_l1_cn0_by_direction": {
+        "N": 33,
+        "NE": 29,
+        "E": 29,
+        "SE": 29,
+        "S": 29,
+        "SW": 48,
+        "W": 47,
+        "NW": 45
+      },
+      "gps_l1_cn0_high": 30
+    },
+    {
+      "session_id": "session2",
+      "seconds": 7200,
+      "systems": [
+        "BeiDou",
+        "GLONASS",
+        "GPS",
+        "Galileo"
+      ],
+      "satellites_tracked": 53,
+      "steady_satellites_median": 11.0,
+      "phase_break_share": 0.219,
+      "gps_l1_cn0_by_direction": {
+        "N": 33,
+        "NE": 29,
+        "E": 29,
+        "SE": 29,
+        "S": 31,
+        "SW": 39,
+        "W": 44,
+        "NW": 45
+      },
+      "gps_l1_cn0_high": 32
+    },
+    {
+      "session_id": "session3",
+      "seconds": 7200,
+      "systems": [
+        "BeiDou",
+        "GLONASS",
+        "GPS",
+        "Galileo"
+      ],
+      "satellites_tracked": 54,
+      "steady_satellites_median": 12.0,
+      "phase_break_share": 0.246,
+      "gps_l1_cn0_by_direction": {
+        "N": null,
+        "NE": 28,
+        "E": 30,
+        "SE": 28,
+        "S": 37,
+        "SW": 51,
+        "W": 47,
+        "NW": 43
+      },
+      "gps_l1_cn0_high": 29
+    }
+  ],
+  "privacy": "Directions and signal strengths only; no position or height."
+}

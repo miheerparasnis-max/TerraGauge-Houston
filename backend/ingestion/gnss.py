@@ -28,9 +28,12 @@ def groundtruth_report(manifest_path: str | Path) -> dict[str, Any]:
         static_ok = isinstance(static_height, (int, float)) and not isinstance(static_height, bool)
         if static_ok:
             heights.append(float(static_height))
-        findings.append({"session_id": session.get("session_id"), "missing_fields": absent, "raw_log_nonempty": raw_ok, "rinex_nonempty": rinex_ok, "static_solution_present": static_ok, "antenna_fixed": session.get("antenna_fixed") is True, "cors_station": session.get("cors_station"), "cors_overlap": session.get("cors_overlap") is True})
-    passes = len(sessions) >= 3 and len(heights) == len(sessions) and all(not item["missing_fields"] and item["raw_log_nonempty"] and item["rinex_nonempty"] and item["static_solution_present"] and item["antenna_fixed"] and item["cors_overlap"] for item in findings)
-    return {"artifact_type": "groundtruth_node_report", "pass": passes, "sessions": findings, "session_count": len(sessions), "vertical_session_scatter_mm": stdev(heights) if passes else None, "claim": "Stationary receiver repeatability only; this result does not measure subsidence." if passes else "Logging prototype only; do not report a detectability result.", "required_cors_station": "NETP", "limitations": ["A pass requires three or more fixed-antenna sessions, non-empty raw and RINEX files, overlapping CORS data, and static solutions."]}
+        # A float (unresolved-ambiguity) height can be metres off, so only an ambiguity-fixed final solution counts.
+        solution = session.get("solution") if isinstance(session.get("solution"), dict) else {}
+        findings.append({"session_id": session.get("session_id"), "missing_fields": absent, "raw_log_nonempty": raw_ok, "rinex_nonempty": rinex_ok, "static_solution_present": static_ok, "solution_fixed": solution.get("quality") == "fixed", "antenna_fixed": session.get("antenna_fixed") is True, "cors_station": session.get("cors_station"), "cors_overlap": session.get("cors_overlap") is True})
+    stations = sorted({str(item["cors_station"]) for item in findings})
+    passes = len(sessions) >= 3 and len(heights) == len(sessions) and len(stations) == 1 and all(not item["missing_fields"] and item["raw_log_nonempty"] and item["rinex_nonempty"] and item["static_solution_present"] and item["solution_fixed"] and item["antenna_fixed"] and item["cors_overlap"] for item in findings)
+    return {"artifact_type": "groundtruth_node_report", "pass": passes, "sessions": findings, "session_count": len(sessions), "vertical_session_scatter_mm": stdev(heights) if passes else None, "claim": "Stationary receiver repeatability only; this result does not measure subsidence." if passes else "Logging prototype only; do not report a detectability result.", "cors_stations": stations, "limitations": ["A pass requires three or more fixed-antenna sessions, non-empty raw and RINEX files, overlapping CORS data, ambiguity-fixed static solutions, and one CORS base shared by every session (a second base's coordinate error would read as scatter)."]}
 
 
 def write_groundtruth_report(manifest_path: str | Path, output_path: str | Path) -> None:

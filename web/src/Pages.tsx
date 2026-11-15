@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Cell, Meta } from "./types";
 import { ACTION, CONFIDENCE, num } from "./labels";
-import { CONFIDENCE_COLORS, MUTED_BAR, UI } from "./palette";
-import { HBarChart, Scatter } from "./Charts";
+import { CONFIDENCE_COLORS, CONTEXT_BAR, MUTED_BAR, UI } from "./palette";
+import { ColumnChart, HBarChart, Scatter } from "./Charts";
 import { MapFigure, type FigurePin } from "./MapFigure";
 import { SquareTrend } from "./Card";
 import { usePlaceName } from "./places";
@@ -275,9 +275,72 @@ const rateUncertainty = (sigma: number, days: number, n: number) => (sigma / (da
 const utcTime = (iso: string) => iso.slice(11, 16);
 
 /** Live status of our fixed-antenna test, from meta.groundtruth (scripts/export_web.py). */
+const DIRECTIONS: [string, string][] = [["N", "North"], ["NE", "Northeast"], ["E", "East"], ["SE", "Southeast"], ["S", "South"], ["SW", "Southwest"], ["W", "West"], ["NW", "Northwest"]];
+const signed = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${num(Math.abs(v))} m`);
+
+/** Recorded but too weak for a result: show what the sensor saw, and the rough heights with their limits. */
+function GroundTruthData({ gt, note }: { gt: NonNullable<Meta["groundtruth"]>; note: string }) {
+  const sig = gt.signal ?? [];
+  const clear = gt.clearSkyDbHz ?? 40;
+  const bars = DIRECTIONS.map(([k, name]) => {
+    const vals = sig.map((s) => s.byDirection[k]).filter((v): v is number => typeof v === "number");
+    const v = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+    return { label: k, value: v, color: v >= clear ? UI.accent : CONTEXT_BAR, note: `${name}: ${vals.join(", ")} in sessions ${sig.filter((s) => typeof s.byDirection[k] === "number").map((s) => s.id.replace("session", "")).join(", ")}` };
+  });
+  const rough = gt.roughHeights;
+  const spread = rough ? Math.max(...rough.methods.flatMap((m) => m.offsetsM.filter((v): v is number => v !== null))) - Math.min(...rough.methods.flatMap((m) => m.offsetsM.filter((v): v is number => v !== null))) : null;
+  return (
+    <>
+      <div className="status-box">
+        <p><b>Recorded: here is everything the sensor saw. No steadiness result.</b> {gt.reason ?? ""} {note}</p>
+        <p>Nothing is corrupted: the sensor logged every second, and the files run through the whole processing chain. What fell short was the signal. Satellites to the north and east came in weak and kept losing track.</p>
+      </div>
+      <div className="table-scroll"><table className="table">
+        <thead><tr><th>Session</th><th>Time (UTC)</th><th>Recorded</th><th>Satellites seen</th><th>Held steadily at once</th><th>Seconds with a lost signal</th></tr></thead>
+        <tbody>{gt.sessions.map((x) => {
+          const s = sig.find((y) => y.id === x.id);
+          return (
+            <tr key={x.id}>
+              <td>{x.id.replace("session", "")}</td>
+              <td>{x.window ? `${x.window[0].slice(0, 10)}, ${utcTime(x.window[0])}–${utcTime(x.window[1])}` : "—"}</td>
+              <td>{s ? `${s.seconds.toLocaleString()} s` : x.hours === null ? "—" : `${num(x.hours)} h`}</td>
+              <td>{s ? s.tracked : "—"}</td>
+              <td>{s ? `About ${Math.round(s.steady)}` : "—"}</td>
+              <td>{s?.breakShare != null ? `${Math.round(s.breakShare * 100)}%` : "—"}</td>
+            </tr>
+          );
+        })}</tbody>
+      </table></div>
+      <p className="gt-note">"Held steadily" counts satellites tracked without a break for 10 minutes or more. Precise height needs many of those, spread all around the sky. A lost signal is a sudden jump between the sensor's two radio frequencies.</p>
+
+      {sig.length > 0 && (
+        <figure className="figure">
+          <h3 className="fig-title">GPS signal strength by direction in the sky</h3>
+          <ColumnChart bars={bars} height={190} ariaLabel="Average GPS signal strength by compass direction across the three sessions" format={(v) => `${v}`} />
+          <figcaption>Average of the three sessions, satellites at least 15° above the horizon. Teal bars reach the open-sky level of about {clear}; gray bars fall short. The weak side was the same in every session, and even satellites high overhead averaged only {sig.map((s) => s.high).filter((v) => v !== null).join(", ")} in sessions 1–3.</figcaption>
+        </figure>
+      )}
+
+      {rough && rough.methods.length > 0 && (
+        <>
+          <h3 className="fig-title gt-gap">Rough heights from each method we tried</h3>
+          <div className="table-scroll"><table className="table">
+            <thead><tr><th>Method</th>{gt.sessions.map((x) => <th key={x.id}>Session {x.id.replace("session", "")}</th>)}</tr></thead>
+            <tbody>{rough.methods.map((m) => (
+              <tr key={m.label}><td>{m.label}</td>{m.offsetsM.map((v, i) => <td key={i}>{v === null ? "Too few satellites" : signed(v)}</td>)}</tr>
+            ))}</tbody>
+          </table></div>
+          <p className="gt-note">Heights are relative to each method's own average. The antenna never moved, so with good data every row would agree to within a few millimetres. Instead they differ by up to {spread === null ? "several" : num(spread)} m depending on the method, which is why none of them is a result and the sensor's daily wobble above stays a planning guess.</p>
+        </>
+      )}
+    </>
+  );
+}
+
 function GroundTruthStatus({ gt }: { gt: Meta["groundtruth"] }) {
   const note = "The sensor measures its own wobble with the antenna standing still, not Houston's sinking.";
   if (!gt || gt.status === "none") return <div className="status-box"><p><b>No recordings yet.</b> We report a result only after three good sessions checked against NOAA's reference station in Houston. {note}</p></div>;
+  if (gt.status === "inconclusive") return <GroundTruthData gt={gt} note={note} />;
   if (gt.status === "recorded") return <div className="status-box"><p><b>{gt.recorded} session{gt.recorded === 1 ? "" : "s"} recorded, waiting on NOAA.</b> Each two-hour recording is checked against NOAA's reference station in Houston, whose data NOAA posts a few hours after each day ends. {note}</p></div>;
   return (
     <>
@@ -306,7 +369,7 @@ function GroundTruthStatus({ gt }: { gt: Meta["groundtruth"] }) {
 export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; onShow: (id: string) => void }) {
   const hw = meta.hardware;
   const gt = meta.groundtruth;
-  const ours = gt && gt.processed >= 3 ? gt.sessions.map((x) => x.offsetMm ?? 0).join(", ") : "";
+  const ours = gt && gt.pass && gt.processed >= 3 ? gt.sessions.map((x) => x.offsetMm ?? 0).join(", ") : "";
   const [heights, setHeights] = useState(ours);
   const [rate, setRate] = useState(10);
   const [gap, setGap] = useState(1);
@@ -415,7 +478,8 @@ export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[
         <ul>
           <li>Hohensinn, R. et al. (2022), low-cost GPS receivers for ground-movement monitoring, Remote Sensing 14(20), 5100.</li>
           <li>Harris-Galveston Subsidence District, subsidence FAQs and GPS records.</li>
-          <li>NOAA Continuously Operating Reference Stations (station NETP).</li>
+          <li>NOAA Continuously Operating Reference Stations (stations NETP and ZHU1), open data bucket noaa-cors-pds.</li>
+          <li>CNES real-time multi-GNSS orbits, clocks and signal biases (ppp-wizard.net, file cnt24446), used for the satellites-only rough heights.</li>
         </ul>
       </footer>
     </div>

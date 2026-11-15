@@ -18,13 +18,14 @@ class GroundTruthExportTests(unittest.TestCase):
         base = Path(self.tmp.name)
         self.raw = base / "raw"
         self.raw.mkdir()
-        self.saved = (export_web.GROUNDTRUTH_RAW, export_web.GROUNDTRUTH_MANIFEST, export_web.GROUNDTRUTH_REPORT)
+        self.saved = (export_web.GROUNDTRUTH_RAW, export_web.GROUNDTRUTH_MANIFEST, export_web.GROUNDTRUTH_REPORT, export_web.GROUNDTRUTH_DIAGNOSTICS)
         export_web.GROUNDTRUTH_RAW = self.raw
         export_web.GROUNDTRUTH_MANIFEST = base / "manifest.json"
         export_web.GROUNDTRUTH_REPORT = base / "report.json"
+        export_web.GROUNDTRUTH_DIAGNOSTICS = base / "diagnostics.json"
 
     def tearDown(self):
-        export_web.GROUNDTRUTH_RAW, export_web.GROUNDTRUTH_MANIFEST, export_web.GROUNDTRUTH_REPORT = self.saved
+        export_web.GROUNDTRUTH_RAW, export_web.GROUNDTRUTH_MANIFEST, export_web.GROUNDTRUTH_REPORT, export_web.GROUNDTRUTH_DIAGNOSTICS = self.saved
         self.tmp.cleanup()
 
     def record(self, n, start):
@@ -54,6 +55,25 @@ class GroundTruthExportTests(unittest.TestCase):
         self.assertNotIn("21345", text)  # no absolute height
         for banned in ("lat", "lon", "height_mm", "raw_observation_log"):
             self.assertNotIn(banned, text)
+
+    def test_inconclusive_review_withholds_heights(self):
+        sessions = [{"session_id": f"session{i}", "static_solution_height_mm": h, "session_hours": 2.0,
+                     "window_utc": ["2026-11-14T17:00:00Z", "2026-11-14T19:00:00Z"],
+                     "solution": {"quality": "float", "fixed_epoch_share": 0.1, "sigma_3d_mm": 20.0}} for i, h in enumerate([2732.5, 4581.2, -1060.9], start=1)]
+        export_web.GROUNDTRUTH_MANIFEST.write_text(json.dumps({"sessions": sessions, "review": {"status": "inconclusive", "summary": "Too few clean satellites."}}), encoding="utf-8")
+        export_web.GROUNDTRUTH_REPORT.write_text(json.dumps({"pass": False, "vertical_session_scatter_mm": None}), encoding="utf-8")
+        gt = export_web.groundtruth_meta()
+        self.assertEqual((gt["status"], gt["processed"], gt["scatterMm"], gt["reason"]), ("inconclusive", 3, None, "Too few clean satellites."))
+        self.assertTrue(all(s["offsetMm"] is None for s in gt["sessions"]))
+        self.assertNotIn("21345", json.dumps(gt))
+
+    def test_signal_diagnostics_carry_no_position(self):
+        export_web.GROUNDTRUTH_DIAGNOSTICS.write_text(json.dumps({"clear_sky_dbhz": 40, "sessions": [{"session_id": "session1", "seconds": 7156, "satellites_tracked": 45, "steady_satellites_median": 7,
+            "phase_break_share": 0.27, "gps_l1_cn0_by_direction": {"N": 33, "SW": 48}, "gps_l1_cn0_high": 30}]}), encoding="utf-8")
+        gt = export_web.groundtruth_meta()
+        self.assertEqual((gt["signal"][0]["steady"], gt["clearSkyDbHz"]), (7, 40))
+        for banned in ("lat", "lon", "height"):
+            self.assertNotIn(banned, json.dumps(gt))
 
 
 if __name__ == "__main__":

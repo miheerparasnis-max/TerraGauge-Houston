@@ -417,3 +417,14 @@ Reyansh merged `chore/audit-baseline-2026-11-10` (Aaron's science fixes and "scu
 - **Not changed.** Every other rule, threshold and seed in `config/prediction_test.json`, whose hash is checked by the scorer.
 
 *Approved by the repository owner (2026-11-14: "i want to unblock it with another source").*
+
+### D-050: GroundTruth sessions 1-3 are inconclusive; no steadiness result is reported (2026-11-15)
+- **What was recorded.** Three two-hour fixed-antenna sessions on 2026-11-14 (17:05-19:05, 19:14-21:14, 21:35-23:35 UTC). The logs are complete and decode to RINEX.
+- **Base station.** NOAA NETP posted no data after 19:00 UTC that day, so sessions 2 and 3 have no NETP overlap. `scripts/process_groundtruth.py` now takes `--base`, checks that the base covers each session, and refuses mixed bases. All three were processed against ZHU1 (19 km).
+- **Finding.** Satellites in the north-east half of the sky, including some near the zenith, arrived weak (19-31 dB-Hz) and lost carrier lock in 36-94% of one-second steps. A median of only 7, 11 and 12 satellites were held without a phase break for 10 minutes or more, all to the south and west (`scripts/groundtruth_diagnostics.py`, published on the Hardware page with method-by-method rough heights). No processing produced an ambiguity-fixed solution: relative GPS against NETP and ZHU1 and multi-GNSS float PPP (CNES real-time products) gave heights that move by 0.5-5 m with reasonable processing choices. Details are in the manifest's `review` block.
+- **Decision.** No session scatter is reported, because picking the best-agreeing run would choose the answer rather than measure it. The Hardware page shows the sessions as recorded but inconclusive, with heights withheld, and the node's daily wobble stays a planning guess.
+- **Rule fix found on the way.** `groundtruth_report` passed on file completeness alone: it reported these sessions as a pass with a 2.9 m scatter. A pass now also needs ambiguity-fixed solutions and one shared base (`tests/test_gnss.py`).
+- **No new recording is planned.** Should one happen, set the receiver to MSM7 (which adds Doppler) and check signal strength in every direction in the first minutes.
+
+*Approved by the repository owner (2026-11-15: "we cannot record again").*
+

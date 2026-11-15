@@ -1,0 +1,48 @@
+{
+  "artifact_type": "groundtruth_node_report",
+  "pass": false,
+  "sessions": [
+    {
+      "session_id": "session1",
+      "missing_fields": [],
+      "raw_log_nonempty": true,
+      "rinex_nonempty": true,
+      "static_solution_present": true,
+      "solution_fixed": false,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_overlap": true
+    },
+    {
+      "session_id": "session2",
+      "missing_fields": [],
+      "raw_log_nonempty": true,
+      "rinex_nonempty": true,
+      "static_solution_present": true,
+      "solution_fixed": false,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_overlap": true
+    },
+    {
+      "session_id": "session3",
+      "missing_fields": [],
+      "raw_log_nonempty": true,
+      "rinex_nonempty": true,
+      "static_solution_present": true,
+      "solution_fixed": false,
+      "antenna_fixed": true,
+      "cors_station": "ZHU1",
+      "cors_overlap": true
+    }
+  ],
+  "session_count": 3,
+  "vertical_session_scatter_mm": null,
+  "claim": "Logging prototype only; do not report a detectability result.",
+  "cors_stations": [
+    "ZHU1"
+  ],
+  "limitations": [
+    "A pass requires three or more fixed-antenna sessions, non-empty raw and RINEX files, overlapping CORS data, ambiguity-fixed static solutions, and one CORS base shared by every session (a second base's coordinate error would read as scatter)."
+  ]
+}

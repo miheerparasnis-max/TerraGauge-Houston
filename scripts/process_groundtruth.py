@@ -1,10 +1,10 @@
-"""Process GroundTruth Node sessions: RTCM3 log -> RINEX -> static solution against NOAA CORS NETP.
+"""Process GroundTruth Node sessions: RTCM3 log -> RINEX -> static solution against a NOAA CORS base.
 
 For each data/raw/groundtruth/sessionN.rtcm3 (with sessionN.start.txt from the capture):
 1. RTKLIB convbin converts the log to RINEX 3 (data/derived/groundtruth/sessionN.obs);
-2. NETP observations covering the session (hourly files, or the daily file) and the GPS
+2. base-station observations covering the session (hourly files, or the daily file) and the GPS
    broadcast orbits are fetched from NOAA's open-data bucket (noaa-cors-pds; no login);
-3. RTKLIB rnx2rtkp computes a static GPS L1+L5 solution relative to NETP, whose
+3. RTKLIB rnx2rtkp computes a static GPS solution relative to the base, whose
    ITRF2020 coordinate is carried from epoch 2020.0 to the session date with NOAA's velocity;
 4. the session's ellipsoidal height goes into data/groundtruth_session_manifest.json, and
    backend.ingestion.cli groundtruth-report computes the session-to-session scatter.
@@ -15,6 +15,11 @@ latitude or longitude. The result is fixed-antenna repeatability, never land mot
 
     python3 scripts/process_groundtruth.py               # every session with a raw log
     python3 scripts/process_groundtruth.py 1 2           # selected sessions
+    python3 scripts/process_groundtruth.py --base zhu1   # another base (use one base for every session)
+
+Every session in a report must share one base: a different base's coordinate error would
+show up as session-to-session scatter. NETP's record for 2026-11-14 stops at 19:00 UTC, so
+sessions on that day are processed against ZHU1 (19 km away, complete record).
 Needs RTKLIB built in ~/tools/RTKLIB (override with RTKLIB=/path).
 """
 from __future__ import annotations
@@ -41,13 +46,16 @@ RTKLIB = Path(os.environ.get("RTKLIB", Path.home() / "tools" / "RTKLIB"))
 CONVBIN = RTKLIB / "app/consapp/convbin/gcc/convbin"
 RNX2RTKP = RTKLIB / "app/consapp/rnx2rtkp/gcc/rnx2rtkp"
 BUCKET = "https://noaa-cors-pds.s3.amazonaws.com"
-STATION = "netp"
 ELEV_MASK_DEG = 15
 
-# NETP ARP, ITRF2020 epoch 2020.0, and velocity (NOAA coord/coord_20/netp_20.coord.txt, retrieved 2026-11-14).
-NETP_XYZ = (-515007.955, -5515795.306, 3150298.442)
-NETP_VEL = (-0.0118, 0.0010, -0.0041)
-NETP_EPOCH = 2020.0
+# Base ARPs, ITRF2020 epoch 2020.0, and velocities in m and m/yr
+# (NOAA noaa-cors-pds coord/coord_20/<id>_20.coord.txt; NETP retrieved 2026-11-14, ZHU1 2026-11-15).
+BASES = {
+    "netp": {"xyz": (-515007.955, -5515795.306, 3150298.442), "vel": (-0.0118, 0.0010, -0.0041)},
+    "zhu1": {"xyz": (-513864.508, -5506451.270, 3166720.217), "vel": (-0.0118, 0.0091, -0.0058)},
+}
+BASE_EPOCH = 2020.0
+STATION = "netp"
 
 
 def sha256(path: Path) -> str:
@@ -78,9 +86,10 @@ def decimal_year(t: datetime) -> float:
     return t.year + (t - start).total_seconds() / (datetime(t.year + 1, 1, 1, tzinfo=timezone.utc) - start).total_seconds()
 
 
-def netp_at(t: datetime) -> tuple[float, float, float]:
-    dt = decimal_year(t) - NETP_EPOCH
-    return tuple(p + v * dt for p, v in zip(NETP_XYZ, NETP_VEL))
+def base_at(t: datetime) -> tuple[float, float, float]:
+    dt = decimal_year(t) - BASE_EPOCH
+    b = BASES[STATION]
+    return tuple(p + v * dt for p, v in zip(b["xyz"], b["vel"]))
 
 
 def ecef_to_height(x: float, y: float, z: float) -> float:
@@ -122,7 +131,7 @@ def cors_files(t0: datetime, t1: datetime) -> tuple[Path, list[Path]]:
     if len(days) == 1:
         year, doy = days[0]
         daily = fetch(f"rinex/{year}/{doy:03d}/{STATION}/{STATION}{doy:03d}0.{year % 100:02d}o.gz", CORS_DIR / f"{STATION}{doy:03d}0.{year % 100:02d}o.gz")
-        if daily:
+        if daily and covers(daily, t0, t1):
             return daily, nav
     parts = []
     for h in hours:
@@ -132,7 +141,22 @@ def cors_files(t0: datetime, t1: datetime) -> tuple[Path, list[Path]]:
         if part is None:
             sys.exit(f"NOAA has not posted {name} yet (hourly files arrive in batches, the daily file about 6 h after midnight UTC). Try again later.")
         parts.append(part)
-    return merge_rinex2(parts, CORS_DIR / f"{STATION}_{t0:%Y%j%H}_{t1:%H}.obs"), nav
+    merged = merge_rinex2(parts, CORS_DIR / f"{STATION}_{t0:%Y%j%H}_{t1:%H}.obs")
+    if not covers(merged, t0, t1):
+        sys.exit(f"{STATION.upper()} has no observations for part of {t0:%Y-%m-%d %H:%M}-{t1:%H:%M} UTC. Choose another base with --base and reprocess every session.")
+    return merged, nav
+
+
+def covers(obs: Path, t0: datetime, t1: datetime) -> bool:
+    """True if a RINEX 2 base file has epochs within 5 minutes of both ends of the session."""
+    stamps = []
+    for line in obs.read_text(encoding="ascii", errors="replace").splitlines():
+        m = re.match(r" (\d\d) +(\d+) +(\d+) +(\d+) +(\d+) +([\d.]+) +\d +\d", line)
+        if m:
+            yy, mo, dd, hh, mi, ss = m.groups()
+            stamps.append(datetime(2000 + int(yy), int(mo), int(dd), int(hh), int(mi), int(float(ss)), tzinfo=timezone.utc))
+    slack = timedelta(minutes=5)
+    return bool(stamps) and stamps[0] <= t0 + slack and stamps[-1] >= t1 - slack
 
 
 def obs_window(obs: Path) -> tuple[datetime, datetime, int]:
@@ -184,7 +208,7 @@ def process(n: int) -> dict:
                    check=True, capture_output=True)
     t0, t1, epochs = obs_window(obs)
     base_obs, nav = cors_files(t0, t1)
-    cfg = config(netp_at(t0), OUT / f"session{n}.conf")
+    cfg = config(base_at(t0), OUT / f"session{n}.conf")
     pos = OUT / f"session{n}.pos"
     subprocess.run([str(RNX2RTKP), "-k", str(cfg), "-o", str(pos), str(obs), str(base_obs), *map(str, nav)], check=True, capture_output=True)
     sol = final_solution(pos)
@@ -205,19 +229,30 @@ def process(n: int) -> dict:
         "cors_station": STATION.upper(),
         "cors_files": [p.name for p in [base_obs, *nav]],
         "cors_overlap": True,
-        "processing": f"RTKLIB rnx2rtkp static, GPS L1+L5, elevation mask {ELEV_MASK_DEG} deg, broadcast orbits, base NETP ITRF2020 propagated to the session date",
+        "processing": f"RTKLIB rnx2rtkp static, GPS, elevation mask {ELEV_MASK_DEG} deg, broadcast orbits, base {STATION.upper()} ITRF2020 propagated to the session date",
     }
 
 
 def main() -> None:
+    global STATION
+    args = sys.argv[1:]
+    if "--base" in args:
+        i = args.index("--base")
+        STATION = args[i + 1].lower()
+        del args[i:i + 2]
+        if STATION not in BASES:
+            sys.exit(f"Unknown base {STATION}; add its NOAA ITRF2020 coordinate to BASES ({', '.join(BASES)}).")
     for tool in (CONVBIN, RNX2RTKP):
         if not tool.is_file():
             sys.exit(f"Missing {tool}. Build RTKLIB first (see the README).")
-    wanted = [int(a) for a in sys.argv[1:]] or sorted(int(m.group(1)) for p in RAW.glob("session*.rtcm3") if (m := re.fullmatch(r"session(\d+)\.rtcm3", p.name)))
+    wanted = [int(a) for a in args] or sorted(int(m.group(1)) for p in RAW.glob("session*.rtcm3") if (m := re.fullmatch(r"session(\d+)\.rtcm3", p.name)))
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.is_file() else {"purpose": "GroundTruth Node stationary-repeatability validation. Heights are ellipsoidal (ITRF2020 via NETP); location is withheld for privacy.", "sessions": []}
     by_id = {s["session_id"]: s for s in manifest["sessions"]}
     for n in wanted:
         by_id[f"session{n}"] = process(n)
+    bases = {s.get("cors_station") for s in by_id.values()}
+    if len(bases) > 1:
+        sys.exit(f"Sessions were processed against different bases ({', '.join(sorted(map(str, bases)))}); reprocess all of them with one --base.")
     manifest["sessions"] = [by_id[k] for k in sorted(by_id)]
     MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     subprocess.run([sys.executable, "-m", "backend.ingestion.cli", "groundtruth-report", str(MANIFEST), str(REPORT)], check=True, cwd=ROOT)
