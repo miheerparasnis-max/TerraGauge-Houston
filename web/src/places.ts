@@ -20,8 +20,9 @@ function lookup(key: string, lon: number, lat: number): Promise<string | null> {
         if (res.ok) {
           const a = ((await res.json()) as { address?: Record<string, string> }).address ?? {};
           const local = a.neighbourhood ?? a.suburb ?? a.quarter ?? a.hamlet ?? a.village;
-          const town = a.city ?? a.town ?? a.village ?? a.county;
-          name = local && town && local !== town ? `${local}, ${town}` : local ?? town ?? null;
+          const town = a.city ?? a.town ?? a.village;
+          // Unincorporated land only has a county; its ZIP code says more to a Houstonian.
+          name = local && town && local !== town ? `${local}, ${town}` : local ?? town ?? (a.county ? (a.postcode ? `ZIP ${a.postcode}, ${a.county}` : a.county) : null);
         }
       } catch { name = null; }
       cache.set(key, name);

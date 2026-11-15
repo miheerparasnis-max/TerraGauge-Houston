@@ -1,41 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlaceName } from "./places";
 import type { Cell, Meta, SensorSite } from "./types";
-import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, chanceOver, duration, floodExtra, headline, num } from "./labels";
+import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, chanceOver, duration, floodExtra, headline, num, plain } from "./labels";
+import { TrendChart, monthLabel, yearOf } from "./Charts";
 
-const yearOf = (d: string) => Number(d.slice(0, 4)) + (Number(d.slice(5, 7)) - 1) / 12 + (Number(d.slice(8, 10)) - 1) / 365;
-
-/** Measured ground level since 2016 plus the tested forecast range. */
-function TrendChart({ cell, meta }: { cell: Cell; meta: Meta }) {
+/** Measured ground level since 2016 plus the tested forecast range, for one square. */
+export function SquareTrend({ cell, meta, height }: { cell: Cell; meta: Meta; height?: number }) {
   if (!cell.series) return null;
   const cos = Math.cos((meta.thresholds.incidence_deg * Math.PI) / 180);
-  const past = cell.series.map((v, i) => ({ t: yearOf(meta.record.dates[i]), cm: v / cos / 10 }));
-  const t0 = past[past.length - 1].t, base = past[past.length - 1].cm;
-  const fut = cell.future && meta.forecast ? meta.forecast.years.map((y) => ({ t: y + (t0 % 1), ...cell.future!.by[String(y)] })) : [];
-  const w = 340, h = 150, padL = 34, padR = 20, padT = 14, padB = 22;
-  const xs = [past[0].t, fut.length ? fut[fut.length - 1].t : t0];
-  const vals = [...past.map((p) => p.cm), ...fut.flatMap((f) => [base + f.lo, base + f.hi]), 0];
-  const lo = Math.min(...vals), hi = Math.max(...vals);
-  const sx = (t: number) => padL + ((t - xs[0]) / (xs[1] - xs[0] || 1)) * (w - padL - padR);
-  const sy = (v: number) => padT + (1 - (v - lo) / (hi - lo || 1)) * (h - padT - padB);
-  const pastPath = past.map((p, i) => `${i ? "L" : "M"}${sx(p.t).toFixed(1)},${sy(p.cm).toFixed(1)}`).join("");
-  const cone = fut.length ? [`M${sx(t0)},${sy(base)}`, ...fut.map((f) => `L${sx(f.t)},${sy(base + f.hi)}`), ...fut.slice().reverse().map((f) => `L${sx(f.t)},${sy(base + f.lo)}`), "Z"].join("") : "";
-  const mid = fut.length ? [`M${sx(t0)},${sy(base)}`, ...fut.map((f) => `L${sx(f.t)},${sy(base + f.c)}`)].join("") : "";
-  const span = hi - lo, step = span > 60 ? 20 : span > 30 ? 10 : span > 12 ? 5 : 2;
-  const ticks: number[] = [];
-  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
-  const xticks = [2016, 2020, 2024, ...(fut.length ? [Math.round(xs[1])] : [])].filter((t) => t >= xs[0] - 0.5 && t <= xs[1] + 0.5);
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="trend" role="img" aria-label="Measured ground level since 2016 and the forecast range">
-      {ticks.map((v) => <g key={v}><line x1={padL} x2={w - padR} y1={sy(v)} y2={sy(v)} className="grid" /><text x={padL - 4} y={sy(v) + 3} textAnchor="end" className="tick">{v}</text></g>)}
-      {cone && <path d={cone} className="cone" />}
-      {mid && <path d={mid} className="mid" />}
-      <path d={pastPath} className="past" />
-      <line x1={sx(t0)} x2={sx(t0)} y1={padT} y2={h - padB} className="now" />
-      {xticks.map((t) => <text key={t} x={sx(t)} y={h - 6} textAnchor="middle" className="tick">{t}</text>)}
-      <text x={2} y={9} className="tick">cm</text>
-    </svg>
-  );
+  const x = meta.record.dates.map(yearOf);
+  const past = cell.series.map((v) => v / cos / 10);
+  const t0 = x[x.length - 1];
+  const future = cell.future && meta.forecast ? meta.forecast.years.map((y) => ({ t: y + (t0 % 1), label: `${y}`, ...cell.future!.by[String(y)] })) : [];
+  return <TrendChart x={x} labels={meta.record.dates.map(monthLabel)} past={past} future={future} height={height} />;
 }
 
 function Row({ k, v, note }: { k: string; v: string; note?: string }) {
@@ -96,7 +73,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
         <h2 id="card-title"><span className="badge" style={{ background: a.color }} />{a.name}</h2>
         {place && <p className="place">Near {place}</p>}
       </div>
-      <p className="why">{cell.actWhy}</p>
+      <p className="why">{plain(cell.actWhy)}</p>
 
       <div className="headline-stats">
         <div><strong>{measured ? `${num(cell.rate)}` : "—"}</strong><span>mm a year{measured ? (!cell.sig ? ", too small to call" : cell.rate! < 0 ? ", sinking" : ", rising") : ""}</span></div>
@@ -112,23 +89,22 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       </div>
       <div className="matters"><h3>Why it matters here</h3><p>{a.why}</p></div>
 
-      <Section title={headline(cell, th.stable_mm_year)} peek={measured ? `${num(cell.rate)} ± ${num(cell.se)} mm/yr` : undefined} open>
+      <Section title={headline(cell, th.stable_mm_year)} peek={measured ? `${num(cell.rate)} mm a year` : undefined} open>
         {measured ? (
           <dl>
-            <Row k="Up and down" v={`${num(cell.rate)} ± ${num(cell.se)} mm/yr`} note={`${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}, from ${sources}`} />
-            {cell.raw !== null && cell.raw !== undefined && <Row k="This square's own reading" v={`${num(cell.raw)} mm/yr`} note="Its satellite record is noisy, so the map combines it with the squares around it, weighting each by how precise it is. In tests this matched GPS stations better than the raw readings." />}
-            {!estimated && cell.los !== null && <Row k="What the radar sees" v={`${num(cell.los)} mm/yr`} note={`The satellite looks at the ground at a ${th.incidence_deg}° slant. We turn that into straight up-and-down movement.`} />}
+            <Row k="Up and down" v={`${num(cell.rate)} mm a year`} note={`Give or take ${num(cell.se)} mm. ${meta.record.start.slice(0, 4)}–${meta.record.end.slice(0, 4)}, from ${sources}.`} />
+            {cell.raw !== null && cell.raw !== undefined && <Row k="This square on its own" v={`${num(cell.raw)} mm a year`} note="Its own satellite record is shaky, so the map blends it with the squares around it, trusting the steadier ones more. Checked against GPS stations, the blend was closer than the raw readings." />}
+            {!estimated && cell.los !== null && <Row k="What the radar sees" v={`${num(cell.los)} mm a year`} note={`The satellite looks at the ground at a ${th.incidence_deg}° slant. We turn that into straight up-and-down movement.`} />}
           </dl>
-        ) : <p className="muted">{cell.actWhy}</p>}
+        ) : <p className="muted">{plain(cell.actWhy)}</p>}
       </Section>
 
       {cell.future && f && (
-        <Section title="How much will it sink?" peek={yv ? `${num(yv.c)} cm by ${year}` : undefined} open>
-          <TrendChart cell={cell} meta={meta} />
-          <p className="legend-line"><span className="k-past" />Measured <span className="k-mid" />Forecast <span className="k-cone" />Likely range (80%)</p>
+        <Section title="How much more will it sink?" peek={yv ? `${num(yv.c)} cm by ${year}` : undefined} open>
+          <SquareTrend cell={cell} meta={meta} height={170} />
           <dl>{f.years.map((y) => { const v = cell.future!.by[String(y)]; return <Row key={y} k={`By ${y}`} v={`${num(v.c)} cm`} note={`likely ${num(v.lo)} to ${num(v.hi)} cm`} />; })}</dl>
-          <p className="fine">Change in ground level since {f.base.slice(0, 7)}, at {num(cell.future.rate)} mm a year: this square's trend, allowing for seasons, averaged with its neighborhood{cell.future.recent !== null ? `. The last 5 years alone were ${num(cell.future.recent)} mm a year` : ""}.</p>
-          <details className="fine"><summary>Why a straight line?</summary>We tested {f.benchmark.table.length} ways to forecast, including machine learning, by pretending it was an earlier date and predicting 1 to 5 years ahead, {f.benchmark.test_cases} times each. The winner carries each square's trend forward, allowing for seasons and averaged with its neighborhood. Real ground wiggles around the line (dry years shrink Houston's clay, wet years swell it), and nobody can predict those years ahead, so the shaded range comes from the real misses in those tests.</details>
+          <p className="fine">Change in ground level since {monthLabel(f.base)}, at {num(cell.future.rate)} mm a year: this square's own trend, allowing for seasons, averaged with its neighborhood{cell.future.recent !== null ? `. The last five years alone ran ${num(cell.future.recent)} mm a year` : ""}. The likely range covers 8 in 10 of the misses in our tests.</p>
+          <details className="fine"><summary>Why a straight line?</summary>We tested {f.benchmark.table.length} ways to forecast, including machine learning, by pretending it was an earlier date and predicting 1 to 5 years ahead, {f.benchmark.test_cases.toLocaleString()} times each. The winner carries each square's trend forward, allowing for seasons and averaged with its neighborhood. Real ground wiggles around the line (dry years shrink Houston's clay, wet years swell it), and nobody can know those years in advance, so the shaded range comes from the real misses in those tests.</details>
         </Section>
       )}
 
@@ -136,11 +112,11 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
 
       {cell.conf && (
         <Section title="How sure are we?" peek={CONFIDENCE[cell.conf].name}>
-          <ul className="reasons">{cell.confWhy.map((r) => <li key={r}>{r}</li>)}</ul>
+          <ul className="reasons">{cell.confWhy.map((r) => <li key={r}>{plain(r)}</li>)}</ul>
           <dl>
-            {cell.check && <Row k="GPS cross-check" v={`${num(Math.abs(cell.check.diff))} mm/yr apart`} note={`Station ${cell.check.id}, ${num(cell.check.km)} km away`} />}
-            {cell.quality.periods !== null && <Row k="Satellite periods used" v={`${cell.quality.periods} of ${cell.quality.periodsTotal}`} note="Periods with a clear view of the ground" />}
-            {cell.quality.fitSe !== null && <Row k="How well a straight trend fits" v={`± ${num(cell.quality.fitSe)} mm/yr`} />}
+            {cell.check && <Row k="GPS check" v={`${num(Math.abs(cell.check.diff))} mm a year apart`} note={`Station ${cell.check.id}, ${num(cell.check.km)} km away`} />}
+            {cell.quality.periods !== null && <Row k="Clear radar snapshots" v={`${cell.quality.periods} of ${cell.quality.periodsTotal}`} note="Snapshots where the satellite could see the ground clearly" />}
+            {cell.quality.fitSe !== null && <Row k="How steady the trend is" v={`give or take ${num(cell.quality.fitSe)} mm a year`} />}
           </dl>
         </Section>
       )}
@@ -148,7 +124,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       {cell.detect && (
         <Section title="How long to confirm it?" peek={cell.detect.gpsWeeks !== null ? `GPS: ~${Math.max(1, cell.detect.gpsWeeks)} weeks` : undefined}>
           <dl>
-            <Row k="NASA and India's NISAR satellite" v={duration(cell.detect.nisarMonths)} note="of passes every 12 days, based on how much NISAR's readings over Houston wobble" />
+            <Row k="NISAR, NASA and India's new satellite" v={duration(cell.detect.nisarMonths)} note="of passes every 12 days, given how much its readings over Houston wobble" />
             <Row k="A permanent GPS station" v={cell.detect.gpsWeeks === null ? "—" : `about ${Math.max(1, cell.detect.gpsWeeks)} weeks`} note={`assuming its height wobbles ${th.gps_daily_sigma_mm} mm a day`} />
             <Row k="A low-cost GPS sensor" v={cell.detect.nodeWeeks === null ? "more than 4 years" : `about ${Math.max(1, cell.detect.nodeWeeks)} weeks`} note={`assuming ${meta.hardware.node_daily_sigma_mm} mm a day until our own sensor test measures it`} />
           </dl>
@@ -157,8 +133,8 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       )}
 
       <Section title="Sensors" peek={`nearest GPS ${num(cell.gps.km)} km`}>
-        <dl><Row k="Nearest active GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}: ${num(cell.gps.up)} mm/yr${cell.gps.y0 ? ` over ${cell.gps.y0}–${cell.gps.y1}` : ""}`} /></dl>
-        {sensor ? <p className="good">Suggested permanent GPS station site #{sensor.rank} of {meta.sensors.length}. Why here: the area around it is sinking about {num(Math.abs(sensor.areaRate))} mm/yr in a high-risk flood zone, the nearest GPS is {num(sensor.gpsKm)} km away, and our confidence here is only {cell.conf ? CONFIDENCE[cell.conf].name.toLowerCase() : "low"}. A station turns that uncertain satellite reading into a firm one where it matters most for flooding.</p>
+        <dl><Row k="Nearest working GPS" v={`${num(cell.gps.km)} km away`} note={`Station ${cell.gps.id}: ${num(cell.gps.up)} mm a year${cell.gps.y0 ? ` over ${cell.gps.y0}–${cell.gps.y1}` : ""}`} /></dl>
+        {sensor ? <p className="good">Suggested permanent GPS station site #{sensor.rank} of {meta.sensors.length}. Why here: the area around it is sinking about {num(Math.abs(sensor.areaRate))} mm a year in a high-risk flood zone, the nearest GPS is {num(sensor.gpsKm)} km away, and our confidence here is only {cell.conf ? CONFIDENCE[cell.conf].name.toLowerCase() : "low"}. A station turns that uncertain satellite reading into a firm one where it matters most for flooding.</p>
           : cell.gapRank ? <p className="good">Sensor site #{cell.gapRank} of {meta.gaps.length} for places nothing measures: no satellite coverage here and the nearest GPS is {num(cell.gps.km)} km away. A low-cost sensor gives the first reading.</p>
           : cell.nodeRank ? <p className="good">Suggested low-cost sensor site #{cell.nodeRank} of {meta.nodes.length}: {cell.detect?.nodeWeeks ? `sinking fast enough that a cheap sensor could confirm it in about ${cell.detect.nodeWeeks} weeks, ` : ""}with no GPS within {th.gps_covered_km} km.</p>
           : cell.act === "add_monitoring" && cell.near ? <p className="good">Needs a sensor: no GPS within {th.gps_covered_km} km. The nearest suggested site is {cell.near.kind === "gps" ? `permanent GPS station #${cell.near.rank}` : `low-cost sensor #${cell.near.rank}`}, {num(cell.near.km)} km away.</p>
@@ -170,7 +146,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
       <Section title="Other evidence" peek={cell.flood.zone ? `flood zone ${cell.flood.zone}` : undefined}>
         <dl>
           <Row k="Flood zone (FEMA)" v={cell.flood.sfha ? `${cell.flood.zone}: high risk` : cell.flood.zone ?? "Not mapped"} note={[cell.flood.sub, cell.flood.share !== undefined && cell.flood.share !== null ? `${Math.round(cell.flood.share * 100)}% of the square is in the 1-in-100-year zone` : null].filter(Boolean).join(". ") || undefined} />
-          {cell.well && <Row k="Groundwater well" v={`${num(cell.well.km)} km away`} note={cell.well.dd === null ? undefined : `Water ${cell.well.dd >= 0 ? `${num(cell.well.dd)} ft deeper` : `${num(-cell.well.dd)} ft shallower`}, Jan 2025 to Nov 2026 (USGS)`} />}
+          {cell.well && <Row k="Groundwater well" v={`${num(cell.well.km)} km away`} note={cell.well.dd === null ? undefined : `Water ${cell.well.dd >= 0 ? `${num(cell.well.dd)} ft lower` : `${num(-cell.well.dd)} ft higher`}, Jan 2025 to Nov 2026 (USGS)`} />}
           {cell.ext && <Row k="Soil compaction gauge" v={`${num(cell.ext.km)} km away`} note={cell.ext.c === null ? undefined : `Clay squeezed ${num(cell.ext.c, 2)} ft over its record (USGS)`} />}
           {cell.quality.nisarCoh !== null && <Row k="NISAR, Nov 2025" v={cell.quality.nisarOk ? "Clear view of the ground" : "Blurry view of the ground"} note={`${cell.quality.nisarValid === null ? "—" : Math.round(cell.quality.nisarValid * 100)}% of the square was readable`} />}
           {cell.nasadem?.elevation_m !== undefined && <Row k="Elevation (NASA)" v={`${num(cell.nasadem.elevation_m)} m`} />}
@@ -187,7 +163,7 @@ export function Card({ cell, meta, sensor, year, ranks, onShare, onClose }: { ce
           <li>The forecast assumes the next five years behave like the last ten, with no big change in groundwater pumping.</li>
         </ul>
       </Section>
-      <p className="fine">Square {cell.id} at {cell.lat.toFixed(4)}, {cell.lon.toFixed(4)}</p>
+      <p className="fine">Square centered at {cell.lat.toFixed(4)}°N, {Math.abs(cell.lon).toFixed(4)}°W</p>
     </article>
   );
 }
@@ -233,7 +209,7 @@ function Hazards({ cell, meta, year }: { cell: Cell; meta: Meta; year: number })
           <p>The sinking speed changes by <b>{num(hz.bend)} mm a year</b> between this square and the next one over. {hz.bl === "high" ? "Uneven sinking like this bends pipes, roads and slabs, and in Houston it often marks one of the city's slowly slipping faults." : hz.bl === "medium" ? "Some uneven sinking; worth watching for cracks in roads and pipes." : "The ground sinks evenly here, which is easier on buildings and pipes."}</p>
         </div>
       )}
-      <p className="fine">These don't predict when a storm or drought comes, only what the moving ground does when one does. Flood odds are FEMA's; how much the ground dropped is measured by satellite.</p>
+      <p className="fine">These say nothing about when a storm or drought comes, only what the moving ground does when one does. Flood odds are FEMA's; how far the ground dropped is measured by satellite.</p>
     </Section>
   );
 }

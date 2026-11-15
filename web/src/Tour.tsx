@@ -10,15 +10,15 @@ export function tourSteps(meta: Meta, stats: { fast: number; measured: number },
   const err = fc?.benchmark.table.find((t) => t.method === fc.method)?.by_horizon_cm[String(Math.round(fc.tested_horizon_years))];
   return [
     { title: "Houston is sinking", mode: "movement", history: true, cell: null,
-      body: `NASA radar satellites measured every square kilometer from 2016 to 2026, and NISAR, NASA and India's newest radar satellite, now checks it. Watch the ground drop: ${stats.fast.toLocaleString()} of ${stats.measured.toLocaleString()} squares sank 10 mm a year or more, mostly in the northwest and east, where groundwater pumping squeezes the clay.` },
+      body: `NASA radar satellites measured every square kilometer from 2016 to 2026${meta.predictionTest?.verdict === "pass" ? ", and NISAR, NASA and India's newest radar satellite, sees the same pattern in 2026" : ""}. Watch the ground drop: ${stats.fast.toLocaleString()} of ${stats.measured.toLocaleString()} squares sank 1 cm a year or more, mostly in the northwest and east, where groundwater pumping squeezes the clay.` },
     { title: "How sure are we?", mode: "confidence", cell: null,
       body: `We checked the satellite against ${meta.validation.stations} GPS stations it never saw: they agree within about ${num(meta.validation.typical_diff_mm_year)} mm a year. Every square gets its own confidence level, and shaky readings are blended with their neighbors instead of shown as-is.` },
     { title: `How much more by ${last}?`, mode: "future", cell: picks.fastest ?? null,
-      body: `We tested 9 forecasting methods on past years, including machine learning, and use the one tied for most accurate. Five years ahead it was typically off by ${num(err ?? null)} cm. This square is one of the fastest-sinking in a flood zone.` },
+      body: `We tested ${fc?.benchmark.table.length ?? 9} ways to forecast on past years, including machine learning, and use the one tied for most accurate. Five years ahead it was typically off by ${num(err ?? null)} cm. This square is one of the fastest-sinking in a flood zone.` },
     { title: "What would a flood do?", mode: "hazards", hazard: "flood", cell: picks.harvey ?? null,
       body: h && h.by_class["1pct"] && h.by_class.minimal ? `Sinking land floods deeper. We checked our flood map against Hurricane Harvey's real flood maps: high-risk squares had ${num(h.by_class["1pct"].mean_flooded_share_pct, 0)}% of their area flooded, low-risk squares ${num(h.by_class.minimal.mean_flooded_share_pct, 0)}%. Drought and ground-bending views are here too.` : "Sinking land floods deeper. The flood, drought and ground-bending views show what the moving ground does in a disaster." },
     { title: "Where to put sensors", mode: "priority", cell: null,
-      body: `Satellites find the sinking; ground sensors confirm it. We suggest ${meta.sensors.length} permanent GPS stations (numbered), ${meta.nodes.length} low-cost sensors (diamonds), and ${meta.gaps.length} sensors where nothing measures the ground yet (white diamonds). The Hardware page compares them.` },
+      body: `Satellites find the sinking; ground sensors confirm it. We suggest ${meta.sensors.length} permanent GPS stations (numbered), ${meta.nodes.length} low-cost sensors (orange diamonds), and ${meta.gaps.length} sensors for land nothing measures yet (white diamonds).` },
   ];
 }
 

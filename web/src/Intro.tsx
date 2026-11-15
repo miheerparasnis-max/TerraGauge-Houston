@@ -35,6 +35,7 @@ interface Props {
  */
 export function Intro({ skip, onDone }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const halo = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const done = useRef(false);
   const latest = useRef(onDone);
@@ -64,6 +65,18 @@ export function Intro({ skip, onDone }: Props) {
       return;
     }
     map.current = m;
+    // A faint halo just off the globe's rim. Globe radius in px = 512·2^zoom / 2π / cos(latitude),
+    // MapLibre's own formula; with no camera tilt the globe is centred on screen.
+    const placeHalo = () => {
+      const el = halo.current;
+      if (!el) return;
+      const r = (512 * Math.pow(2, m.getZoom())) / (2 * Math.PI) / Math.cos((m.getCenter().lat * Math.PI) / 180);
+      const fit = Math.min(window.innerWidth, window.innerHeight);
+      el.style.setProperty("--r", `${r.toFixed(1)}px`);
+      el.style.opacity = String(Math.max(0, Math.min(1, (fit * 0.95 - r) / (fit * 0.35))));
+    };
+    m.on("render", placeHalo);
+    placeHalo();
     const timers: number[] = [];
     // Never hold the visitor on a blank screen if tiles are slow.
     timers.push(window.setTimeout(finish, 9000));
@@ -96,8 +109,9 @@ export function Intro({ skip, onDone }: Props) {
 
   return (
     <div className="intro-globe" aria-hidden="true">
+      <div ref={halo} className="globe-halo" />
       <div ref={ref} className="intro-map" />
-      <p className="intro-credit">Earth at night: NASA Black Marble</p>
+      <p className="intro-credit">Earth at night, NASA Black Marble</p>
     </div>
   );
 }

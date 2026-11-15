@@ -56,7 +56,7 @@ interface Score { median_abs_error: number; mean_abs_error: number; correlation:
 export interface Meta {
   status: string;
   predictionTest?: { status: string; pairs: number; first: string; last: string; squares: number; power: number; verdict: string | null; result?: { spearman_rho_block_medians: number; p_block_permutation_two_sided: number } | null };
-  nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number };
+  nisarArchive: { passes: number; pairs: number; first: string; last: string; processedPairs: number; retrieved?: string };
   stations: { total: number; deepSeated: string[]; rateWithheld: string[] };
   record: { start: string; end: string; dates: string[]; products: number };
   thresholds: { stable_mm_year: number; gps_covered_km: number; gps_blend_km: number; disagree_mm_year: number; sensor_spacing_km: number; incidence_deg: number; gps_daily_sigma_mm: number };

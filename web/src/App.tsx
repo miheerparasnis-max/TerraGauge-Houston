@@ -8,7 +8,7 @@ import { Tour, tourSteps } from "./Tour";
 import { usePlaceName } from "./places";
 import { cellIdAt } from "./geo";
 import { readHash, writeHash, type Tab } from "./url";
-import { Landing } from "./Landing";
+import { Landing, type Story } from "./Landing";
 import { ACTION, BEND, CONFIDENCE, DROUGHT, FLOOD, HAZARDS, MODES, NOT_DIRECT, NO_MEASUREMENT, floodExtra, movementColor, num } from "./labels";
 
 async function getJSON<T>(name: string): Promise<T> {
@@ -51,10 +51,10 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
     return (
       <div>
         <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * span, span)).join(",")})` }} />
-        <div className="ramp-keys"><span>Sinking {span}+ {unit}</span><span>None</span><span>Rising</span></div>
+        <div className="ramp-keys"><span>Sinking {span}+ {unit}</span><span>No clear motion</span><span>Rising</span></div>
         <KeyList items={[noData]} note={mode === "future"
           ? <>Each square's 2016–2026 trend, allowing for seasons and averaged with its neighborhood, carried forward. It tied for most accurate of {meta.forecast?.benchmark.table.length ?? 9} methods we tested on past years, including machine learning. Lighter squares are estimated from their neighbors.</>
-          : <>Measured by NASA satellite radar, 2016–2026, and combined with GPS where a station sits inside the square. NISAR checks it. Lighter squares are estimated from their neighbors.</>} />
+          : <>Measured by NASA satellite radar, 2016–2026, and combined with GPS where a station sits inside the square. Lighter squares are estimated from their neighbors.</>} />
       </div>
     );
   }
@@ -64,7 +64,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
     const t = meta.hazards?.tests;
     const note = hazard === "flood"
       ? <>FEMA's flood zones give the odds of a big flood. The satellite measured how much the ground has dropped since 2016, and the same flood now stands that much deeper. This is measured, not forecast.{meta.hazards?.harvey?.by_class["1pct"] && meta.hazards.harvey.by_class.minimal ? <> Checked against Hurricane Harvey: in northeast Houston, {num(meta.hazards.harvey.by_class["1pct"].mean_flooded_share_pct, 0)}% of high-risk squares' area flooded, versus {num(meta.hazards.harvey.by_class.minimal.mean_flooded_share_pct, 0)}% of low-risk squares'.</> : null}</>
-      : hazard === "drought" && t ? <>Tested: using only data from before 2023, the squares flagged from the 2018 drought dropped a median {num(t.drought.flagged_median_drop_mm, 0)} mm in the 2023 drought, versus {num(t.drought.others_median_drop_mm, 0)} mm for the rest.</>
+      : hazard === "drought" && t ? <>Tested: using only data from before 2023, the squares flagged from the 2018 drought typically dropped {num(t.drought.flagged_median_drop_mm, 0)} mm in the 2023 drought, against {num(t.drought.others_median_drop_mm, 0)} mm for the rest.</>
       : t ? <>Tested: the sharpest-bending squares in 2016–2021 were still bending about {num(t.bending.hotspot_later_median / t.bending.others_later_median, 0)}× more than the rest in 2021–2026.</> : undefined;
     const items: Key[] = keys.map((k) => ({ key: k, ...table[k], n: counts.get(k) ?? 0 }));
     if (hazard !== "flood") items.push({ key: "indirect", name: "No direct record", color: NOT_DIRECT, meaning: "Estimated or unmeasured squares: drought and bending need a square's own satellite record.", n: cells.length - items.reduce((t, i) => t + i.n, 0) });
@@ -73,7 +73,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
   const items: Key[] = mode === "priority"
     ? (["investigate_first", "add_monitoring", "review_disagreement", "observe", "no_clear_motion"] as const).map((k) => ({ key: k, ...ACTION[k], n: meta.counts.action[k] ?? 0 }))
     : (["high", "medium", "low"] as const).map((k) => ({ key: k, ...CONFIDENCE[k], n: meta.counts.confidence[k] ?? 0 }));
-  return <KeyList items={[...items, noData]} note={mode === "priority" ? <>Rules are checked in this order; the first that fits decides. Numbered pins are suggested permanent GPS stations; diamonds are suggested low-cost sensors; white diamonds are sensors for places nothing measures yet. Every "Add monitoring here" square has a suggested sensor within 6 km.</> : undefined} />;
+  return <KeyList items={[...items, noData]} note={mode === "priority" ? <>Rules are checked in this order, and the first that fits decides. Numbered pins are suggested permanent GPS stations, orange diamonds are suggested low-cost sensors, and white diamonds are sensors for land nothing measures yet. Every "Add monitoring here" square has a suggested sensor within 6 km.</> : undefined} />;
 }
 
 function detailTile(id: string): string | null {
@@ -88,12 +88,14 @@ function AtRisk({ c, rank, onPick }: { c: Cell; rank: number; onPick: (id: strin
   return (
     <li><button onClick={() => onPick(c.id)}>
       <span className="rank">{rank}</span>
-      <span><b>{name ?? `${c.lat.toFixed(3)}, ${c.lon.toFixed(3)}`}</b><small>Sinking {num(Math.abs(c.rate ?? 0))} mm a year in a high-risk flood zone, {num(last)} cm by {c.future ? Object.keys(c.future.by).slice(-1)[0] : ""}</small></span>
+      <span><b>{name ?? `${c.lat.toFixed(3)}°N, ${Math.abs(c.lon).toFixed(3)}°W`}</b><small>Sinking {num(Math.abs(c.rate ?? 0))} mm a year in a high-risk flood zone, {num(last)} cm more by {c.future ? Object.keys(c.future.by).slice(-1)[0] : ""}</small></span>
     </button></li>
   );
 }
 
-const LAYER_NAMES: [keyof Layers, string][] = [["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost sensors (diamonds)"], ["gaps", "Sensors where nothing measures yet (white diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zones"]];
+const LAYER_NAMES: [keyof Layers, string][] = [["sensors", "Suggested GPS stations (numbered)"], ["nodes", "Suggested low-cost sensors (diamonds)"], ["gaps", "Sensors where nothing measures yet (white diamonds)"], ["gps", "Existing GPS stations"], ["ext", "Soil compaction gauges"], ["wells", "Groundwater wells"], ["flood", "FEMA high-risk flood zone outlines"]];
+
+const COPYRIGHT = "© 2026 TerraGauge by Aaron Qin, Miheer Parasnis, and Reyansh Maheshwari · Built for the NASA Space Apps Challenge";
 
 /** The story intro shows on a fresh visit; any #map / #how / #hardware link goes straight to the app. */
 const startsInApp = () => /^#(map|how|hardware)/.test(window.location.hash);
@@ -216,6 +218,28 @@ export default function App() {
     return { total: cells.length, measured: measured.length, direct: direct.length, fast: measured.filter((c) => (c.rate ?? 0) <= -10).length, sorted, top, harveyPick: harvey?.id };
   }, [cells]);
 
+  const story = useMemo<Story | null>(() => {
+    if (!cells || !meta?.timelapse) return null;
+    const dates = meta.timelapse.dates;
+    const median = (xs: number[]) => { const a = [...xs].sort((p, q) => p - q); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+    const measured = cells.filter((c) => c.rate !== null && c.act !== "insufficient_data");
+    const direct = measured.filter((c) => !c.src.includes("estimated"));
+    const withTl = direct.filter((c) => c.tl && c.tl.length === dates.length).sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0));
+    const tenth = withTl.slice(0, Math.max(1, Math.round(withTl.length / 10)));
+    const curve = (group: Cell[]) => dates.map((_, i) => Math.round(median(group.map((c) => c.tl![i])) / 10 * 10) / 10);
+    const r = (c: Cell) => c.rate as number;
+    const bins = [
+      { label: "Rising\n2+", mid: 3, n: measured.filter((c) => r(c) >= 2).length },
+      { label: "Steady\n±2", mid: 0, n: measured.filter((c) => r(c) > -2 && r(c) < 2).length },
+      { label: "Sinking\n2–5", mid: -3.5, n: measured.filter((c) => r(c) <= -2 && r(c) > -5).length },
+      { label: "Sinking\n5–10", mid: -7.5, n: measured.filter((c) => r(c) <= -5 && r(c) > -10).length },
+      { label: "Sinking\n10–20", mid: -15, n: measured.filter((c) => r(c) <= -10 && r(c) > -20).length },
+      { label: "Sinking\n20+", mid: -25, n: measured.filter((c) => r(c) <= -20).length },
+    ];
+    const fast = measured.filter((c) => r(c) <= -10);
+    return { measured: measured.length, direct: direct.length, fast: fast.length, fastInFlood: fast.filter((c) => c.flood.sfha).length, fastest: Math.min(...direct.map(r)), dates, fastCurve: curve(tenth), typicalCurve: curve(withTl), bins };
+  }, [cells, meta]);
+
   const pick = useCallback((id: string) => { const c = byId.get(id); if (!c) return; setSelected(id); setFocus({ lon: c.lon, lat: c.lat, key: Date.now() }); }, [byId]);
   const pickPoint = useCallback((lon: number, lat: number, label: string) => {
     let id = cellIdAt(lon, lat);
@@ -228,7 +252,14 @@ export default function App() {
     setFound(label); setSelected(id); setFocus({ lon, lat, key: Date.now() });
   }, [byId, cells]);
 
-  const landingView = landing && <Landing meta={meta} sites={sites} stats={stats} playIntro={firstVisit.current} onWarm={warm} onEnter={enter} />;
+  const enterAt = (lon: number, lat: number) => {
+    enter();
+    if (!cells) return;
+    let id = cellIdAt(lon, lat);
+    if (!byId.has(id)) { let best: Cell | null = null, d = Infinity; for (const c of cells) { const dd = (c.lon - lon) ** 2 + (c.lat - lat) ** 2; if (dd < d) { d = dd; best = c; } } if (best) id = best.id; }
+    setMode("movement"); setSelected(id); setFocus({ lon, lat, key: Date.now() });
+  };
+  const landingView = landing && <Landing meta={meta} sites={sites} story={story} playIntro={firstVisit.current} onWarm={warm} onEnter={enter} onEnterAt={enterAt} />;
   if (!dashMounted && landing) return <>{landingView}</>;
   if (error) return <>{landingView}<div className={landing ? "app under loading" : "loading"}>{error}</div></>;
   if (!cells || !meta || !sites || !stats) return <>{landingView}<div className={landing ? "app under loading" : "loading"}><span className="spinner" aria-hidden="true" />Loading Houston's ground record…</div></>;
@@ -261,7 +292,7 @@ export default function App() {
       <header className="top">
         <button className="brand" onClick={backToStart} title="Back to the start">
           <img src="./logo.png" alt="" width={34} height={34} />
-          <div><h1>TerraGauge <em>Houston</em></h1><p>Where is Houston's ground sinking? Built on NASA radar and NISAR.</p></div>
+          <div><h1>TerraGauge</h1><p>Houston's moving ground, measured from space</p></div>
         </button>
         <nav aria-label="Pages">
           <button className="tab tour-btn" onClick={() => goTour(0)}>Take the tour</button>
@@ -286,16 +317,12 @@ export default function App() {
                 {HAZARDS.map((h) => <button key={h.key} role="radio" aria-checked={hazard === h.key} className={hazard === h.key ? "on" : ""} onClick={() => setHazard(h.key)}>{h.name}</button>)}
               </div>
             )}
-            <div className="q-row">
-              <p className="question">{question}</p>
-              {showYear && (
-                <label className="year-select"><span className="sr-only">Year</span>
-                  <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Year">
-                    {fc!.years.map((y) => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                </label>
-              )}
-            </div>
+            <p className="question">{question}</p>
+            {showYear && (
+              <div className="seg years" role="radiogroup" aria-label="Forecast year" style={{ gridTemplateColumns: `repeat(${fc!.years.length}, 1fr)` }}>
+                {fc!.years.map((y) => <button key={y} role="radio" aria-checked={year === y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}</button>)}
+              </div>
+            )}
             {history ? (
               <div className="timelapse">
                 <div className="ramp" style={{ background: `linear-gradient(90deg, ${[-1, -0.66, -0.33, 0, 0.33].map((t) => movementColor(t * 20, 20)).join(",")})` }} />
@@ -305,7 +332,7 @@ export default function App() {
                   <input type="range" min={0} max={frames - 1} value={frame!} onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }} aria-label="Date" />
                   <span className="tl-date">{new Date(dates[frame!]).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
                 </div>
-                <p className="legend-note">How much the ground has dropped or risen since July 2016, from NASA satellite radar. Squares with noisy records show their trend.</p>
+                <p className="legend-note">How far the ground has dropped or risen since July 2016, from NASA satellite radar. Squares with shaky records show their trend.</p>
                 <button className="link small-link" onClick={() => { setFrame(null); setPlaying(false); }}>Back to the yearly rate</button>
               </div>
             ) : (
@@ -330,30 +357,20 @@ export default function App() {
             <div className="summary">
               <button className="sheet-handle" onClick={() => setSheet((s) => !s)} aria-expanded={sheet}><span>Houston at a glance</span><i aria-hidden="true">{sheet ? "▾" : "▴"}</i></button>
               <h2>Houston at a glance</h2>
-              <p className="lead-in">Pumping groundwater squeezes Houston's clay and the land sinks. Some areas dropped over 9 feet in four decades, and sinking ground floods deeper. TerraGauge maps it from NASA satellite radar, square kilometer by square kilometer, and checks it with NISAR, NASA and India's newest radar satellite.</p>
+              <p className="lead-in">Pumping groundwater squeezes Houston's clay and the land sinks, and sinking ground floods deeper. TerraGauge maps it one square kilometer at a time from NASA satellite radar and the new NISAR mission, checked against GPS on the ground.</p>
               <div className="tiles">
-                <button className={`tile${mode === "movement" ? " on" : ""}`} onClick={() => goMode("movement")}>
-                  <strong>{stats.fast.toLocaleString()}</strong><span>squares sinking 10+ mm a year</span><small>Movement</small>
-                </button>
-                <button className={`tile${mode === "confidence" ? " on" : ""}`} onClick={() => goMode("confidence")}>
-                  <strong>±{num(meta.validation.typical_diff_mm_year)}<em>mm/yr</em></strong><span>typical gap from {meta.validation.stations} GPS stations</span><small>Confidence</small>
-                </button>
-                <button className={`tile${mode === "future" ? " on" : ""}`} onClick={() => goMode("future")}>
-                  <strong>±{num(test5 ?? null)}<em>cm</em></strong><span>typically off by this much 5 years ahead, tested on past years</span><small>Future</small>
-                </button>
-                <button className={`tile${mode === "priority" ? " on" : ""}`} onClick={() => goMode("priority")}>
-                  <strong>{(meta.counts.action.add_monitoring ?? 0).toLocaleString()}</strong><span>flood-zone squares sinking with no GPS nearby, each with a suggested sensor within 6 km</span><small>Priority</small>
-                </button>
-                <button className={`tile wide${mode === "hazards" ? " on" : ""}`} onClick={() => goMode("hazards", "flood")}>
-                  <strong>{ht ? `${num(ht.drought.flagged_median_drop_mm / ht.drought.others_median_drop_mm, 0)}×` : "—"}</strong><span>more drop in the 2023 drought where we predicted it from 2018. Flood, drought and ground-bending views.</span><small>Hazards</small>
-                </button>
+                <div className="tile"><small>Movement</small><strong>{stats.fast.toLocaleString()}</strong><span>squares sinking 1 cm or more a year</span></div>
+                <div className="tile"><small>Confidence</small><strong>{num(meta.validation.typical_diff_mm_year)}<em> mm a year</em></strong><span>typical gap from {meta.validation.stations} GPS stations</span></div>
+                <div className="tile"><small>Future</small><strong>±{num(test5 ?? null)}<em> cm</em></strong><span>typical miss five years ahead, tested on past years</span></div>
+                <div className="tile"><small>Priority</small><strong>{(meta.counts.action.add_monitoring ?? 0).toLocaleString()}</strong><span>flood-zone squares sinking with no GPS nearby</span></div>
+                <div className="tile wide"><small>Hazards</small><strong>{ht ? `${num(ht.drought.flagged_median_drop_mm / ht.drought.others_median_drop_mm, 0)}×` : "—"}</strong><span>more ground drop in the 2023 drought where we flagged it from 2018 alone</span></div>
               </div>
-              <p className="fine">{stats.total.toLocaleString()} squares of 1 km: {stats.direct.toLocaleString()} measured, {(stats.measured - stats.direct).toLocaleString()} estimated from neighboring squares or GPS stations. Click any square, or search an address, for its full story. Forecast to {lastYear}.</p>
+              <p className="fine">{stats.total.toLocaleString()} squares: {stats.direct.toLocaleString()} measured directly and {(stats.measured - stats.direct).toLocaleString()} estimated from their neighbors. Click any square, or search an address, for its full story.</p>
 
               {stats.top.length > 0 && (
                 <details className="list-block" open>
                   <summary>Most at-risk areas <span>{stats.top.length}</span></summary>
-                  <p className="fine">The fastest sinking inside FEMA high-risk flood zones, measured directly, at least 5 km apart.</p>
+                  <p className="fine">The fastest sinking inside FEMA high-risk flood zones, measured directly and at least 5 km apart, with the forecast to {lastYear}.</p>
                   <ol className="sensor-list">{stats.top.map((c, i) => <AtRisk key={c.id} c={c} rank={i + 1} onPick={pick} />)}</ol>
                 </details>
               )}
@@ -367,16 +384,16 @@ export default function App() {
                     </button></li>
                   ))}
                 </ol>
-                <p className="fine">{meta.nodes.length} low-cost sensor sites (diamonds) are listed on the <button className="link" onClick={() => setTab("hardware")}>Hardware page</button>.</p>
               </details>
+              <p className="sheet-credit">{COPYRIGHT}</p>
             </div>
           )}
         </section>
       </main>
-      {tab === "how" && <HowWeKnow meta={meta} cells={cells} />}
-      {tab === "hardware" && <HardwarePage meta={meta} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true, gaps: true })); pick(id); }} />}
+      {tab === "how" && <HowWeKnow meta={meta} cells={cells} onShow={(id) => { setTab("map"); setMode("priority"); pick(id); }} />}
+      {tab === "hardware" && <HardwarePage meta={meta} cells={cells} onShow={(id) => { setTab("map"); setMode("priority"); setLayers((l) => ({ ...l, sensors: true, nodes: true, gaps: true })); pick(id); }} />}
       {tourAt !== null && tab === "map" && <Tour steps={steps} index={tourAt} onGo={goTour} onClose={() => { setTourAt(null); setPlaying(false); }} />}
-      {meta.status !== "reviewed" && <footer className="foot">Draft for NASA Space Apps 2026, Dancing with the SARs: built on NASA satellite radar and NISAR. Not a flood forecast or a property assessment.</footer>}
+      <footer className={tab === "map" ? "foot on-map" : "foot"}>{COPYRIGHT}</footer>
     </div>
     </>
   );
