@@ -1,0 +1,154 @@
+{
+  "artifact_type": "nisar_gunw_temporal_network_diagnostic",
+  "acquisition_dates": [
+    "2025-11-02",
+    "2025-11-14",
+    "2025-11-26",
+    "2025-12-08",
+    "2025-12-20",
+    "2026-01-01",
+    "2026-01-13",
+    "2026-01-25",
+    "2026-02-06",
+    "2026-02-18",
+    "2026-03-14",
+    "2026-03-26",
+    "2026-04-07",
+    "2026-04-19",
+    "2026-05-01",
+    "2026-05-13",
+    "2026-05-25",
+    "2026-06-06",
+    "2026-06-18",
+    "2026-06-30",
+    "2026-07-12",
+    "2026-07-24",
+    "2026-08-17",
+    "2026-08-29",
+    "2026-09-10",
+    "2026-09-22",
+    "2026-10-04",
+    "2026-10-16"
+  ],
+  "pair_edges": [
+    {
+      "reference_date": "2025-11-02",
+      "secondary_date": "2025-11-14"
+    },
+    {
+      "reference_date": "2025-11-14",
+      "secondary_date": "2025-11-26"
+    },
+    {
+      "reference_date": "2025-11-26",
+      "secondary_date": "2025-12-08"
+    },
+    {
+      "reference_date": "2025-12-08",
+      "secondary_date": "2025-12-20"
+    },
+    {
+      "reference_date": "2025-12-20",
+      "secondary_date": "2026-01-01"
+    },
+    {
+      "reference_date": "2026-01-01",
+      "secondary_date": "2026-01-13"
+    },
+    {
+      "reference_date": "2026-01-13",
+      "secondary_date": "2026-01-25"
+    },
+    {
+      "reference_date": "2026-01-25",
+      "secondary_date": "2026-02-06"
+    },
+    {
+      "reference_date": "2026-02-06",
+      "secondary_date": "2026-02-18"
+    },
+    {
+      "reference_date": "2026-02-18",
+      "secondary_date": "2026-03-14"
+    },
+    {
+      "reference_date": "2026-03-14",
+      "secondary_date": "2026-03-26"
+    },
+    {
+      "reference_date": "2026-03-26",
+      "secondary_date": "2026-04-07"
+    },
+    {
+      "reference_date": "2026-04-07",
+      "secondary_date": "2026-04-19"
+    },
+    {
+      "reference_date": "2026-04-19",
+      "secondary_date": "2026-05-01"
+    },
+    {
+      "reference_date": "2026-05-01",
+      "secondary_date": "2026-05-13"
+    },
+    {
+      "reference_date": "2026-05-13",
+      "secondary_date": "2026-05-25"
+    },
+    {
+      "reference_date": "2026-05-25",
+      "secondary_date": "2026-06-06"
+    },
+    {
+      "reference_date": "2026-06-06",
+      "secondary_date": "2026-06-18"
+    },
+    {
+      "reference_date": "2026-06-18",
+      "secondary_date": "2026-06-30"
+    },
+    {
+      "reference_date": "2026-06-30",
+      "secondary_date": "2026-07-12"
+    },
+    {
+      "reference_date": "2026-07-12",
+      "secondary_date": "2026-07-24"
+    },
+    {
+      "reference_date": "2026-07-24",
+      "secondary_date": "2026-08-17"
+    },
+    {
+      "reference_date": "2026-08-17",
+      "secondary_date": "2026-08-29"
+    },
+    {
+      "reference_date": "2026-08-29",
+      "secondary_date": "2026-09-10"
+    },
+    {
+      "reference_date": "2026-09-10",
+      "secondary_date": "2026-09-22"
+    },
+    {
+      "reference_date": "2026-09-22",
+      "secondary_date": "2026-10-04"
+    },
+    {
+      "reference_date": "2026-10-04",
+      "secondary_date": "2026-10-16"
+    }
+  ],
+  "date_count": 28,
+  "pair_count": 27,
+  "independent_edges_needed_for_connectivity": 27,
+  "redundant_edges": 0,
+  "minimum_redundant_edges_for_rate": 2,
+  "rate_status": "withheld_insufficient_redundancy",
+  "next_requirement": "Add at least two valid same-track cross-pairs or repeat pairs before emitting a temporal LOS rate; select and document a stable reference region before inversion.",
+  "limitations": [
+    "A connected chain can reconstruct relative epochs but has no independent loop closure.",
+    "This diagnostic does not select a reference region or estimate motion."
+  ]
+}
