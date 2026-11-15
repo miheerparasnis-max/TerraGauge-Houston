@@ -16,3 +16,7 @@ data/derived/groundtruth/*.obs
 data/derived/groundtruth/*.pos
 data/derived/groundtruth/*.conf
 data/derived/groundtruth/*.stat
+
+CLAUDE.md
+MASTER.md
+README.md
