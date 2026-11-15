@@ -20,3 +20,6 @@ data/derived/groundtruth/*.stat
 CLAUDE.md
 MASTER.md
 README.md
+# keep other projects and macOS files out of this repo
+web/SignalBridge-Sepsis/
+.DS_Store
