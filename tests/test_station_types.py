@@ -40,6 +40,15 @@ class DeepSeatedStationTests(unittest.TestCase):
         rows = compare_opera_gps(series, stations)["stations"]
         self.assertEqual([r["station_id"] for r in rows], ["OKEK"])
 
+    def test_campaign_stations_never_enter_the_headline_comparison(self):
+        # PR-5 / V3: campaign-style stations (< 0.5 position days a day) are reported apart.
+        series = {"cells": [{"cell_id": "c", "longitude": -95.4, "latitude": 29.8, "opera_los_velocity_mm_year": -1.0}]}
+        sparse = dict(station("PA20", -4.0), samples=int(20 * 365 * 0.14))
+        out = compare_opera_gps(series, [station("OKEK", -9.0), sparse])
+        self.assertEqual([r["station_id"] for r in out["stations"]], ["OKEK"])
+        self.assertEqual([r["station_id"] for r in out["campaign_stations"]["stations"]], ["PA20"])
+        self.assertEqual(out["stats"]["station_count"], 1)
+
     def test_region_cells_are_those_within_the_radius_of_any_reference_station(self):
         stations = {"DEN2": station("DEN2", lon=-95.0, lat=29.0), "TMCC": station("TMCC", lon=-95.5, lat=29.5)}
         cells = [{"cell_id": "near", "longitude": -95.01, "latitude": 29.0}, {"cell_id": "far", "longitude": -95.25, "latitude": 29.25},

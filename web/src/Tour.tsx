@@ -10,9 +10,9 @@ export function tourSteps(meta: Meta, stats: { fast: number; measured: number },
   const err = fc?.benchmark.table.find((t) => t.method === fc.method)?.by_horizon_cm[String(Math.round(fc.tested_horizon_years))];
   return [
     { title: "Houston is sinking", mode: "movement", history: true, cell: null,
-      body: `NASA radar satellites measured every square kilometer from 2016 to 2026${meta.predictionTest?.verdict === "pass" ? ", and NISAR, NASA and India's newest radar satellite, sees the same pattern in 2026" : ""}. Watch the ground drop: ${stats.fast.toLocaleString()} of ${stats.measured.toLocaleString()} squares sank 1 cm a year or more, mostly in the northwest and east, where groundwater pumping squeezes the clay.` },
+      body: `Europe's Sentinel-1 radar satellites, with NASA processing, measured Houston from 2016 to 2026${meta.predictionTest?.verdict === "pass" ? ", and NISAR, NASA and India's newest radar satellite, sees the same pattern in 2026" : ""}. Watch the ground drop: ${stats.fast.toLocaleString()} of ${stats.measured.toLocaleString()} squares sank 1 cm a year or more, mostly northwest of downtown, where groundwater pumping squeezes the clay.` },
     { title: "How sure are we?", mode: "confidence", cell: null,
-      body: `We checked the satellite against ${meta.validation.stations} GPS stations it never saw: they agree within about ${num(meta.validation.typical_diff_mm_year)} mm a year. Every square gets its own confidence level, and shaky readings are blended with their neighbors instead of shown as-is.` },
+      body: `We checked the satellite against ${meta.validation.stations} GPS stations it never saw: typically they are about ${num(meta.validation.typical_diff_mm_year)} mm a year apart. Every square gets its own confidence level, and shaky readings are blended with their neighbors instead of shown as-is.` },
     { title: `How much more by ${last}?`, mode: "future", cell: picks.fastest ?? null,
       body: `We tested ${fc?.benchmark.table.length ?? 9} ways to forecast on past years, including machine learning, and use the one tied for most accurate. Five years ahead it was typically off by ${num(err ?? null)} cm. This square is one of the fastest-sinking in a flood zone.` },
     { title: "What would a flood do?", mode: "hazards", hazard: "flood", cell: picks.harvey ?? null,

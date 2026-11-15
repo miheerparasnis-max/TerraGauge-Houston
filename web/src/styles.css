@@ -466,6 +466,10 @@ cite { display: block; margin-top: 2px; font-size: 11px; color: var(--ink-3); le
 .sources h2 { font: 500 11.5px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); margin-bottom: var(--s-3); }
 .sources ul { columns: 2; column-gap: var(--s-7); margin: 0; padding-left: 18px; font-size: var(--fs-xs); color: var(--ink-3); }
 .sources li { margin-bottom: var(--s-2); break-inside: avoid; }
+.sources .refs { list-style: none; columns: 2; column-gap: var(--s-7); margin: 0; padding: 0; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.5; }
+.sources .refs li { padding-left: 2em; text-indent: -2em; }
+.sources .refs a, cite a { color: var(--ink-2); overflow-wrap: anywhere; text-decoration-color: var(--line-2); text-underline-offset: 2px; }
+.sources .refs a:hover, cite a:hover { color: var(--accent); }
 .gauge { margin: var(--s-3) 0; }
 .gauge-label { font-weight: 650; font-size: var(--fs-sm); margin-bottom: 6px; }
 .gauge-track { position: relative; height: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
@@ -566,7 +570,7 @@ cite { display: block; margin-top: 2px; font-size: 11px; color: var(--ink-3); le
   .cols, .cols.three { column-count: 1; }
   .mast-rule span:nth-child(2) { display: none; }
   .tier { grid-template-columns: 1fr; }
-  .sources ul { columns: 1; }
+  .sources ul, .sources .refs { columns: 1; }
   .field-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {

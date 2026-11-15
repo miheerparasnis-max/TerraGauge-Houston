@@ -1,1 +1,350 @@
-{"reference":{"method":"Pre-registered region A (config/preregistration.json v1.1): every cell within 3 km of GPS stations DEN2, TMCC, which are continuous, long-history, and moved less than 1 mm/yr vertically. Provisional until the full-series cell list is frozen (plan B3).","radius_km":3.0,"reference_stations":["DEN2","TMCC"],"held_out_stable_stations":["COH2","THSU"]},"pair_20251102_20251114":{"reference_median_mm":-8.635678225132413,"reference_scatter_mm":3.010959302777864,"reference_cells":52,"labels":{"insufficient_radar_evidence":4183,"add_ground_monitoring":2007,"context_only":2393,"investigate_satellite_signal":528}},"chain_20251102_20260101":{"reference_median_mm":-10.784161860205732,"reference_scatter_mm":4.308995919370443,"reference_cells":52,"labels":{"insufficient_radar_evidence":4417,"add_ground_monitoring":1633,"context_only":2610,"investigate_satellite_signal":451}},"opera":{"cells":8062,"products":30,"reference_cells":59,"gps_comparison":{"station_count":131,"pearson_r":0.7726541414070673,"median_abs_residual_mm_year":1.2933070423702344,"median_residual_mm_year":0.5092349674789975},"south_frame":{"frame":"F38239","products_merged":29,"products_found":29,"per_product":[{"dates":["2016-07-12","2016-11-09"],"overlap":1175,"added":3479,"offset_mm":9.83,"overlap_spread_mm":1.14},{"dates":["2016-11-09","2017-02-13"],"overlap":1436,"added":3465,"offset_mm":1.14,"overlap_spread_mm":0.77},{"dates":["2017-02-13","2017-05-14"],"overlap":1366,"added":3467,"offset_mm":0.56,"overlap_spread_mm":0.88},{"dates":["2017-05-14","2017-08-12"],"overlap":1227,"added":3487,"offset_mm":1.85,"overlap_spread_mm":0.76},{"dates":["2017-08-12","2017-11-10"],"overlap":1255,"added":3489,"offset_mm":-39.04,"overlap_spread_mm":0.71},{"dates":["2017-11-10","2018-02-08"],"overlap":1448,"added":3465,"offset_mm":-27.08,"overlap_spread_mm":0.65},{"dates":["2018-02-08","2018-05-15"],"overlap":1346,"added":3470,"offset_mm":7.92,"overlap_spread_mm":0.9},{"dates":["2018-05-15","2018-08-13"],"overlap":1191,"added":3494,"offset_mm":15.55,"overlap_spread_mm":1.17},{"dates":["2018-08-13","2018-11-11"],"overlap":1261,"added":3479,"offset_mm":-3.53,"overlap_spread_mm":1.11},{"dates":["2018-11-11","2019-02-09"],"overlap":1443,"added":3467,"offset_mm":-16.96,"overlap_spread_mm":0.78},{"dates":["2019-02-09","2019-05-10"],"overlap":1340,"added":3474,"offset_mm":1.89,"overlap_spread_mm":1.21},{"dates":["2019-05-10","2019-08-08"],"overlap":1230,"added":3488,"offset_mm":4.46,"overlap_spread_mm":1.35},{"dates":["2019-08-08","2019-11-06"],"overlap":1229,"added":3482,"offset_mm":5.11,"overlap_spread_mm":0.71},{"dates":["2019-11-06","2020-02-04"],"overlap":1446,"added":3467,"offset_mm":1.92,"overlap_spread_mm":1.13},{"dates":["2020-02-04","2020-05-04"],"overlap":1342,"added":3471,"offset_mm":8.2,"overlap_spread_mm":1.18},{"dates":["2020-05-04","2020-08-02"],"overlap":1204,"added":3500,"offset_mm":-10.4,"overlap_spread_mm":0.83},{"dates":["2020-08-02","2020-10-31"],"overlap":1266,"added":3480,"offset_mm":2.09,"overlap_spread_mm":0.82},{"dates":["2020-10-31","2021-02-04"],"overlap":1419,"added":3468,"offset_mm":3.79,"overlap_spread_mm":0.73},{"dates":["2021-02-04","2021-05-05"],"overlap":1410,"added":3467,"offset_mm":-5.31,"overlap_spread_mm":0.68},{"dates":["2021-05-05","2021-08-03"],"overlap":1194,"added":3509,"offset_mm":13.56,"overlap_spread_mm":0.74},{"dates":["2021-08-03","2021-11-01"],"overlap":1209,"added":3490,"offset_mm":-7.39,"overlap_spread_mm":0.67},{"dates":["2021-11-01","2022-03-19"],"overlap":1438,"added":3469,"offset_mm":-1.32,"overlap_spread_mm":0.51},{"dates":["2022-03-19","2022-09-27"],"overlap":1114,"added":3509,"offset_mm":25.54,"overlap_spread_mm":0.74},{"dates":["2022-09-27","2023-04-07"],"overlap":1182,"added":3498,"offset_mm":-11.22,"overlap_spread_mm":0.64},{"dates":["2023-04-07","2023-10-04"],"overlap":1098,"added":3524,"offset_mm":19.85,"overlap_spread_mm":1.21},{"dates":["2023-10-04","2024-04-01"],"overlap":1260,"added":3480,"offset_mm":-17.03,"overlap_spread_mm":1.42},{"dates":["2024-04-01","2024-09-28"],"overlap":1085,"added":3580,"offset_mm":1.23,"overlap_spread_mm":0.61},{"dates":["2024-09-28","2025-03-27"],"overlap":1232,"added":3483,"offset_mm":-10.46,"overlap_spread_mm":0.7},{"dates":["2025-03-27","2025-09-23"],"overlap":1138,"added":3529,"offset_mm":-8.32,"overlap_spread_mm":0.88}]}}}
+{
+  "reference": {
+    "method": "Pre-registered region A (config/preregistration.json v1.1): every cell within 3 km of GPS stations DEN2, TMCC, which are continuous, long-history, and moved less than 1 mm/yr vertically. Provisional until the full-series cell list is frozen (plan B3).",
+    "radius_km": 3.0,
+    "reference_stations": [
+      "DEN2",
+      "TMCC"
+    ],
+    "held_out_stable_stations": [
+      "COH2",
+      "THSU"
+    ]
+  },
+  "pair_20251102_20251114": {
+    "reference_median_mm": -8.635678225132413,
+    "reference_scatter_mm": 3.010959302777864,
+    "reference_cells": 52,
+    "labels": {
+      "insufficient_radar_evidence": 4183,
+      "add_ground_monitoring": 2007,
+      "context_only": 2393,
+      "investigate_satellite_signal": 528
+    }
+  },
+  "chain_20251102_20260101": {
+    "reference_median_mm": -10.784161860205732,
+    "reference_scatter_mm": 4.308995919370443,
+    "reference_cells": 52,
+    "labels": {
+      "insufficient_radar_evidence": 4417,
+      "add_ground_monitoring": 1633,
+      "context_only": 2610,
+      "investigate_satellite_signal": 451
+    }
+  },
+  "opera": {
+    "cells": 8062,
+    "products": 30,
+    "reference_cells": 59,
+    "gps_comparison": {
+      "station_count": 64,
+      "pearson_r": 0.6797590641465849,
+      "median_abs_residual_mm_year": 1.3066070716993403,
+      "median_residual_mm_year": 0.627540910707868
+    },
+    "south_frame": {
+      "frame": "F38239",
+      "products_merged": 29,
+      "products_found": 29,
+      "per_product": [
+        {
+          "dates": [
+            "2016-07-12",
+            "2016-11-09"
+          ],
+          "overlap": 1175,
+          "added": 3479,
+          "offset_mm": 9.83,
+          "overlap_spread_mm": 1.14
+        },
+        {
+          "dates": [
+            "2016-11-09",
+            "2017-02-13"
+          ],
+          "overlap": 1436,
+          "added": 3465,
+          "offset_mm": 1.14,
+          "overlap_spread_mm": 0.77
+        },
+        {
+          "dates": [
+            "2017-02-13",
+            "2017-05-14"
+          ],
+          "overlap": 1366,
+          "added": 3467,
+          "offset_mm": 0.56,
+          "overlap_spread_mm": 0.88
+        },
+        {
+          "dates": [
+            "2017-05-14",
+            "2017-08-12"
+          ],
+          "overlap": 1227,
+          "added": 3487,
+          "offset_mm": 1.85,
+          "overlap_spread_mm": 0.76
+        },
+        {
+          "dates": [
+            "2017-08-12",
+            "2017-11-10"
+          ],
+          "overlap": 1255,
+          "added": 3489,
+          "offset_mm": -39.04,
+          "overlap_spread_mm": 0.71
+        },
+        {
+          "dates": [
+            "2017-11-10",
+            "2018-02-08"
+          ],
+          "overlap": 1448,
+          "added": 3465,
+          "offset_mm": -27.08,
+          "overlap_spread_mm": 0.65
+        },
+        {
+          "dates": [
+            "2018-02-08",
+            "2018-05-15"
+          ],
+          "overlap": 1346,
+          "added": 3470,
+          "offset_mm": 7.92,
+          "overlap_spread_mm": 0.9
+        },
+        {
+          "dates": [
+            "2018-05-15",
+            "2018-08-13"
+          ],
+          "overlap": 1191,
+          "added": 3494,
+          "offset_mm": 15.55,
+          "overlap_spread_mm": 1.17
+        },
+        {
+          "dates": [
+            "2018-08-13",
+            "2018-11-11"
+          ],
+          "overlap": 1261,
+          "added": 3479,
+          "offset_mm": -3.53,
+          "overlap_spread_mm": 1.11
+        },
+        {
+          "dates": [
+            "2018-11-11",
+            "2019-02-09"
+          ],
+          "overlap": 1443,
+          "added": 3467,
+          "offset_mm": -16.96,
+          "overlap_spread_mm": 0.78
+        },
+        {
+          "dates": [
+            "2019-02-09",
+            "2019-05-10"
+          ],
+          "overlap": 1340,
+          "added": 3474,
+          "offset_mm": 1.89,
+          "overlap_spread_mm": 1.21
+        },
+        {
+          "dates": [
+            "2019-05-10",
+            "2019-08-08"
+          ],
+          "overlap": 1230,
+          "added": 3488,
+          "offset_mm": 4.46,
+          "overlap_spread_mm": 1.35
+        },
+        {
+          "dates": [
+            "2019-08-08",
+            "2019-11-06"
+          ],
+          "overlap": 1229,
+          "added": 3482,
+          "offset_mm": 5.11,
+          "overlap_spread_mm": 0.71
+        },
+        {
+          "dates": [
+            "2019-11-06",
+            "2020-02-04"
+          ],
+          "overlap": 1446,
+          "added": 3467,
+          "offset_mm": 1.92,
+          "overlap_spread_mm": 1.13
+        },
+        {
+          "dates": [
+            "2020-02-04",
+            "2020-05-04"
+          ],
+          "overlap": 1342,
+          "added": 3471,
+          "offset_mm": 8.2,
+          "overlap_spread_mm": 1.18
+        },
+        {
+          "dates": [
+            "2020-05-04",
+            "2020-08-02"
+          ],
+          "overlap": 1204,
+          "added": 3500,
+          "offset_mm": -10.4,
+          "overlap_spread_mm": 0.83
+        },
+        {
+          "dates": [
+            "2020-08-02",
+            "2020-10-31"
+          ],
+          "overlap": 1266,
+          "added": 3480,
+          "offset_mm": 2.09,
+          "overlap_spread_mm": 0.82
+        },
+        {
+          "dates": [
+            "2020-10-31",
+            "2021-02-04"
+          ],
+          "overlap": 1419,
+          "added": 3468,
+          "offset_mm": 3.79,
+          "overlap_spread_mm": 0.73
+        },
+        {
+          "dates": [
+            "2021-02-04",
+            "2021-05-05"
+          ],
+          "overlap": 1410,
+          "added": 3467,
+          "offset_mm": -5.31,
+          "overlap_spread_mm": 0.68
+        },
+        {
+          "dates": [
+            "2021-05-05",
+            "2021-08-03"
+          ],
+          "overlap": 1194,
+          "added": 3509,
+          "offset_mm": 13.56,
+          "overlap_spread_mm": 0.74
+        },
+        {
+          "dates": [
+            "2021-08-03",
+            "2021-11-01"
+          ],
+          "overlap": 1209,
+          "added": 3490,
+          "offset_mm": -7.39,
+          "overlap_spread_mm": 0.67
+        },
+        {
+          "dates": [
+            "2021-11-01",
+            "2022-03-19"
+          ],
+          "overlap": 1438,
+          "added": 3469,
+          "offset_mm": -1.32,
+          "overlap_spread_mm": 0.51
+        },
+        {
+          "dates": [
+            "2022-03-19",
+            "2022-09-27"
+          ],
+          "overlap": 1114,
+          "added": 3509,
+          "offset_mm": 25.54,
+          "overlap_spread_mm": 0.74
+        },
+        {
+          "dates": [
+            "2022-09-27",
+            "2023-04-07"
+          ],
+          "overlap": 1182,
+          "added": 3498,
+          "offset_mm": -11.22,
+          "overlap_spread_mm": 0.64
+        },
+        {
+          "dates": [
+            "2023-04-07",
+            "2023-10-04"
+          ],
+          "overlap": 1098,
+          "added": 3524,
+          "offset_mm": 19.85,
+          "overlap_spread_mm": 1.21
+        },
+        {
+          "dates": [
+            "2023-10-04",
+            "2024-04-01"
+          ],
+          "overlap": 1260,
+          "added": 3480,
+          "offset_mm": -17.03,
+          "overlap_spread_mm": 1.42
+        },
+        {
+          "dates": [
+            "2024-04-01",
+            "2024-09-28"
+          ],
+          "overlap": 1085,
+          "added": 3580,
+          "offset_mm": 1.23,
+          "overlap_spread_mm": 0.61
+        },
+        {
+          "dates": [
+            "2024-09-28",
+            "2025-03-27"
+          ],
+          "overlap": 1232,
+          "added": 3483,
+          "offset_mm": -10.46,
+          "overlap_spread_mm": 0.7
+        },
+        {
+          "dates": [
+            "2025-03-27",
+            "2025-09-23"
+          ],
+          "overlap": 1138,
+          "added": 3529,
+          "offset_mm": -8.32,
+          "overlap_spread_mm": 0.88
+        }
+      ]
+    },
+    "gps_comparison_campaign": {
+      "station_count": 67,
+      "pearson_r": 0.8402242638345946,
+      "median_abs_residual_mm_year": 1.0882278628838484,
+      "median_residual_mm_year": 0.33861811638708916
+    }
+  }
+}

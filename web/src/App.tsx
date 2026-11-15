@@ -54,7 +54,7 @@ function Legend({ mode, hazard, year, meta, cells }: { mode: Mode; hazard: Hazar
         <div className="ramp-keys"><span>Sinking {span}+ {unit}</span><span>No clear motion</span><span>Rising</span></div>
         <KeyList items={[noData]} note={mode === "future"
           ? <>Each square's 2016–2026 trend, allowing for seasons and averaged with its neighborhood, carried forward. It tied for most accurate of {meta.forecast?.benchmark.table.length ?? 9} methods we tested on past years, including machine learning. Lighter squares are estimated from their neighbors.</>
-          : <>Measured by NASA satellite radar, 2016–2026, and combined with GPS where a station sits inside the square. Lighter squares are estimated from their neighbors.</>} />
+          : <>Measured by Europe's Sentinel-1 radar satellites with NASA processing, 2016–2026, and combined with GPS where a station sits inside the square. Lighter squares are estimated from their neighbors.</>} />
       </div>
     );
   }
@@ -332,7 +332,7 @@ export default function App() {
                   <input type="range" min={0} max={frames - 1} value={frame!} onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }} aria-label="Date" />
                   <span className="tl-date">{new Date(dates[frame!]).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
                 </div>
-                <p className="legend-note">How far the ground has dropped or risen since July 2016, from NASA satellite radar. Squares with shaky records show their trend.</p>
+                <p className="legend-note">How far the ground has dropped or risen since July 2016, from Sentinel-1 satellite radar processed by NASA. Squares with shaky records show their trend.</p>
                 <button className="link small-link" onClick={() => { setFrame(null); setPlaying(false); }}>Back to the yearly rate</button>
               </div>
             ) : (
@@ -357,7 +357,7 @@ export default function App() {
             <div className="summary">
               <button className="sheet-handle" onClick={() => setSheet((s) => !s)} aria-expanded={sheet}><span>Houston at a glance</span><i aria-hidden="true">{sheet ? "▾" : "▴"}</i></button>
               <h2>Houston at a glance</h2>
-              <p className="lead-in">Pumping groundwater squeezes Houston's clay and the land sinks, and sinking ground floods deeper. TerraGauge maps it one square kilometer at a time from NASA satellite radar and the new NISAR mission, checked against GPS on the ground.</p>
+              <p className="lead-in">Pumping groundwater squeezes Houston's clay and the land sinks, and sinking ground floods deeper. TerraGauge maps it one square kilometer at a time from ten years of satellite radar processed by NASA and the new NISAR mission, checked against GPS on the ground.</p>
               <div className="tiles">
                 <div className="tile"><small>Movement</small><strong>{stats.fast.toLocaleString()}</strong><span>squares sinking 1 cm or more a year</span></div>
                 <div className="tile"><small>Confidence</small><strong>{num(meta.validation.typical_diff_mm_year)}<em> mm a year</em></strong><span>typical gap from {meta.validation.stations} GPS stations</span></div>

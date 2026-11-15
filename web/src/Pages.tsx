@@ -6,6 +6,7 @@ import { ColumnChart, HBarChart, Scatter } from "./Charts";
 import { MapFigure, type FigurePin } from "./MapFigure";
 import { SquareTrend } from "./Card";
 import { usePlaceName } from "./places";
+import { Cite, References } from "./References";
 
 /* The two reading pages, set like a newspaper: masthead, a ticker of key
    numbers, columns of text with figures and captions, and boxed sidebars. */
@@ -129,7 +130,7 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
           <caption>Table 1. The datasets and what each one does</caption>
           <thead><tr><th>Data</th><th>Tells us</th><th>Used for</th></tr></thead>
           <tbody>
-            <tr><td>NASA satellite radar, {years}</td><td>How far each square moved, every few months</td><td>Movement and the forecast</td></tr>
+            <tr><td>Sentinel-1 satellite radar, processed by NASA, {years}</td><td>How far each square moved, every few months</td><td>Movement and the forecast</td></tr>
             <tr><td>NISAR, from {longMonth(meta.nisarArchive.first)}</td><td>The same, every 12 days, from NASA and India's new satellite</td><td>An independent check of the pattern</td></tr>
             <tr><td>HoustonNet GPS, {meta.stations.total} stations</td><td>Very precise movement at single points</td><td>Checking the satellite, and confidence</td></tr>
             <tr><td>FEMA flood zones</td><td>Official flood odds</td><td>Priority and the flood view</td></tr>
@@ -168,7 +169,7 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
               <p>FEMA's flood maps give the odds of a big flood: a 1% chance each year in high-risk zones and 0.2% in moderate ones. Over a 30-year mortgage, 1% a year adds up to about a 26% chance. Sinking ground makes the same flood deeper by however much the ground has dropped, and the satellite measured that drop in every square since 2016. The flood view shows it directly, measured and not forecast. Real flooding also depends on drains, bayous and where the rain falls.</p>
               {h && <p>Checked against Hurricane Harvey, the flood odds hold up: high-risk squares had far more of their area flooded, and deeper, than low-risk ones. But {num(h.flooded_area_outside_high_risk_pct, 0)}% of Harvey's flooded area was outside the high-risk zones, which is why every square shows its flood zone and not just a yes or no. A square with no mapped zone counts as unknown, never as safe.</p>}
               <h3 className="subhead">Droughts</h3>
-              <p>Houston's clay shrinks when it dries out. In the 2011 and 2023 droughts the city had thousands of water main breaks and widespread foundation cracks, and the satellite saw the ground drop below its normal trend. We pretended it was early 2023 and used only the 2018 drought to flag the 10% of squares most likely to drop. In the October 2023 drought, those squares typically dropped <b>{num(t.drought.flagged_median_drop_mm, 0)} mm</b>, against {num(t.drought.others_median_drop_mm, 0)} mm everywhere else. Drought damage repeats in the same places.</p>
+              <p>Houston's clay shrinks when it dries out, which cracks foundations and breaks water mains. In the 2018 and 2023 droughts the satellite saw the ground drop below its normal trend. We pretended it was early 2023 and used only the 2018 drought to flag the 10% of squares most likely to drop. In the October 2023 drought, those squares typically dropped <b>{num(t.drought.flagged_median_drop_mm, 0)} mm</b>, against {num(t.drought.others_median_drop_mm, 0)} mm everywhere else. Drought damage repeats in the same places.</p>
               <h3 className="subhead">Ground bending and faults</h3>
               <p>Where one square sinks much faster than the next, the ground between them bends, straining pipes, roads and foundations. Houston's slowly slipping faults show up in radar as exactly this kind of sharp change. The squares bending most in 2016–2021 were still bending about {num(t.bending.hotspot_later_median / t.bending.others_later_median, 0)} times more than the rest in 2021–2026, so the hotspots are real and lasting. At 1 km wide, they mark zones to inspect, not exact fault lines.</p>
             </div>
@@ -193,8 +194,9 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
           <div className="spread">
             <div className="cols">
               <p className="dropcap">To test a forecast honestly, we pretended it was an earlier date. Each method could only use satellite data up to that date, then had to say how far every square would sink one to five years later. We compared each answer with what really happened, from {f.benchmark.origins.length} different starting dates between {f.benchmark.origins[0].slice(0, 4)} and {f.benchmark.origins[f.benchmark.origins.length - 1].slice(0, 4)}.</p>
-              <p>We tried {f.benchmark.table.length} methods, from "no motion" to a machine-learning model that learns from each square's past speed, its neighbors and its location. The winner is simple: each square's own trend, allowing for the clay's seasonal swing, averaged half and half with its neighborhood within 3 km.</p>
-              <p>Machine learning came last, even behind "no motion". With ten years of data most of the error comes from weather-driven shrink and swell that no one can know years ahead, and the model learned quirks of particular years instead. With more years of radar, a model may eventually win.</p>
+              <p>We tried {f.benchmark.table.length} methods, from "no motion" to a machine-learning model that learns from each square's past speed, its neighbors and its location. The best, tied with a plain trend line, is each square's own trend, allowing for the clay's seasonal swing, averaged half and half with its neighborhood within 3 km.</p>
+              <p>{(() => { const ml = f.benchmark.table.find((r) => r.method.startsWith("ml")), none = f.benchmark.table.find((r) => r.method === "no_motion"), worst = Math.max(...f.benchmark.table.map((r) => r.overall_cm));
+                return ml && ml.overall_cm === worst ? `Machine learning came last${none && ml.overall_cm > none.overall_cm ? `, even behind "no motion"` : ""}.` : "Machine learning did not beat the simpler methods."; })()} With ten years of data most of the error comes from weather-driven shrink and swell that no one can know years ahead, and the model learned quirks of particular years instead. With more years of radar, a model may eventually win.</p>
               <aside className="sidebar"><h3>What the forecast assumes</h3><ul>
                 <li>Each square keeps its 2016–2026 trend, allowing for seasons and averaged with its neighborhood. It can't foresee changes in groundwater pumping or new rules.</li>
                 <li>We tested it up to {f.tested_horizon_years.toFixed(0)} years ahead, {f.benchmark.test_cases} times, so we don't show later years.</li>
@@ -222,7 +224,7 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
         <div className="spread">
           <div className="cols">
             <p className="dropcap">NISAR started imaging Houston in {longMonth(meta.nisarArchive.first)} and passes over every 12 days. We use all {meta.nisarArchive.processedPairs} of its Houston image pairs so far. Houston sinks a few millimeters over a few weeks, but the air between the satellite and the ground shifts a single reading by centimeters, so one pass can't yet measure Houston's slow sinking on its own.</p>
-            <p>That's why every square says how long NISAR needs to confirm its sinking. At {n.detect[1]?.rate ?? 10} mm a year it takes about {n.detect[1]?.years ?? "—"} years of passes; faster sinking shows up sooner.</p>
+            <p>That's why every square says how long NISAR needs to confirm its sinking.{n.noise?.measured && n.noise.near_mm !== null && n.noise.far_mm !== null ? <> We measured the wobble of a single reading across all {n.noise.pairs} pairs: about {num(n.noise.near_mm, 0)} mm near our reference area, rising to {num(n.noise.far_mm, 0)} mm some {num(n.noise.far_km ?? 45, 0)} km away, because the air differs more the farther apart two places are.</> : null} For a typical square, sinking {n.detect[1]?.rate ?? 10} mm a year takes about {n.detect[1]?.years ?? "—"} years of passes to confirm; faster sinking and squares closer to the reference area show up sooner.</p>
             {meta.predictionTest && meta.predictionTest.status !== "scored" && <p>We also wrote down a prediction for NISAR's 2026 images before they existed. It has not been scored yet.</p>}
           </div>
           <div className="rail">
@@ -244,10 +246,10 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
       <article className="story">
         <h2 className="head">How each answer is decided</h2>
         <div className="boxes">
-          <section><h3>Movement</h3><p>The satellite looks at the ground at a {th.incidence_deg}° slant, so we turn its reading into straight up-and-down movement, then blend in a GPS station when one sits within {th.gps_blend_km} km. Changes smaller than {num(th.stable_mm_year)} mm a year count as no clear motion: twice the wobble of GPS stations that aren't moving.</p></section>
+          <section><h3>Movement</h3><p>The satellite looks at the ground at a {th.incidence_deg}° slant, so we turn its reading into straight up-and-down movement, then blend in a GPS station when one sits within {th.gps_blend_km} km. That assumes the ground moves only up or down, and uses one angle for the whole city; the real angle changes by a few degrees across Houston, so a rate can be off by several percent. Changes smaller than {num(th.stable_mm_year)} mm a year count as no clear motion: twice the scatter of the satellite's readings in the reference area, where GPS shows the ground isn't moving.</p></section>
           <section><h3>Priority, first rule that fits</h3><ol>{(["insufficient_data", "review_disagreement", "investigate_first", "add_monitoring", "observe", "no_clear_motion"] as const).map((k) => <li key={k}><b>{ACTION[k].name}.</b> {ACTION[k].meaning}</li>)}</ol></section>
           <section><h3>Sensor sites</h3><p>The numbered pins are "Add monitoring here" squares in the fastest-sinking areas, ranked by the typical rate within 3 km so one odd square can't top the list, and kept at least {th.sensor_spacing_km} km apart. Low-cost sensors are added until every such square has one within 6 km.</p></section>
-          <section><h3>Shaky and missing squares</h3><p>About 1 in 10 squares has a shaky record. Each square's own rate is blended with its neighborhood, trusting steadier squares more; against GPS this cut the typical gap from 1.9 to 1.7 mm a year. Squares with no reading are estimated from at least {meta.estimates.min_neighbors} measured squares within {meta.estimates.radius_km} km; hidden-square tests put the typical error at {num(meta.estimates.median_error_mm_year)} mm a year.</p></section>
+          <section><h3>Shaky and missing squares</h3><p>Each square's own rate is blended with its neighborhood, trusting steadier squares more{meta.blendTest ? <>, so about {num(meta.blendTest.pulled_share_pct, 0)}% of squares, the ones with shaky records, lean mostly on their neighbors. Against GPS within {meta.blendTest.radius_km} km of {meta.blendTest.squares.toLocaleString()} squares, this cut the typical gap from {num(meta.blendTest.typical_before_mm_year)} to {num(meta.blendTest.typical_after_mm_year)} mm a year, and the worst tenth from {num(meta.blendTest.worst10_before_mm_year)} to {num(meta.blendTest.worst10_after_mm_year)}</> : null}. Squares with no reading are estimated from at least {meta.estimates.min_neighbors} measured squares within {meta.estimates.radius_km} km; hidden-square tests put the typical error at {num(meta.estimates.median_error_mm_year)} mm a year.</p></section>
           <section><h3>Still to sign off</h3><p>Radar measures movement against a reference. We used {meta.reference.reference_stations.length} long-running GPS stations that barely move, and held {meta.reference.held_out_stable_stations.length} more back as a check. The team still has to review that choice.</p></section>
           <section><h3>Downloads</h3><p>Everything on the map, free to reuse.</p><div className="downloads">
             <button onClick={() => save("terragauge-houston-squares.csv", toCSV(cells, meta), "text/csv")}>All squares (CSV)</button>
@@ -256,17 +258,8 @@ export function HowWeKnow({ meta, cells, onShow }: { meta: Meta; cells: Cell[]; 
         </div>
       </article>
 
-      <footer className="sources">
-        <h2>Sources</h2>
-        <ul>
-          <li>NASA JPL OPERA surface displacement products from Copernicus Sentinel-1 (frames F38238 and F38239), {meta.record.start} to {meta.record.end}, via the Alaska Satellite Facility.</li>
-          <li>NASA/ISRO NISAR interferogram products, track 062 frame 016, {meta.nisarArchive.processedPairs} pairs, {meta.nisarArchive.first} to {meta.nisarArchive.last}.</li>
-          <li>HoustonNet GPS 2024 release, University of Houston and the Harris-Galveston Subsidence District. Wang et al. (2022), J. Surv. Eng. 148(4): 04022008, for the deep-anchor stations.</li>
-          <li>USGS groundwater daily values and the 2023 Houston extensometer release. Garvin, K.M. (2018), Hurricane Harvey flood inundation data, USGS, doi:10.5066/F7VH5N3N.</li>
-          <li>FEMA National Flood Hazard Layer. NASA NASADEM elevation; NASA JPL OPERA surface water and land disturbance products.</li>
-          <li>Address search and place names by OpenStreetMap Nominatim. Basemap © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.</li>
-        </ul>
-      </footer>
+      <References keys={["operaDisp", "sentinel1", "nisarGunw", "houstonNet2024", "wang2022", "nwis", "ramageShah2024", "garvin2018", "fema", "nasadem", "dswx", "dist", "osm", "sklearn",
+        "storkSneed2002", "bernal2019", "abc13_2021", "holt2021", "blakeZelinsky2018", "lindnerFitzgerald2018", "blackMarble"]} />
     </div>
   );
 }
@@ -397,7 +390,7 @@ export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[
           <div className="cols">
             <p className="dropcap">A GPS receiver bolted to the ground measures its own height every day against NOAA's reference stations. If the ground under it sinks, the daily heights slowly drift down. After enough days the drift stands out from the daily wobble, and the sinking is confirmed. Faster sinking and a steadier sensor mean a shorter wait.</p>
             <p>The satellite already sees where Houston is sinking. A sensor turns that reading into proof at the exact spots where a city would spend money on drainage, levees or pumping rules, which is why TerraGauge suggests sites instead of spreading sensors evenly.</p>
-            <p>A permanent station is steadier and confirms sinking faster, but costs hundreds of times more. A low-cost sensor can cover many more places for the same money, which matters in a region where {meta.counts.action.add_monitoring?.toLocaleString() ?? "many"} flood-zone squares are sinking with no GPS nearby.</p>
+            <p>A permanent station is steadier and confirms sinking faster, but costs far more. A low-cost sensor can cover many more places for the same money, which matters in a region where {meta.counts.action.add_monitoring?.toLocaleString() ?? "many"} flood-zone squares are sinking with no GPS nearby.</p>
           </div>
           <div className="rail">
             <Fig n={1} title="Weeks to confirm sinking, best case" caption={<>Fewer weeks is better. Best case assumes the daily wobble is random; real readings also drift with the seasons, so agencies usually wait a few years before trusting a long-term rate.</>}>
@@ -417,7 +410,7 @@ export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[
             <dl>
               <div className="row"><dt>What it is</dt><dd>A small dual-band GPS board and antenna on a fixed post, with power and a data link</dd></div>
               <div className="row"><dt>Cost</dt><dd>About $74 for our prototype, up to $350–500 for a kit with a better antenna</dd></div>
-              <div className="row"><dt>Daily wobble</dt><dd>About {hw.node_daily_sigma_mm} mm, a planning guess until our test measures it</dd></div>
+              <div className="row"><dt>Daily wobble</dt><dd>About {hw.node_daily_sigma_mm} mm, a planning guess until our test measures it. A study of a similar low-cost receiver found about 1 cm precision in real-time use <Cite refs={["hohensinn2022"]} />.</dd></div>
               <div className="row"><dt>Best for</dt><dd>Covering many sinking areas cheaply</dd></div>
             </dl>
           </section>
@@ -426,7 +419,7 @@ export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[
             <dl>
               <div className="row"><dt>What it is</dt><dd>A survey-grade receiver on a deep, stable mount, like the {meta.stations.total} HoustonNet stations</dd></div>
               <div className="row"><dt>Cost</dt><dd>About $20,000–30,000</dd></div>
-              <div className="row"><dt>Daily wobble</dt><dd>About {hw.gps_daily_sigma_mm} mm</dd></div>
+              <div className="row"><dt>Daily wobble</dt><dd>About {hw.gps_daily_sigma_mm} mm, the middle of the 5–8 mm HoustonNet reports for its stations <Cite refs={["wang2022"]} /></dd></div>
               <div className="row"><dt>Best for</dt><dd>Long-term anchors in the most important flood-zone areas</dd></div>
             </dl>
           </section>
@@ -473,15 +466,7 @@ export function HardwarePage({ meta, cells, onShow }: { meta: Meta; cells: Cell[
         </div>
       </article>
 
-      <footer className="sources">
-        <h2>Sources</h2>
-        <ul>
-          <li>Hohensinn, R. et al. (2022), low-cost GPS receivers for ground-movement monitoring, Remote Sensing 14(20), 5100.</li>
-          <li>Harris-Galveston Subsidence District, subsidence FAQs and GPS records.</li>
-          <li>NOAA Continuously Operating Reference Stations (stations NETP and ZHU1), open data bucket noaa-cors-pds.</li>
-          <li>CNES real-time multi-GNSS orbits, clocks and signal biases (ppp-wizard.net, file cnt24446), used for the satellites-only rough heights.</li>
-        </ul>
-      </footer>
+      <References keys={["hohensinn2022", "wang2022", "houstonNet2024", "cors", "cnes", "rtklib"]} />
     </div>
   );
 }

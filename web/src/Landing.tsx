@@ -12,6 +12,7 @@ import { CONFIDENCE_COLORS, CONTEXT_BAR, PRIORITY_COLORS, RISE, SINK, SINK_EXTRE
 import { ColumnChart, HBarChart, LineChart, SegmentedBar, monthLabel, yearOf } from "./Charts";
 import { Marquee } from "./Marquee";
 import { usePlaceName } from "./places";
+import { Cite } from "./References";
 
 const TAU = Math.PI * 2;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -136,12 +137,12 @@ const ProblemCard = memo(function ProblemCard({ story: st, chartH }: { story: St
       <h2 id="b-move">Houston is sinking, and sinking land floods deeper</h2>
       <p className="lede">Much of Houston sits on thick clay. Pumping water out of the sand between the clay layers lets the clay squeeze, and the land above drops for good. Lower ground means the same storm brings deeper water, and drains and levees were built for the old ground level.</p>
       <ul className="facts-list">
-        <li><strong>10+ ft</strong><span>of sinking near Pasadena between 1906 and 1995. About 3,200 square miles of greater Houston dropped at least a foot.<cite>USGS</cite></span></li>
-        <li><strong>~10 ft</strong><span>Baytown's Brownwood neighborhood sank so far that Hurricane Alicia wiped it out in 1983. It is a nature center today.<cite>Houston History Magazine</cite></span></li>
-        <li><strong>28 in</strong><span>dropped at a GPS station in Jersey Village over 26 years, as pumping moved northwest.<cite>Harris-Galveston Subsidence District</cite></span></li>
-        <li><strong>$125B</strong><span>in damage from Hurricane Harvey in 2017, after almost 34 inches of rain fell on Harris County in four days.<cite>NOAA, Harris County Flood Control District</cite></span></li>
+        <li><strong>10+ ft</strong><span>of sinking near Pasadena between 1906 and 1995. Almost 3,200 square miles of greater Houston dropped more than a foot.<Cite refs={["storkSneed2002"]} /></span></li>
+        <li><strong>9–13 ft</strong><span>Baytown's Brownwood neighborhood sank so far that Hurricane Alicia wiped it out in 1983. It is a nature center today.<Cite refs={["abc13_2021", "bernal2019"]} /></span></li>
+        <li><strong>28 in</strong><span>dropped at a GPS station in Jersey Village over 26 years, one of the fastest-sinking areas today.<Cite refs={["holt2021"]} /></span></li>
+        <li><strong>$125B</strong><span>in damage from Hurricane Harvey in 2017, after an average of almost 34 inches of rain fell across Harris County in four days.<Cite refs={["blakeZelinsky2018", "lindnerFitzgerald2018"]} /></span></li>
       </ul>
-      <p className="hope">It can be slowed. Where pumping was cut in the late 1970s, sinking along the Ship Channel largely stopped. Knowing exactly where the ground moves now tells the region where to act next.<cite>USGS</cite></p>
+      <p className="hope">It can be slowed. Where pumping was cut in the late 1970s, sinking along the Ship Channel and in Baytown and Pasadena has largely eased. Knowing exactly where the ground moves now tells the region where to act next.<Cite refs={["storkSneed2002"]} /></p>
     </div>
     <div className="col">
       <figure className="fig">
@@ -198,7 +199,7 @@ const PriorityCard = memo(function PriorityCard({ meta, openAt }: { meta: Meta |
       </ul>
       {hw && meta && (
         <div className="kit">
-          <div><strong>{meta.sensors.length}</strong><span>permanent GPS stations, about $20,000–30,000 each. One confirms 1 cm a year of sinking in about {hw.gps_weeks_10} weeks.</span></div>
+          <div><strong>{meta.sensors.length}</strong><span>permanent GPS stations, the steadiest option. One confirms 1 cm a year of sinking in about {hw.gps_weeks_10} weeks.</span></div>
           <div><strong>{meta.nodes.length}</strong><span>low-cost sensors, from $74. About {hw.node_weeks_10} weeks to confirm the same, and every flagged flood-zone square gets one within 6 km.</span></div>
           <div><strong>{meta.gaps.length}</strong><span>sensors for land nothing measures yet.</span></div>
         </div>
@@ -406,7 +407,7 @@ export function Landing({ meta, sites, cells, story, playIntro, onWarm, onEnter,
       : "A first look: each square says how long NISAR needs to confirm its sinking.";
     return [
       { short: "NISAR", name: "NISAR, NASA and India's new radar satellite", what: `Passes over Houston every 12 days. We use all ${a.processedPairs} of its image pairs, ${monthLabel(a.first)} to ${monthLabel(a.last)}.`, use: nisarUse },
-      { short: "Radar record", name: `Ten years of NASA satellite radar, ${years}`, what: `${meta.record.products} snapshots of how far the ground moved, every few months.`, use: "The long record the whole map is built from." },
+      { short: "Radar record", name: `Ten years of satellite radar, ${years}`, what: `${meta.record.products} snapshots of how far the ground moved, every few months, from Europe's Sentinel-1 satellites with NASA processing.`, use: "The long record the whole map is built from." },
       { short: "GPS", name: "HoustonNet GPS stations", what: `${meta.stations.total} stations that measure their own height to the millimeter.`, use: `The ground truth we check the satellite against. ${meta.stations.deepSeated.length} stations bolted to deep underground anchors are left out: they track deep ground, not the surface.` },
       { short: "Flood zones", name: "FEMA flood zones", what: "The official map of flood risk.", use: "Sinking inside a high-risk zone moves a square up the list. A square with no mapped zone counts as unknown, never as safe." },
       { short: "Harvey", name: "Hurricane Harvey flood maps, USGS", what: "Where Harvey's water actually reached in 2017, and how deep.", use: "A real-world check of the flood view." },
@@ -567,7 +568,7 @@ export function Landing({ meta, sites, cells, story, playIntro, onWarm, onEnter,
           <img className="hero-logo" src="./logo.png" alt="" />
           <div className="hero-copy">
             <p className="tagline">Where did Houston's ground move, and how sure are we?</p>
-            <p className="hero-sub">Ten years of NASA satellite radar and the new NISAR mission, checked against GPS on the ground, one square kilometer at a time.</p>
+            <p className="hero-sub">Ten years of satellite radar, processed by NASA, and the new NISAR mission, checked against GPS on the ground, one square kilometer at a time.</p>
             <button className="cta" onClick={toStory}>Start the story</button>
           </div>
           <div className="scroll-cue" style={{ opacity: 1 - ramp(s, 0.05, 0.3) }} aria-hidden="true"><span />Scroll</div>

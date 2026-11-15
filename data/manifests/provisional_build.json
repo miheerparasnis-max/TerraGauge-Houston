@@ -374,7 +374,7 @@
   "outputs": [
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "279e23c4795a76df559b2b8e0ac985713ad2f4177e58153321fdfc8d661b0346",
+      "sha256": "f31151ab76fe0fcd3ee1076feb22e1798c77d97d71bffba024366bad926fc909",
       "tracked": true
     },
     {
@@ -414,7 +414,7 @@
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "b8c9818195c61444c2dda5e2683d5e6f5e29db44bf7f47908b5c058fd722f0d4",
+      "sha256": "389db4eb5448ce2042ad91d1fa51d3edb878246db0df301e0f4aa6b98afb762c",
       "tracked": true
     },
     {
@@ -428,5 +428,5 @@
       "tracked": false
     }
   ],
-  "note": "Outputs marked tracked: false are gitignored regenerable intermediates; scripts/export_web.py reads two of them and records the same hashes."
+  "note": "Outputs marked tracked: false are gitignored regenerable intermediates; scripts/export_web.py reads two of them and records the same hashes. 2026-11-15: opera_vs_houstonnet_comparison.json and build_report.json regenerated with the PR-5 campaign-station rule (D-051); same inputs, compare_opera_gps step only."
 }

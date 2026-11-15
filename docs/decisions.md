@@ -428,3 +428,19 @@ Reyansh merged `chore/audit-baseline-2026-11-10` (Aaron's science fixes and "scu
 
 *Approved by the repository owner (2026-11-15: "we cannot record again").*
 
+### D-051: Polish-pass corrections to the published model numbers (2026-11-15)
+Found while checking every number on the website against its source. Each was a mismatch between what the code did and what a rule or source says. Results are shown under both versions.
+
+1. **The website's GPS comparison now follows PR-5 (V3 exclusions).** `compare_opera_gps` mixed campaign-style HoustonNet stations (fewer than 0.5 position days a day) into the headline, which the pre-registration excludes. They are now compared separately (`campaign_stations` in `opera_vs_houstonnet_comparison.json`) and never enter the headline.
+   - Before: 131 stations, r = 0.773, median gap 1.6 mm/yr vertical.
+   - After (registered rule): 64 continuous stations, r = 0.680, median gap 1.7 mm/yr. The 67 campaign stations alone give r = 0.840.
+   - Knock-on: the model-error term (robust scatter of the comparison residuals) fell from 2.23 to 1.92 mm/yr, so 285 squares moved from "no clear motion" to a labelled action (no_clear_motion 5,466 to 5,181).
+2. **NISAR per-pass noise is measured, not assumed.** The detection times used the scatter inside region A of one pair (3.0 mm). `scripts/measure_nisar_noise.py` measures each square's scatter about a straight line through its region-A-referenced history over the 22-pair chain: median 11.1 mm, rising from 6.0 mm (about 7 km from region A) to 16.1 mm (about 45 km), as atmospheric noise should. The export uses the distance curve per square. Time to confirm 10 mm/yr: 0.6 years before, 1.4 years after. The measured value includes real non-linear motion, so it is an upper bound on noise.
+3. **Permanent-GPS daily wobble is sourced.** 4.0 mm was an unsourced assumption. Wang et al. (2022) report 5 to 8 mm RMS for daily vertical positions in HoustonNet, so 6.5 mm is used. Ten mm/yr now takes about 20 weeks to confirm (was 14).
+4. **The neighbourhood-blending test is recomputed every export** (`blend_test` in `scripts/export_web.py`, `meta.blendTest`). The page quoted a one-off result (1.9 to 1.7 mm/yr over 2,584 squares) that no code reproduced. The reproducible version, against long-history GPS stations within 3 km (not reference, not deep-seated), gives 2.1 to 2.0 mm/yr typical and 8.6 to 7.8 mm/yr for the worst tenth, over 1,984 squares. About 12% of squares lean mostly on their neighbourhood.
+5. **Copy corrected against sources** (ledger: `docs/factcheck/2026-11-15-citation-check.md`). The radar record is Copernicus Sentinel-1 processed by NASA, not "NASA radar satellites". Brownwood sank an estimated 9 to 13 ft, not "~10 ft". Ship Channel sinking "largely eased" (USGS: "largely abated"), not "stopped". The drought text named 2011, which the 2016 to 2026 satellite record cannot see; the model uses 2018 and 2023. Fast sinking is mostly northwest of downtown (66% of squares sinking 1 cm/yr or more), not "northwest and east". The unsourced station price and "hundreds of times more" were removed.
+
+**Not fixed, stated instead:** every LOS rate is converted to vertical with one 38° incidence and no horizontal motion (audit A9). The fix needs the OPERA DISP-S1-STATIC line-of-sight layers, which need an Earthdata login this machine does not have. The Movement section now states the limitation (a few percent).
+
+*Requested by the repository owner (2026-11-15: "make sure there are no inconsistencies across the data and findings ... fix every single hole").*
+

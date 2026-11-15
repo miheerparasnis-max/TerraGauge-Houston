@@ -47,7 +47,7 @@ OUT = ROOT / "web" / "public" / "data"
 BUILD_COMMAND = "python3 scripts/build_provisional.py"
 GPS_SIGMA_MM_YEAR = 0.5       # assumed uncertainty of a >=10-year HoustonNet rate
 GPS_BLEND_KM = 1.0
-GPS_DAILY_SIGMA_MM = 4.0      # typical daily vertical scatter of a permanent GPS station (assumption)
+GPS_DAILY_SIGMA_MM = 6.5      # daily vertical scatter of a HoustonNet station: 5-8 mm RMS (Wang et al., 2022, J. Surv. Eng. 148(4))
 SENSOR_COUNT = 15             # permanent GPS stations to suggest
 SENSOR_SPACING_KM = 4.0
 NODE_COUNT = 30               # low-cost nodes to suggest
@@ -68,6 +68,31 @@ COS = cos(radians(38.0))
 LOG: ProvenanceLog | None = None
 
 
+def blend_test(raw: dict, shrunk: dict, gps: list[dict], exclude: set[str], radius_km: float = 3.0) -> dict:
+    """Does blending shaky squares with their neighbourhood bring them closer to GPS?
+
+    Every satellite square within ``radius_km`` of a long-history GPS station (not a
+    reference station, not deep-seated) is compared with that station's vertical rate,
+    before and after blending. Also reports how many squares the blend moves mostly
+    toward their neighbourhood (neighbourhood weight above one half)."""
+    before, after = [], []
+    for cid, (lon, lat, rate, _se) in raw.items():
+        if cid not in shrunk:
+            continue
+        near = [g for g in gps if g["station_id"] not in exclude and not is_deep_seated(g["station_id"]) and distance_km(lon, lat, g["longitude"], g["latitude"]) <= radius_km]
+        if not near:
+            continue
+        g = min(near, key=lambda s: distance_km(lon, lat, s["longitude"], s["latitude"]))
+        truth = display_gps_rate(g.get("up_mm_year"))[0]
+        before.append(abs(rate - truth)); after.append(abs(shrunk[cid][0] - truth))
+    # neighbourhood weight = 1 - own weight / total weight; total weight = 1 / blended se^2
+    pulled = sum(1 for cid, (_lo, _la, _rate, se) in raw.items() if cid in shrunk and (1 / max(se, 0.3) ** 2) < (1 / shrunk[cid][1] ** 2) / 2)
+    q = lambda xs, p: sorted(xs)[min(len(xs) - 1, int(p * len(xs)))]  # noqa: E731
+    return {"squares": len(before), "radius_km": radius_km, "typical_before_mm_year": r(median(before)), "typical_after_mm_year": r(median(after)),
+            "worst10_before_mm_year": r(q(before, 0.9)), "worst10_after_mm_year": r(q(after, 0.9)),
+            "pulled_share_pct": r(100 * pulled / max(1, len(shrunk)), 0)} if before else None
+
+
 def load(path: Path) -> dict:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     assert_publishable(payload, str(path))
@@ -83,6 +108,7 @@ def r(value, digits=1):
 GROUNDTRUTH_RAW = ROOT / "data" / "raw" / "groundtruth"
 GROUNDTRUTH_MANIFEST = ROOT / "data" / "groundtruth_session_manifest.json"
 GROUNDTRUTH_REPORT = DERIVED / "groundtruth" / "groundtruth_report.json"
+NISAR_NOISE = DERIVED / "nisar_noise_measured.json"
 GROUNDTRUTH_DIAGNOSTICS = DERIVED / "groundtruth" / "groundtruth_diagnostics.json"
 
 
@@ -226,7 +252,24 @@ def main() -> None:
     noise_los = robust_sd([opera_cells[c]["opera_los_velocity_mm_year"] for c in reference_ids if c in opera_cells])
     stable_vertical = vertical_rate(t.pair_signal_sigma_multiplier * noise_los)
     model_error = robust_sd([vertical_rate(row["residual_mm_year"]) for row in comparison["stations"]])
-    nisar_sigma = pair["reference_scatter_mm"]
+    # NISAR per-pass noise. Measured from the 22-pair archive when available
+    # (scripts/measure_nisar_noise.py): it grows with distance from the reference
+    # region because the atmosphere decorrelates with distance. Falls back to the
+    # scatter inside the reference region of one pair, which understates it.
+    nisar_noise = load(NISAR_NOISE) if NISAR_NOISE.is_file() else None
+    nisar_sigma = nisar_noise["median_sigma_mm"] if nisar_noise else pair["reference_scatter_mm"]
+    noise_curve = sorted((b["median_distance_km"], b["median_sigma_mm"]) for b in (nisar_noise or {}).get("by_distance_from_region_a", []))
+
+    def nisar_sigma_at(lon: float, lat: float) -> float:
+        if not noise_curve:
+            return nisar_sigma
+        d = distance_km(lon, lat, *nisar_noise["region_a_center"])
+        if d <= noise_curve[0][0]:
+            return noise_curve[0][1]
+        for (d0, s0), (d1, s1) in zip(noise_curve, noise_curve[1:]):
+            if d <= d1:
+                return s0 + (s1 - s0) * (d - d0) / (d1 - d0)
+        return noise_curve[-1][1]
 
     sat_rates = [{"id": c["cell_id"], "lon": float(c["longitude"]), "lat": float(c["latitude"]), "rate": vertical_rate(c["opera_los_velocity_mm_year"])} for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= IMPLAUSIBLE_MM_YEAR]
     area = neighborhood_medians(sat_rates)
@@ -244,6 +287,7 @@ def main() -> None:
                  for c in opera["cells"] if abs(vertical_rate(c["opera_los_velocity_mm_year"])) <= IMPLAUSIBLE_MM_YEAR}
     shrunk = shrink_to_neighbours(raw_rates, floor_mm_year=1.5)
     long_history = [s for s in stations if (s.get("history_years") or 0) >= 10 and display_gps_rate(s.get("up_mm_year"))[0] is not None]
+    shrink_test = blend_test(raw_rates, shrunk, long_history, set((opera.get("reference") or {}).get("stations") or []) | {"DEN2", "TMCC"})
     active = [s for s in stations if (s.get("end_decimal_year") or 0) >= 2022 and s.get("up_mm_year") is not None]
 
     cells, candidates = [], []
@@ -331,7 +375,7 @@ def main() -> None:
 
         detect = None
         if rate is not None and act != "insufficient_data" and rate < 0:
-            n_nisar = passes_to_detect(rate * COS, nisar_sigma, 12)
+            n_nisar = passes_to_detect(rate * COS, nisar_sigma_at(lon, lat), 12)
             n_gps = passes_to_detect(rate, GPS_DAILY_SIGMA_MM, 1)
             n_node = passes_to_detect(rate, NODE_DAILY_SIGMA_MM, 1, max_passes=4000)
             detect = {"nisarMonths": r((n_nisar - 1) * 12 / 30.44, 0) if n_nisar else None, "gpsWeeks": r((n_gps - 1) / 7, 0) if n_gps else None, "nodeWeeks": r((n_node - 1) / 7, 0) if n_node else None}
@@ -404,7 +448,7 @@ def main() -> None:
                 by[str(y)] = {"c": r(est * h / 10), "lo": r((est * h - half) / 10), "hi": r((est * h + half) / 10)}
             per_year = sqrt(band_at(tested) ** 2 + (est_se * tested) ** 2) / tested
             future = {"rate": r(est), "low": r(est - per_year), "high": r(est + per_year), "recent": None, "by": by}
-        n_nisar = passes_to_detect(est * COS, nisar_sigma, 12) if est < 0 else None
+        n_nisar = passes_to_detect(est * COS, nisar_sigma_at(c["lon"], c["lat"]), 12) if est < 0 else None
         n_gps = passes_to_detect(est, GPS_DAILY_SIGMA_MM, 1) if est < 0 else None
         n_node = passes_to_detect(est, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) if est < 0 else None
         c.update({
@@ -510,7 +554,7 @@ def main() -> None:
             c["future"]["rate"] = r(fill)
         n_gps = passes_to_detect(fill, GPS_DAILY_SIGMA_MM, 1) if fill < 0 else None
         n_node = passes_to_detect(fill, NODE_DAILY_SIGMA_MM, 1, max_passes=4000) if fill < 0 else None
-        n_nisar = passes_to_detect(fill * COS, nisar_sigma, 12) if fill < 0 else None
+        n_nisar = passes_to_detect(fill * COS, nisar_sigma_at(c["lon"], c["lat"]), 12) if fill < 0 else None
         c["detect"] = {"nisarMonths": r((n_nisar - 1) * 12 / 30.44, 0) if n_nisar else None, "gpsWeeks": r((n_gps - 1) / 7, 0) if n_gps else None, "nodeWeeks": r((n_node - 1) / 7, 0) if n_node else None} if fill < 0 else None
         c.update({"sig": sig, "act": act, "actWhy": act_why + " (Filled from the measured squares touching it.)"})
         c.update({"rate": r(fill), "conf": level, "adj": len(touching), "estFrom": "satellite",
@@ -709,7 +753,10 @@ def main() -> None:
         "validation": {"stations": comparison["stats"]["station_count"], "r": comparison["stats"].get("pearson_r"), "typical_diff_mm_year": r(vertical_rate(comparison["stats"]["median_abs_residual_mm_year"])), "points": [{"id": p["station_id"], "gps": r(p["gps_up_mm_year"]), "sat": r(vertical_rate(p["opera_los_mm_year"]))} for p in comparison["stations"]]},
         "forecast": forecast_meta,
         "hazards": hazards_meta,
-        "nisar": {"pair": nisar_check(pair, 12), "chain": nisar_check(chain, 60), "detect": detect_table, "sigma_mm": r(nisar_sigma)},
+        "nisar": {"pair": nisar_check(pair, 12), "chain": nisar_check(chain, 60), "detect": detect_table, "sigma_mm": r(nisar_sigma),
+                  "noise": {"measured": bool(nisar_noise), "pairs": (nisar_noise or {}).get("pairs"), "near_mm": noise_curve[0][1] if noise_curve else None, "far_mm": noise_curve[-1][1] if noise_curve else None,
+                            "near_km": noise_curve[0][0] if noise_curve else None, "far_km": noise_curve[-1][0] if noise_curve else None}},
+        "blendTest": shrink_test,
         "reference": build["reference"],
         "sensors": sensor_out,
         "nodes": node_out,

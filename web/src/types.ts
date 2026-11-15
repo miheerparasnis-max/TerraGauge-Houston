@@ -84,7 +84,9 @@ export interface Meta {
     limitations: string[];
     backtest: { cutoff: string; predict_to: string; years_ahead: number; ml_typical_error_cm: number | null; long_term_rate_typical_error_cm: number; past_rate_typical_error_cm: number; no_motion_typical_error_cm: number; long_term_within_2cm_pct: number; fast_actual_median_cm: number; fast_long_term_predicted_median_cm: number }[];
   };
-  nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number };
+  nisar: { pair: { cells: number; noise_mm: number; signal_mm: number; r: number }; chain: { cells: number; noise_mm: number; signal_mm: number; r: number }; detect: { rate: number; passes: number | null; years: number | null }[]; sigma_mm: number;
+    /** Per-pass noise measured from the pair archive; grows with distance from the reference area. */
+    noise?: { measured: boolean; pairs: number | null; near_mm: number | null; far_mm: number | null; near_km: number | null; far_km: number | null } };
   reference: { method: string; reference_stations: string[]; held_out_stable_stations: string[] };
   sensors: SensorSite[];
   nodes: NodeSite[];
@@ -100,6 +102,8 @@ export interface Meta {
     /** Exploratory heights from each method, metres relative to that method's average. Never a result. */
     roughHeights?: { note: string | null; methods: { label: string; offsetsM: (number | null)[] }[] };
   };
+  /** Does blending shaky squares with their neighborhood bring them closer to GPS? Recomputed every export. */
+  blendTest?: { squares: number; radius_km: number; typical_before_mm_year: number; typical_after_mm_year: number; worst10_before_mm_year: number; worst10_after_mm_year: number; pulled_share_pct: number } | null;
   hardware: { node_daily_sigma_mm: number; node_max_years: number; node_spacing_km: number; gps_daily_sigma_mm: number; node_weeks_10: number; gps_weeks_10: number; node_weeks_5: number; gps_weeks_5: number };
   nasaLayers: Record<string, string>;
 }

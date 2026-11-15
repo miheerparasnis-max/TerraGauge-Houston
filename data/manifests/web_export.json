@@ -1,10 +1,20 @@
 {
   "artifact_type": "terragauge_web_export_manifest",
-  "created_utc": "2026-11-14T22:07:05Z",
-  "git_head": "2d9843e99d1dc600719ac57f14d790d9e3300a1e",
+  "created_utc": "2026-11-15T18:24:03Z",
+  "git_head": "e003a2bef8852d31282d312db4d1b8fa78b30c62",
   "git_worktree_clean": false,
   "command": "python3 scripts/export_web.py",
   "inputs": [
+    {
+      "path": "data/derived/groundtruth/groundtruth_diagnostics.json",
+      "sha256": "bbede631eb905a279ee528f0c09e7c402482cccc4273d55dafab4fe445c673b2",
+      "tracked": true
+    },
+    {
+      "path": "data/derived/groundtruth/groundtruth_report.json",
+      "sha256": "36c4e576f7e2e1ca5af002ada8c7f833489d234251e89fe0b817e3e103c54f0e",
+      "tracked": true
+    },
     {
       "path": "data/derived/houstonnet_2024_summary.json",
       "sha256": "d84b2a11b1032edc1adcb85d5a00590552a42f1f1fd60714f517ea7da54da55f",
@@ -26,6 +36,11 @@
       "tracked": true
     },
     {
+      "path": "data/derived/nisar_noise_measured.json",
+      "sha256": "95b6f440dd3f553a16685b5286002110689b1650515e5bfb50c87dde910db33c",
+      "tracked": false
+    },
+    {
       "path": "data/derived/prediction/prediction_test_result.json",
       "sha256": "56dc7131518b69be3377461a761f93649f9d73a54e5abc4e4c7b2f0addea5cfd",
       "tracked": true
@@ -37,7 +52,7 @@
     },
     {
       "path": "data/derived/provisional/build_report.json",
-      "sha256": "279e23c4795a76df559b2b8e0ac985713ad2f4177e58153321fdfc8d661b0346",
+      "sha256": "f31151ab76fe0fcd3ee1076feb22e1798c77d97d71bffba024366bad926fc909",
       "tracked": true
     },
     {
@@ -72,18 +87,18 @@
     },
     {
       "path": "data/derived/provisional/opera_vs_houstonnet_comparison.json",
-      "sha256": "b8c9818195c61444c2dda5e2683d5e6f5e29db44bf7f47908b5c058fd722f0d4",
+      "sha256": "389db4eb5448ce2042ad91d1fa51d3edb878246db0df301e0f4aa6b98afb762c",
       "tracked": true
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_chain_20251102_20260101.json",
-      "sha256": "f0e1b89096fd2ca40a203cfa31cb874a44729515afb4597d99a3282a7b490c45",
+      "sha256": "01623fab361918f14bce083e3530fe77530393f06b82c17fe78eefa555358309",
       "tracked": false,
       "regenerate_with": "python3 scripts/build_provisional.py"
     },
     {
       "path": "data/derived/provisional/terragauge_houston_evidence_pair_20251102_20251114.json",
-      "sha256": "d00dbec86e4457c1681d11c38dc20468786ae8d15a6a36e5ea917faf7cdb1e68",
+      "sha256": "a2ac4bfe9f4cc3d5280555fca09c9186331a0d963420feba7555c865460cbb87",
       "tracked": false,
       "regenerate_with": "python3 scripts/build_provisional.py"
     },
@@ -98,6 +113,11 @@
       "tracked": true
     },
     {
+      "path": "data/groundtruth_session_manifest.json",
+      "sha256": "9753aa524d080c123f73fe9efd0999593a36e3bb4644d5d97165623fb4c12f8a",
+      "tracked": true
+    },
+    {
       "path": "data/manifests/nisar_track062_inventory_20261110.json",
       "sha256": "ad95cf30160fcc203713476866cf1047dd9d196c098ab983877e0bd215807abc",
       "tracked": true
@@ -106,12 +126,12 @@
   "outputs": [
     {
       "path": "web/public/data/cells.json",
-      "sha256": "91517222323d12d015ae1c06422785132f2c27ba181f1de447ccddf221c2aee6",
+      "sha256": "dc5f7f09ab2e3faf9fc61b0b443099474e8c98d636484a96c0dfaad08e6eb3d9",
       "tracked": true
     },
     {
       "path": "web/public/data/meta.json",
-      "sha256": "19c6d5e83229c637f5fbe489eee94ecc5cb05fe77dc9c81f4c5811628b02bc02",
+      "sha256": "ee521c83e93ff4be23be99217d0abf7c86e9f6c7ea933f66be6135485339ce20",
       "tracked": true
     },
     {

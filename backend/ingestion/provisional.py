@@ -295,11 +295,38 @@ def nearest_cell_ids(stations: list[dict[str, Any]], cells: list[dict[str, Any]]
     return ids
 
 
+CAMPAIGN_SAMPLES_PER_DAY = 0.5  # PR-5: below this a HoustonNet station is campaign-style, not continuous
+
+
+def samples_per_day(station: dict[str, Any]) -> float | None:
+    """Observed position days per calendar day over the station's history (the PR-5 proxy)."""
+    years, samples = station.get("history_years"), station.get("samples")
+    if not years or samples is None:
+        return None
+    return float(samples) / (float(years) * 365.25)
+
+
+def _agreement(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    stats: dict[str, Any] = {"station_count": len(rows)}
+    if len(rows) >= 5:
+        xs = [r["gps_los_approx_mm_year"] for r in rows]; ys = [r["opera_los_mm_year"] for r in rows]
+        mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+        cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys)); vx = sum((x - mx) ** 2 for x in xs); vy = sum((y - my) ** 2 for y in ys)
+        stats["pearson_r"] = cov / sqrt(vx * vy) if vx > 0 and vy > 0 else None
+        stats["median_abs_residual_mm_year"] = median(abs(r["residual_mm_year"]) for r in rows)
+        stats["median_residual_mm_year"] = median(r["residual_mm_year"] for r in rows)
+    return stats
+
+
 def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], incidence_deg: float = 38.0, max_distance_km: float = 1.0, min_overlap_start: float = 2016.5, min_history_end: float = 2021.0, exclude_station_ids: set[str] | None = None) -> dict[str, Any]:
-    """Approximate agreement check between OPERA LOS velocity and GPS vertical rate."""
+    """Approximate agreement check between OPERA LOS velocity and GPS vertical rate.
+
+    The headline statistics use continuous stations only (PR-5 / V3: campaign-style
+    stations below 0.5 samples a day are excluded). Campaign stations are compared
+    too, but reported separately and never mixed into the headline."""
     from .houston import _distance_km
 
-    rows = []
+    rows, campaign = [], []
     projection = cos(radians(incidence_deg))
     for station in stations:
         if (exclude_station_ids and station["station_id"] in exclude_station_ids) or is_deep_seated(station["station_id"]):
@@ -314,15 +341,11 @@ def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], in
         if distance > max_distance_km:
             continue
         gps_los = float(station["up_mm_year"]) * projection
-        rows.append({"station_id": station["station_id"], "cell_id": best["cell_id"], "distance_km": distance, "gps_up_mm_year": station["up_mm_year"], "gps_los_approx_mm_year": gps_los, "opera_los_mm_year": best["opera_los_velocity_mm_year"], "residual_mm_year": best["opera_los_velocity_mm_year"] - gps_los})
-    stats: dict[str, Any] = {"station_count": len(rows)}
-    if len(rows) >= 5:
-        xs = [r["gps_los_approx_mm_year"] for r in rows]; ys = [r["opera_los_mm_year"] for r in rows]
-        mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
-        cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys)); vx = sum((x - mx) ** 2 for x in xs); vy = sum((y - my) ** 2 for y in ys)
-        stats["pearson_r"] = cov / sqrt(vx * vy) if vx > 0 and vy > 0 else None
-        stats["median_abs_residual_mm_year"] = median(abs(r["residual_mm_year"]) for r in rows)
-        stats["median_residual_mm_year"] = median(r["residual_mm_year"] for r in rows)
+        spd = samples_per_day(station)
+        row = {"station_id": station["station_id"], "cell_id": best["cell_id"], "distance_km": distance, "gps_up_mm_year": station["up_mm_year"], "gps_los_approx_mm_year": gps_los,
+               "opera_los_mm_year": best["opera_los_velocity_mm_year"], "residual_mm_year": best["opera_los_velocity_mm_year"] - gps_los, "samples_per_day": round(spd, 3) if spd is not None else None}
+        (rows if spd is not None and spd >= CAMPAIGN_SAMPLES_PER_DAY else campaign).append(row)
+    stats = _agreement(rows)
     return {
         "artifact_type": "opera_vs_houstonnet_approximate_comparison",
         "status": "provisional",
@@ -333,9 +356,11 @@ def compare_opera_gps(series: dict[str, Any], stations: list[dict[str, Any]], in
             "This is a sanity check of the provisional reference, not a formal validation.",
             "Stations used to define the reference are excluded from this comparison.",
             "Deep-seated stations (antennas on deep extensometer anchors: ADKS, LKHU, NETP, TXEX, UHKD) are excluded; they do not measure the land surface (Wang et al. 2022).",
+            f"Campaign-style stations (fewer than {CAMPAIGN_SAMPLES_PER_DAY:g} position days a day of history, PR-5) are compared separately in campaign_stations and never mixed into the headline statistics.",
         ],
         "stats": stats,
         "stations": rows,
+        "campaign_stations": {"stats": _agreement(campaign), "stations": campaign},
     }
 
 
