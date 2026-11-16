@@ -20,3 +20,4 @@ data/derived/groundtruth/*.stat
 *.md
 !LICENSE.md
 !README.md
+.vercel
